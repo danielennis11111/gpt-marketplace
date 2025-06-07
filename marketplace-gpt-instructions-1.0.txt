@@ -1,0 +1,107 @@
+System Instructions for Cursor: GPT Marketplace Project
+
+Project Goal: Build a web application that serves as a GPT Marketplace, allowing users to share, discover, clone, and customize GPT projects.
+
+High-Level Architecture: (Consider this a starting point - Cursor can suggest improvements)
+
+Frontend: React (or similar modern JavaScript framework) for a dynamic and interactive user interface.
+Backend: Node.js with Express (or Python with Flask/Django) for handling API requests, data management, and user authentication.
+Database: PostgreSQL (or MongoDB) for storing GPT metadata, user data, and other application data. Choice can be refined based on data structure needs.
+API: RESTful API for communication between the frontend and backend.
+Authentication: User authentication system (e.g., using Passport.js or similar) with role-based access control.
+Integration with OpenAI API: (Future Phase) Ability to interact with the OpenAI API for creating, managing, and deploying GPTs (if feasible/desired based on OpenAI API capabilities). Focus on storing configuration, not direct OpenAI API calls initially.
+Development Priorities (Start with #1, then #2, then #3, etc.)
+
+Foundation & Core Functionality:
+
+[Backend] User Authentication:
+Implement user registration, login, logout functionality.
+Store user information securely (e.g., using bcrypt for password hashing).
+Implement role-based access control (e.g., admin, contributor, viewer). Start with simple admin/non-admin roles.
+[Database] Define Data Models:
+Create database models for:
+User: (id, username, email, password, role, etc.)
+GPTProject: (id, name, description, creator_id, category, tags, instructions, conversation_starters, knowledge_base_urls (array), capabilities (JSON), actions (JSON), visibility (public/private), version, created_at, updated_at, rating, review_count)
+Category: (id, name, description) [Optional initially - can be a simple string in GPTProject to start].
+Review: (id, gpt_project_id, user_id, rating, comment, created_at) [Optional initially]
+[Backend] API Endpoints:
+Create API endpoints for:
+User registration (POST /api/users/register)
+User login (POST /api/users/login)
+User logout (POST /api/users/logout)
+Creating a GPT project (POST /api/gptprojects)
+Retrieving a single GPT project by ID (GET /api/gptprojects/:id)
+Listing GPT projects with basic filtering/pagination (GET /api/gptprojects?category=X&creator=Y&page=1&limit=20)
+Updating a GPT project (PUT /api/gptprojects/:id) – Restrict to creator or admin.
+Deleting a GPT project (DELETE /api/gptprojects/:id) – Restrict to creator or admin.
+[Frontend] Basic UI Structure:
+Set up the basic React app structure with:
+Routing (e.g., using React Router) for different pages (e.g., homepage, project listing, project details, create project, login, register).
+Basic styling (e.g., using CSS Modules or styled-components) for a clean and consistent look. Focus on functionality first, aesthetics later.
+Implement basic UI components:
+Navigation bar
+Project listing component (displaying a list of GPT projects with minimal information)
+Project details component (displaying the details of a single GPT project)
+Form for creating a new GPT project (basic text fields for name, description, instructions).
+Login/Register forms.
+GPT Project Submission & Management:
+
+[Backend] Enhanced GPT Project API:
+Implement full CRUD (Create, Read, Update, Delete) operations for GPT projects.
+Implement validation for GPT project data (e.g., required fields, data types).
+Implement file upload functionality for the Knowledge Base (store files locally or on cloud storage like AWS S3 – start with local storage). Store links to the files in knowledge_base_urls.
+[Frontend] Enhanced UI for GPT Projects:
+Implement a richer form for creating/editing GPT projects, including:
+Text areas for instructions and conversation starters.
+File upload for the knowledge base.
+Dropdowns/checkboxes for selecting capabilities and actions (start with hardcoded options, make dynamic later).
+Dropdown for selecting category.
+Visibility setting (public/private).
+Improve the display of GPT project details.
+Implement pagination for the project listing.
+Marketplace Search & Filtering:
+
+[Backend] Implement Search & Filtering:
+Add search functionality to the GET /api/gptprojects endpoint using database queries (e.g., using full-text search).
+Implement filtering based on category, creator, capabilities, and actions.
+[Frontend] Implement Search & Filter UI:
+Add a search bar to the project listing page.
+Add filter options for category, creator, capabilities, and actions.
+GPT Cloning & Customization:
+
+[Backend] "Clone" API Endpoint:
+Create a new API endpoint (POST /api/gptprojects/:id/clone) that clones an existing GPT project.
+The cloned project should have all the same settings as the original but should be owned by the user who cloned it.
+[Frontend] "Clone" Button:
+Add a "Clone" button to the GPT project details page.
+When clicked, it should make a request to the clone API endpoint and then redirect the user to the edit page for the cloned project.
+Collaboration & Communication (Consider Postponing if Time is Limited):
+
+[Backend] Implement Comments & Discussions:
+Add a Comment model to the database.
+Create API endpoints for creating, retrieving, updating, and deleting comments on GPT projects.
+[Frontend] Implement Comment UI:
+Add a comment section to the GPT project details page.
+Analytics & Reporting (Consider Postponing if Time is Limited):
+
+[Backend] Track Usage Metrics:
+Track how often each GPT is cloned and used.
+[Frontend] Display Analytics:
+Create dashboards to visualize usage metrics (admin only).
+Specific Instructions for Cursor:
+
+Framework Selection: Start with React for the frontend and Node.js with Express for the backend. Use PostgreSQL for the database.
+Code Style: Follow consistent code style guidelines (e.g., Airbnb JavaScript Style Guide). Use ESLint and Prettier to enforce code style.
+Testing: Write unit tests for the backend API endpoints. Use Jest or Mocha for testing.
+Error Handling: Implement proper error handling throughout the application. Return meaningful error messages to the client.
+Security: Pay attention to security best practices, such as input validation, output encoding, and protection against cross-site scripting (XSS) and cross-site request forgery (CSRF) attacks.
+Documentation: Document the code clearly using comments and JSDoc.
+Version Control: Use Git for version control. Create a separate branch for each feature.
+Regular Check-ins: Provide regular updates on progress and any challenges encountered.
+Assumptions: Assume a basic understanding of web development concepts and technologies. Ask for clarification if anything is unclear.
+Future Considerations:
+
+OpenAI API Integration: Explore the possibility of integrating directly with the OpenAI API to allow users to create, manage, and deploy GPTs directly from the marketplace. This is a stretch goal. This would require careful consideration of API keys and user permissions.
+Payment Integration: Implement a payment system to allow users to charge for their GPT templates (optional).
+Community Features: Add features to encourage community participation, such as forums, leaderboards, and badges.
+This detailed instruction set should provide Cursor with a solid foundation to begin building the GPT Marketplace project. Remember to prioritize the core functionality first and iterate on the design and features as development progresses. Good luck!

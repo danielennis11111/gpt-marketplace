@@ -1,0 +1,64 @@
+{
+  "projects": [
+    {
+      "id": "gpt-001",
+      "name": "Marketing Copy Generator",
+      "description": "Generate compelling marketing copy for various platforms including social media, ads, and email campaigns.",
+      "creator": {
+        "name": "Alice Johnson",
+        "avatar": "/gpt-marketplace/assets/asu-logo.png"
+      },
+      "category": "Marketing",
+      "tags": ["marketing", "copywriting", "ads", "social media"],
+      "rating": 4.8,
+      "reviewCount": 32,
+      "verified": true,
+      "clonedCount": 125,
+      "capabilities": ["web-browsing", "code-interpreter"],
+      "actions": ["send-email", "post-to-twitter"],
+      "version": "1.2",
+      "dateCreated": "2024-01-15",
+      "lastUpdated": "2024-03-01"
+    },
+    {
+      "id": "gpt-002",
+      "name": "Customer Service Bot",
+      "description": "AI-powered customer service chatbot that handles common inquiries and support requests.",
+      "creator": {
+        "name": "Bob Smith",
+        "avatar": "/gpt-marketplace/assets/asu-logo.png"
+      },
+      "category": "Customer Service",
+      "tags": ["customer service", "chatbot", "support"],
+      "rating": 4.5,
+      "reviewCount": 18,
+      "verified": false,
+      "clonedCount": 87,
+      "capabilities": ["web-browsing"],
+      "actions": ["create-ticket", "update-crm"],
+      "version": "1.0",
+      "dateCreated": "2024-02-01",
+      "lastUpdated": "2024-02-15"
+    },
+    {
+      "id": "gpt-003",
+      "name": "Code Review Assistant",
+      "description": "Automated code review tool that helps identify bugs, suggest improvements, and enforce best practices.",
+      "creator": {
+        "name": "Carol Davis",
+        "avatar": "/gpt-marketplace/assets/asu-logo.png"
+      },
+      "category": "Development",
+      "tags": ["code review", "development", "best practices"],
+      "rating": 4.9,
+      "reviewCount": 45,
+      "verified": true,
+      "clonedCount": 203,
+      "capabilities": ["code-interpreter"],
+      "actions": ["suggest-improvements", "check-standards"],
+      "version": "2.1",
+      "dateCreated": "2024-01-01",
+      "lastUpdated": "2024-03-15"
+    }
+  ]
+} 

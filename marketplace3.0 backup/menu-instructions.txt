@@ -1,0 +1,28 @@
+The menu should be a collapsible sidebar menu that uses tailwind framework (already installed) and includes the following: 
+
+Logo alongside MyAI Builder and a tag for beta in gold
+
+logo is 54px wide and auto height for our logo
+
+Font size 16px for "MyAI Builder" text
+
+The logo file is here: /Users/danielennis/ai-apps/marketplace3.0/gpt-marketplace-proto/src/assets/site-logo.png
+
+The sidebar menu should include icons next to the following links: 
+
+Dashboard (home) - https://platform-beta.aiml.asu.edu/
+Create New Project - link tbd 
+MyAI Projects - https://platform-beta.aiml.asu.edu/projects
+Marketplace - (this is what this project is building, so link to our marketplace page)
+Learning - we need to generate this still 
+
+Other CreateAI apps
+- Model Comparison: https://compare-beta.aiml.asu.edu/
+- ASU GPT: https://asugpt-beta.aiml.asu.edu/
+
+Report A Problem - link tbd 
+Give Feedback - link tbd 
+
+
+My Account Settings 
+Logout 

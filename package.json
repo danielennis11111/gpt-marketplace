@@ -1,0 +1,39 @@
+{
+  "name": "gpt-marketplace-proto",
+  "private": true,
+  "version": "0.0.0",
+  "homepage": "https://danielennis11111.github.io/gpt-marketplace",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "postbuild": "sed -i '' 's|src=\"/assets/|src=\"/gpt-marketplace/assets/|g; s|href=\"/assets/|href=\"/gpt-marketplace/assets/|g' dist/index.html && mkdir -p dist/assets && cp src/assets/*.png dist/assets/ && cp src/assets/*.svg dist/assets/ && cp src/assets/*.jpg dist/assets/",
+    "type-check": "tsc",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d dist"
+  },
+  "dependencies": {
+    "@heroicons/react": "^2.0.18",
+    "@types/react-router-dom": "^5.3.3",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-router-dom": "^7.6.1"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.55",
+    "@types/react-dom": "^18.2.19",
+    "@typescript-eslint/eslint-plugin": "^6.21.0",
+    "@typescript-eslint/parser": "^6.21.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.17",
+    "eslint": "^8.56.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-refresh": "^0.4.5",
+    "gh-pages": "^6.1.1",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.2.2",
+    "vite": "^5.1.0"
+  }
+}

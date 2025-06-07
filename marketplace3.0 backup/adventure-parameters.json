@@ -1,0 +1,13 @@
+{
+    "projectName": "Adventure",
+    "description": "This is an AI Project that uses the classic game, \"Adventure\" as a model for learning and education.",
+    "model": "Claude 3.5 Sonnet",
+    "advancedSettings": {
+      "enabled": true,
+      "customInstructions": "/Users/danielennis/ai-apps/marketplace3.0/C-3PO instructions.txt",
+      "temperature": 0.5,
+      "chatMemory": true,
+      "knowledgeBase": false
+    },
+    "starterPrompt": "Let's play a game"
+  }
