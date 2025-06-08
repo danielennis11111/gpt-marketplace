@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { XMarkIcon, PaperAirplaneIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
-import { useOllama } from '../hooks/useOllama';
+import { useChatService } from '../hooks/useChatService';
 
 interface Message {
   id: string;
@@ -28,8 +28,7 @@ export const HoneInChatbot: React.FC<HoneInChatbotProps> = ({
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { sendMessage, status } = useOllama();
-  const isConnected = status.isConnected;
+  const { sendMessage, isConnected, providerName } = useChatService();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -89,10 +88,10 @@ Keep responses focused, practical, and conversational (2-4 sentences). Always as
     try {
       let response: string;
       
-      if (isConnected) {
+      try {
         const prompt = generateHoneInPrompt(inputMessage);
         response = await sendMessage(prompt);
-      } else {
+      } catch (error) {
         // Fallback responses when Ollama is not connected
         response = generateFallbackResponse(inputMessage);
       }
@@ -212,7 +211,7 @@ Keep responses focused, practical, and conversational (2-4 sentences). Always as
           {!isConnected && (
             <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 mb-4">
               <p className="text-sm text-yellow-800">
-                Ollama is not connected. Using fallback responses.
+                {providerName} is not connected. Using fallback responses.
               </p>
             </div>
           )}

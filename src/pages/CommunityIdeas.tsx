@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { HoneInChatbot } from '../components/HoneInChatbot';
+import { useChatService } from '../hooks/useChatService';
 import { 
   ArrowPathIcon, 
   LightBulbIcon, 
@@ -16,8 +17,27 @@ import {
 } from '@heroicons/react/24/outline';
 import { StarIcon } from '@heroicons/react/24/solid';
 
+interface CommunityIdea {
+  id: string;
+  title: string;
+  creator: {
+    name: string;
+    avatar: string;
+  };
+  createdAt: string;
+  idea: string;
+  aiConceptualization: string;
+  likes: number;
+  tags: string[];
+  isFeatured: boolean;
+  comments: number;
+  saves: number;
+  popularity?: number;
+  lastSuggested?: string;
+}
+
 // Mock community ideas data
-const MOCK_COMMUNITY_IDEAS = [
+const MOCK_COMMUNITY_IDEAS: CommunityIdea[] = [
   {
     id: 'idea-001',
     title: 'Research Paper Analyzer',
@@ -43,7 +63,8 @@ The assistant would be configured to understand scientific terminology and provi
     tags: ['research', 'summarization', 'scientific papers', 'academic'],
     isFeatured: true,
     comments: 12,
-    saves: 28
+    saves: 28,
+    popularity: 15
   },
   {
     id: 'idea-002',
@@ -70,7 +91,8 @@ The assistant would be configured to create realistic dialogue between multiple 
     tags: ['podcast', 'conversation', 'text-to-speech', 'creative'],
     isFeatured: true,
     comments: 23,
-    saves: 46
+    saves: 46,
+    popularity: 23
   },
   {
     id: 'idea-003',
@@ -97,7 +119,8 @@ The assistant would be configured to understand educational frameworks, learning
     tags: ['education', 'course development', 'syllabus', 'academic'],
     isFeatured: false,
     comments: 19,
-    saves: 37
+    saves: 37,
+    popularity: 8
   },
   {
     id: 'idea-004',
@@ -124,7 +147,8 @@ The assistant would be configured to understand data visualization best practice
     tags: ['data visualization', 'coding', 'analytics', 'matplotlib', 'd3.js'],
     isFeatured: false,
     comments: 15,
-    saves: 31
+    saves: 31,
+    popularity: 12
   },
   {
     id: 'idea-005',
@@ -151,7 +175,8 @@ The assistant would be configured to use pedagogical techniques like Socratic qu
     tags: ['education', 'learning', 'Socratic method', 'spaced repetition'],
     isFeatured: true,
     comments: 27,
-    saves: 59
+    saves: 59,
+    popularity: 31
   }
 ];
 
@@ -169,6 +194,7 @@ const CATEGORIES = [
 
 const SORT_OPTIONS = [
   { label: 'Most Popular', value: 'popular' },
+  { label: 'Most Suggested', value: 'suggested' },
   { label: 'Newest', value: 'newest' },
   { label: 'Most Saved', value: 'saved' }
 ];
@@ -178,13 +204,14 @@ const CommunityIdeas: React.FC = () => {
   const [filteredIdeas, setFilteredIdeas] = useState(MOCK_COMMUNITY_IDEAS);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('All Categories');
-  const [sortBy, setSortBy] = useState('popular');
+  const [sortBy, setSortBy] = useState('suggested');
   const [expandedIdeas, setExpandedIdeas] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [honeInChatbot, setHoneInChatbot] = useState<{
     isOpen: boolean;
     idea: any | null;
   }>({ isOpen: false, idea: null });
+  const chatService = useChatService();
 
   // Load ideas from Prompt Guide
   useEffect(() => {
@@ -253,6 +280,9 @@ const CommunityIdeas: React.FC = () => {
       switch (sortBy) {
         case 'popular':
           filtered.sort((a, b) => b.likes - a.likes);
+          break;
+        case 'suggested':
+          filtered.sort((a, b) => (b.popularity || 1) - (a.popularity || 1));
           break;
         case 'newest':
           filtered.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());

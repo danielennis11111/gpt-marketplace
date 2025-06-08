@@ -10,6 +10,8 @@ import { ContributePage } from './pages/ContributePage';
 import { PromptGuidePage } from './pages/PromptGuidePage';
 import { FloatingChatButton } from './components/FloatingChatButton';
 import { ProjectsProvider } from './contexts/ProjectsContext';
+import { SettingsProvider } from './contexts/SettingsContext';
+import { SettingsPage } from './pages/SettingsPage';
 import {
   HomeIcon,
   PlusCircleIcon,
@@ -178,7 +180,7 @@ const AppContent = () => {
         {/* User Controls */}
         <div className="p-4 border-t border-gray-200">
           <div className="space-y-2">
-            <NavItem to="#" icon={UserCircleIcon}>
+            <NavItem to="/settings" icon={UserCircleIcon}>
               My Account Settings
             </NavItem>
             <button
@@ -211,6 +213,7 @@ const AppContent = () => {
           <Route path="/contribute" element={<ContributePage />} />
           <Route path="/prompt-guide" element={<PromptGuidePage />} />
           <Route path="/community-ideas" element={<CommunityIdeas />} />
+          <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       </div>
 
@@ -223,9 +226,11 @@ const AppContent = () => {
 export const App: React.FC = () => {
   return (
     <Router>
-      <ProjectsProvider>
-        <AppContent />
-      </ProjectsProvider>
+      <SettingsProvider>
+        <ProjectsProvider>
+          <AppContent />
+        </ProjectsProvider>
+      </SettingsProvider>
     </Router>
   );
 };

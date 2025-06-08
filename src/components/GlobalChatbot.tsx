@@ -9,7 +9,7 @@ import {
   CommandLineIcon,
   SparklesIcon
 } from '@heroicons/react/24/outline';
-import { useOllama } from '../hooks/useOllama';
+import { useChatService } from '../hooks/useChatService';
 import { usePageContext, generateContextualPrompt } from '../utils/contextAware';
 import { getRelevantResources, formatResourcesForResponse } from '../utils/webKnowledge';
 import { MarkdownMessage } from './MarkdownMessage';
@@ -35,7 +35,7 @@ export const GlobalChatbot: React.FC<GlobalChatbotProps> = ({ onClose, projectDa
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  const { status, isLoading, sendMessage, startOllama, pullModel, checkOllamaStatus } = useOllama();
+  const { sendMessage, isConnected, isLoading, providerName } = useChatService();
   const pageContext = usePageContext(projectData);
 
   const scrollToBottom = () => {

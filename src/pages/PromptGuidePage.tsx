@@ -8,7 +8,7 @@ import {
   CheckCircleIcon,
   MagnifyingGlassIcon
 } from '@heroicons/react/24/outline';
-import { useOllama } from '../hooks/useOllama';
+import { useChatService } from '../hooks/useChatService';
 
 interface PromptIdea {
   id: string;
@@ -22,7 +22,7 @@ interface PromptIdea {
 
 export const PromptGuidePage: React.FC = () => {
   const navigate = useNavigate();
-  const { status, sendMessage } = useOllama();
+  const { sendMessage, isConnected, providerName } = useChatService();
   const [userIdea, setUserIdea] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPrompt, setGeneratedPrompt] = useState<PromptIdea | null>(null);
@@ -81,7 +81,7 @@ export const PromptGuidePage: React.FC = () => {
     try {
       let promptResponse = '';
       
-      if (status.isConnected) {
+              if (isConnected) {
         // Use local Ollama for prompt generation
         const promptGeneration = `You are an expert AI prompt engineer. Help create a detailed, effective prompt for this idea: "${userIdea}"
 
@@ -144,11 +144,40 @@ PROMPT: You are a helpful AI assistant specialized in ${userIdea.toLowerCase()}.
   const submitToCommunity = () => {
     if (!generatedPrompt) return;
 
-    // Add to community ideas (in real app, would API call)
-    const communityIdeas = JSON.parse(localStorage.getItem('communityIdeas') || '[]');
-    localStorage.setItem('communityIdeas', JSON.stringify([generatedPrompt, ...communityIdeas]));
+    // Get existing community ideas with popularity tracking
+    const existingIdeas = JSON.parse(localStorage.getItem('communityIdeas') || '[]');
+    
+    // Check if similar idea already exists
+    const similarIdea = existingIdeas.find((idea: any) => 
+      idea.title.toLowerCase().includes(generatedPrompt.title.toLowerCase().split(' ')[0]) ||
+      generatedPrompt.title.toLowerCase().includes(idea.title.toLowerCase().split(' ')[0])
+    );
 
-    // Navigate to community ideas page
+    if (similarIdea) {
+      // Increment popularity of existing idea
+      similarIdea.popularity = (similarIdea.popularity || 1) + 1;
+      similarIdea.lastSuggested = new Date().toISOString();
+      localStorage.setItem('communityIdeas', JSON.stringify(existingIdeas));
+      
+      alert(`Similar idea found! We've increased the popularity of "${similarIdea.title}". Check it out in Community Ideas.`);
+      navigate('/community-ideas');
+      return;
+    }
+    
+    // Add new idea with initial popularity
+    const newIdea = {
+      ...generatedPrompt,
+      id: `prompt-${Date.now()}`,
+      timestamp: new Date().toISOString(),
+      lastSuggested: new Date().toISOString(),
+      likes: 0,
+      popularity: 1,
+      isFromPromptGuide: true
+    };
+
+    localStorage.setItem('communityIdeas', JSON.stringify([newIdea, ...existingIdeas]));
+
+    alert('Your idea has been added to the community! Check it out in Community Ideas.');
     navigate('/community-ideas');
   };
 
@@ -203,14 +232,14 @@ PROMPT: You are a helpful AI assistant specialized in ${userIdea.toLowerCase()}.
 
                 {/* AI Status */}
                 <div className={`p-3 rounded-lg text-sm ${
-                  status.isConnected 
+                  isConnected 
                     ? 'bg-green-50 text-green-800 border border-green-200'
                     : 'bg-yellow-50 text-yellow-800 border border-yellow-200'
                 }`}>
-                  {status.isConnected ? (
-                    <>✅ Using local AI ({status.currentModel}) for enhanced prompt generation</>
+                  {isConnected ? (
+                    <>✅ Using {providerName} for enhanced prompt generation</>
                   ) : (
-                    <>⚡ Using basic prompt generation - set up Ollama for better results</>
+                    <>⚡ Using basic prompt generation - configure AI service in settings for better results</>
                   )}
                 </div>
 
