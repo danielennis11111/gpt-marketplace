@@ -9,7 +9,9 @@ import {
   HandThumbDownIcon,
   ChatBubbleLeftRightIcon,
   BookmarkIcon,
-  ChevronDownIcon
+  ChevronDownIcon,
+  SparklesIcon,
+  PlusIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon } from '@heroicons/react/24/solid';
 
@@ -178,6 +180,36 @@ const CommunityIdeas: React.FC = () => {
   const [sortBy, setSortBy] = useState('popular');
   const [expandedIdeas, setExpandedIdeas] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Load ideas from Prompt Guide
+  useEffect(() => {
+    const promptGuideIdeas = JSON.parse(localStorage.getItem('communityIdeas') || '[]');
+    if (promptGuideIdeas.length > 0) {
+      // Convert prompt guide format to community ideas format
+      const convertedIdeas = promptGuideIdeas.map((idea: any) => ({
+        id: idea.id,
+        title: idea.title,
+        creator: {
+          name: 'Community Member',
+          avatar: 'https://ui-avatars.com/api/?name=CM&background=random'
+        },
+        createdAt: new Date(idea.timestamp).toISOString().split('T')[0],
+        idea: idea.description,
+        aiConceptualization: `Generated AI Prompt:\n\n${idea.prompt}`,
+        likes: 0,
+        tags: [idea.category.toLowerCase(), idea.difficulty],
+        isFeatured: false,
+        comments: 0,
+        saves: 0,
+        isFromPromptGuide: true,
+        difficulty: idea.difficulty,
+        originalPrompt: idea.prompt
+      }));
+      
+      setIdeas([...convertedIdeas, ...MOCK_COMMUNITY_IDEAS]);
+      setFilteredIdeas([...convertedIdeas, ...MOCK_COMMUNITY_IDEAS]);
+    }
+  }, []);
   
   // Toggle idea expansion
   const toggleIdeaExpansion = (ideaId: string) => {
@@ -261,21 +293,26 @@ const CommunityIdeas: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Community Ideas</h1>
-            <p className="text-gray-600">
-              Explore project ideas shared by the community or share your own.
-            </p>
-          </div>
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">Community Ideas</h1>
+          <p className="text-lg text-gray-600 max-w-2xl mx-auto mb-6">
+            Discover AI prompts and project ideas created by the community. Use the Prompt Guide to generate new ideas or submit your own.
+          </p>
           
-          <Link 
-            to="/create-project"
-            className="mt-4 md:mt-0 inline-flex items-center px-6 py-3 bg-amber-400 text-black rounded-full hover:bg-amber-500 transition-colors"
-          >
-            <LightBulbIcon className="w-5 h-5 mr-2" />
-            Share Your Idea
-          </Link>
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link
+              to="/prompt-guide"
+              className="inline-flex items-center px-6 py-3 bg-red-800 text-white rounded-lg font-medium hover:bg-red-900 transition-colors"
+            >
+              <SparklesIcon className="w-5 h-5 mr-2" />
+              Create Idea with AI
+            </Link>
+            <button className="inline-flex items-center px-6 py-3 bg-white text-gray-700 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors">
+              <PlusIcon className="w-5 h-5 mr-2" />
+              Submit Manual Idea
+            </button>
+          </div>
         </div>
         
         {/* Filters */}
@@ -338,10 +375,11 @@ const CommunityIdeas: React.FC = () => {
                 Try adjusting your search filters or share your own idea.
               </p>
               <Link
-                to="/create-project"
-                className="inline-flex items-center px-6 py-3 bg-amber-400 text-black rounded-full hover:bg-amber-500 transition-colors"
+                to="/prompt-guide"
+                className="inline-flex items-center px-6 py-3 bg-red-800 text-white rounded-lg font-medium hover:bg-red-900 transition-colors"
               >
-                Share Your Idea
+                <SparklesIcon className="w-5 h-5 mr-2" />
+                Create Idea with AI
               </Link>
             </div>
           ) : (
@@ -368,12 +406,20 @@ const CommunityIdeas: React.FC = () => {
                         </p>
                       </div>
                     </div>
-                    {idea.isFeatured && (
-                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                        <StarIcon className="w-3 h-3 mr-1" />
-                        Featured
-                      </span>
-                    )}
+                    <div className="flex items-center space-x-2">
+                      {(idea as any).isFromPromptGuide && (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                          <SparklesIcon className="w-3 h-3 mr-1" />
+                          AI Generated
+                        </span>
+                      )}
+                      {idea.isFeatured && (
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                          <StarIcon className="w-3 h-3 mr-1" />
+                          Featured
+                        </span>
+                      )}
+                    </div>
                   </div>
                   
                   <p className="text-gray-700 mb-4">

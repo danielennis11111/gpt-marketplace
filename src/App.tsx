@@ -3,12 +3,11 @@ import type { ReactNode } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import { ProjectDetail } from './components/ProjectDetail';
-import LearningPage from './pages/LearningPage';
 import MyProjects from './pages/MyProjects';
 import ProjectEditor from './pages/ProjectEditor';
-import CreateProject from './pages/CreateProject';
 import CommunityIdeas from './pages/CommunityIdeas';
-import { RateLimiterWrapper } from './components/RateLimiterWrapper';
+import { ContributePage } from './pages/ContributePage';
+import { PromptGuidePage } from './pages/PromptGuidePage';
 import { FloatingChatButton } from './components/FloatingChatButton';
 import { ProjectsProvider } from './contexts/ProjectsContext';
 import {
@@ -122,23 +121,20 @@ const AppContent = () => {
             <NavItem to="https://platform-beta.aiml.asu.edu/" icon={HomeIcon} external={true}>
               Dashboard
             </NavItem>
-            <NavItem to="/create-project" icon={PlusCircleIcon}>
-              Create New Project
+            <NavItem to="/contribute" icon={PlusCircleIcon}>
+              Contribute
             </NavItem>
             <NavItem to="/myprojects" icon={FolderIcon}>
               MyAI Projects
             </NavItem>
             <NavItem to="/marketplace" icon={RocketLaunchIcon}>
-              BetaLand Templates
+              Beta Land Marketplace
             </NavItem>
             <NavItem to="/community-ideas" icon={LightBulbIcon}>
               Community Ideas
             </NavItem>
-            <NavItem to="/rate-limiter" icon={ChatBubbleLeftRightIcon}>
-              Beta Land @ ASU
-            </NavItem>
-            <NavItem to="/learning" icon={AcademicCapIcon}>
-              Learning
+            <NavItem to="/prompt-guide" icon={LightBulbIcon}>
+              Prompt Guide
             </NavItem>
           </div>
 
@@ -210,12 +206,11 @@ const AppContent = () => {
           <Route path="/" element={<HomePage />} />
           <Route path="/marketplace" element={<HomePage />} />
           <Route path="/project/:id" element={<ProjectDetail />} />
-          <Route path="/learning" element={<LearningPage />} />
           <Route path="/myprojects" element={<MyProjects />} />
           <Route path="/edit-project/:id" element={<ProjectEditor />} />
-          <Route path="/create-project" element={<CreateProject />} />
+          <Route path="/contribute" element={<ContributePage />} />
+          <Route path="/prompt-guide" element={<PromptGuidePage />} />
           <Route path="/community-ideas" element={<CommunityIdeas />} />
-          <Route path="/rate-limiter" element={<RateLimiterWrapper />} />
         </Routes>
       </div>
 

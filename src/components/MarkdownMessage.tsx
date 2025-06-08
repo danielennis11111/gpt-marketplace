@@ -40,7 +40,7 @@ export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content, class
       else if (line.startsWith('• ') || line.startsWith('- ')) {
         elements.push(
           <div key={index} className="flex items-start ml-2 mb-1">
-            <span className="text-blue-600 mr-2 text-xs mt-1">•</span>
+            <span className="text-red-700 mr-2 text-xs mt-1">•</span>
             <span className="text-sm">{formatInlineText(line.substring(2))}</span>
           </div>
         );
@@ -51,7 +51,7 @@ export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content, class
         if (match) {
           elements.push(
             <div key={index} className="flex items-start ml-2 mb-1">
-              <span className="text-blue-600 mr-2 text-xs mt-1 font-medium">{match[1]}.</span>
+              <span className="text-red-700 mr-2 text-xs mt-1 font-medium">{match[1]}.</span>
               <span className="text-sm">{formatInlineText(match[2])}</span>
             </div>
           );
@@ -106,7 +106,7 @@ export const MarkdownMessage: React.FC<MarkdownMessageProps> = ({ content, class
             href={url}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-600 hover:text-blue-800 underline"
+            className="text-red-700 hover:text-red-900 underline"
           >
             {linkText}
           </a>

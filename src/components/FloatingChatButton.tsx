@@ -42,12 +42,13 @@ export const FloatingChatButton: React.FC<FloatingChatButtonProps> = ({ projectD
   }
 
   const getButtonStyle = () => {
+    // ASU Maroon and Gold branding
     if (status.isConnected) {
-      return 'bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700';
+      return 'bg-gradient-to-r from-red-800 to-yellow-500 hover:from-red-900 hover:to-yellow-600';
     } else if (status.error) {
-      return 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600';
+      return 'bg-gradient-to-r from-red-700 to-orange-500 hover:from-red-800 hover:to-orange-600';
     }
-    return 'bg-gradient-to-r from-gray-500 to-gray-600 hover:from-gray-600 hover:to-gray-700';
+    return 'bg-gradient-to-r from-gray-600 to-red-800 hover:from-gray-700 hover:to-red-900';
   };
 
   const getIcon = () => {
@@ -83,25 +84,20 @@ export const FloatingChatButton: React.FC<FloatingChatButtonProps> = ({ projectD
           <button
             onClick={handleToggleChat}
             className={`
-              relative w-14 h-14 rounded-full text-white shadow-lg transition-all duration-300 
+              relative w-14 h-14 rounded-full text-white shadow-lg transition-all duration-200 
               ${getButtonStyle()}
               ${isOpen ? 'rotate-45 scale-95' : 'rotate-0 scale-100 hover:scale-105'}
-              ${showPulse ? 'animate-pulse' : ''}
             `}
           >
             {/* Status Indicator */}
             <div className="absolute -top-1 -right-1">
-              {status.isConnected ? (
-                <div className="w-4 h-4 bg-green-400 rounded-full border-2 border-white animate-pulse">
-                  <div className="w-full h-full bg-green-500 rounded-full animate-ping opacity-75"></div>
-                </div>
-              ) : status.error ? (
-                <div className="w-4 h-4 bg-amber-400 rounded-full border-2 border-white">
-                  <div className="w-full h-full bg-amber-500 rounded-full animate-pulse"></div>
-                </div>
-              ) : (
-                <div className="w-4 h-4 bg-gray-400 rounded-full border-2 border-white opacity-50"></div>
-              )}
+                          {status.isConnected ? (
+              <div className="w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
+            ) : status.error ? (
+              <div className="w-4 h-4 bg-amber-500 rounded-full border-2 border-white"></div>
+            ) : (
+              <div className="w-4 h-4 bg-gray-400 rounded-full border-2 border-white"></div>
+            )}
             </div>
 
             {/* Icon */}
@@ -113,12 +109,7 @@ export const FloatingChatButton: React.FC<FloatingChatButtonProps> = ({ projectD
             <div className="absolute inset-0 rounded-full bg-white opacity-0 hover:opacity-10 transition-opacity duration-200"></div>
           </button>
 
-          {/* Notification Badge for New Features */}
-          {!status.isConnected && !localStorage.getItem('ollama-notification-dismissed') && (
-            <div className="absolute -top-2 -left-2 w-6 h-6 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-bounce">
-              !
-            </div>
-          )}
+
         </div>
       </div>
 

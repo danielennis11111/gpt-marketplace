@@ -61,11 +61,11 @@ export const GlobalChatbot: React.FC<GlobalChatbotProps> = ({ onClose, projectDa
 
   const generateWelcomeMessage = (): string => {
     if (status.isConnected && status.currentModel) {
-      return `## 👋 **Welcome to Your Local AI Assistant!**\n\nI'm powered by **${status.currentModel}** running locally on your machine. I'm here to help you with **${pageContext.description}**.\n\n### 🔒 **Privacy First:**\n• All conversations stay on your device\n• No data sent to external servers\n• Unlimited usage with no API costs\n\n*What can I help you with today?*`;
+      return `Hi! I'm your ASU AI Assistant running locally with ${status.currentModel}. I can help with ${pageContext.description.toLowerCase()}. What do you need?`;
     } else if (status.error) {
-      return `## 🤖 **${pageContext.pageName} Assistant**\n\nI'm here to help you with **${pageContext.description}**!\n\n### 🚀 **Enhanced AI Available:**\nI notice Ollama isn't running yet. Would you like me to help you set up **local AI for complete privacy**?\n\n### 💡 **I can help with:**\n• General questions about the platform\n• Navigation and feature explanations\n• Setting up local AI for enhanced assistance\n\n*How can I assist you?*`;
+      return `Hi! I'm your ASU AI Assistant. I can help with ${pageContext.description.toLowerCase()}. Want better responses? Set up Ollama for private local AI!`;
     } else {
-      return `## 🤖 **${pageContext.pageName} Assistant**\n\nI'm here to help you with **${pageContext.description}**!\n\n🔍 *Checking for local AI models...*\n\n### 💡 **I can help with:**\n${pageContext.helpTopics.slice(0, 3).map(topic => `• ${topic}`).join('\n')}\n\n*What would you like to know?*`;
+      return `Hi! I'm your ASU AI Assistant. I can help with ${pageContext.description.toLowerCase()}. What can I do for you?`;
     }
   };
 
@@ -88,8 +88,8 @@ export const GlobalChatbot: React.FC<GlobalChatbotProps> = ({ onClose, projectDa
       let response: string;
 
       if (status.isConnected) {
-        // Use local Ollama with context-aware prompt
-        const contextualPrompt = generateContextualPrompt(currentInput, pageContext);
+        // Use local Ollama with context-aware prompt including real project data
+        const contextualPrompt = generateContextualPrompt(currentInput, pageContext, projects);
         response = await sendMessage(contextualPrompt);
       } else {
         // Fallback to predefined responses with context awareness
@@ -123,6 +123,32 @@ export const GlobalChatbot: React.FC<GlobalChatbotProps> = ({ onClose, projectDa
     const lowercaseMessage = userMessage.toLowerCase();
     let response = "";
     
+    // Quick answers for simple questions
+    if (lowercaseMessage.includes('what is') || lowercaseMessage.includes('what are')) {
+      if (lowercaseMessage.includes('ai projects')) {
+        return "AI Projects are custom assistants for productivity, coding, analytics, and more. Ready to use and customize!";
+      }
+      if (lowercaseMessage.includes('extensions')) {
+        return "Extensions are chatbots you can embed on your own websites. Perfect for customer support or interactive help.";
+      }
+      if (lowercaseMessage.includes('local models')) {
+        return "Local Models run on your computer with Ollama. Completely private, no internet needed once downloaded.";
+      }
+      if (lowercaseMessage.includes('ollama')) {
+        return "Ollama runs AI models locally on your computer. Private, free, and works offline!";
+      }
+    }
+
+    // How-to questions
+    if (lowercaseMessage.includes('how do i') || lowercaseMessage.includes('how to')) {
+      if (lowercaseMessage.includes('clone') || lowercaseMessage.includes('use project')) {
+        return "Just click on any project, then hit 'Clone Project'. Follow the setup steps and you're ready to go!";
+      }
+      if (lowercaseMessage.includes('filter') || lowercaseMessage.includes('search')) {
+        return "Use the category buttons above to filter, or just type in the search bar to find what you need.";
+      }
+    }
+    
     // Check for specific project searches (marketplace functionality)
     if (projects.length > 0) {
       const matchingProject = projects.find(project => 
@@ -131,7 +157,7 @@ export const GlobalChatbot: React.FC<GlobalChatbotProps> = ({ onClose, projectDa
       );
       
       if (matchingProject) {
-        response = `## 🎯 Found: **${matchingProject.name}**\n\n${matchingProject.description}\n\n**Category:** ${matchingProject.category}\n**Rating:** ${'⭐'.repeat(Math.floor(matchingProject.rating))} ${matchingProject.rating}/5\n**Cloned:** ${matchingProject.clonedCount} times\n\n*Would you like to know more about this or similar projects?*`;
+        response = `Found **${matchingProject.name}**! ${matchingProject.description.substring(0, 100)}... \n\n${matchingProject.rating}/5 stars • ${matchingProject.clonedCount} uses • ${matchingProject.category}`;
       }
 
       // Check for category searches
@@ -143,40 +169,84 @@ export const GlobalChatbot: React.FC<GlobalChatbotProps> = ({ onClose, projectDa
         if (matchingCategory.length > 0) {
           const categoryName = matchingCategory[0].category;
           const count = matchingCategory.length;
-          const topProjects = matchingCategory.slice(0, 3).map((p: any) => `• **${p.name}**`).join('\n');
-          response = `## 📂 ${categoryName} Projects\n\nI found **${count} projects** in this category!\n\n### Top Projects:\n${topProjects}\n\n*Want to explore this category further?*`;
+          const topProjects = matchingCategory.slice(0, 2).map((p: any) => p.name).join(', ');
+          response = `Found ${count} ${categoryName.toLowerCase()} projects! Top ones: ${topProjects}. Use the filter above to see them all.`;
         }
       }
     }
 
     // Context-specific responses
     if (!response && pageContext.pageName === 'Marketplace') {
-      if (lowercaseMessage.includes('project') || lowercaseMessage.includes('find')) {
-        response = "## 🛍️ **Marketplace Navigation Help**\n\nI can help you find the perfect AI tool! Here's how:\n\n### **Product Types:**\n• **AI Projects** - Custom assistants & intelligent tools\n• **Extensions** - Embeddable chatbots for websites\n• **Local Models** - Downloadable AI models\n• **Tutorials** - Step-by-step guides\n\n### **Tips:**\n• Use the **filters** at the top to narrow down by category\n• Try the **search bar** for specific keywords\n• Check the **ratings** and **clone counts** for quality indicators\n\n*What type of tool are you looking for?*";
+      if (lowercaseMessage.includes('popular') && lowercaseMessage.includes('project')) {
+        // Show actual popular projects based on clone count
+        const popularProjects = projects
+          .filter((p: any) => p.category !== 'Tutorial' && p.category !== 'Extension' && p.category !== 'Local Model')
+          .sort((a: any, b: any) => b.clonedCount - a.clonedCount)
+          .slice(0, 3);
+        
+        if (popularProjects.length > 0) {
+          const top = popularProjects[0];
+          const others = popularProjects.slice(1, 3).map(p => p.name).join(', ');
+          
+          response = `**${top.name}** is most popular with ${top.clonedCount} uses! Also trending: ${others}. Check the sort dropdown for more.`;
+        } else {
+          response = `Use the sort dropdown above to see popular projects by usage.`;
+        }
+             } else if (lowercaseMessage.includes('top rated') || lowercaseMessage.includes('best project')) {
+        // Show top-rated projects
+        const topRated = projects
+          .filter((p: any) => p.category !== 'Tutorial' && p.category !== 'Extension' && p.category !== 'Local Model')
+          .sort((a: any, b: any) => b.rating - a.rating)
+          .slice(0, 5);
+        
+        if (topRated.length > 0) {
+          const best = topRated[0];
+          const others = topRated.slice(1, 3).map(p => `${p.name} (${p.rating}/5)`).join(', ');
+          
+          response = `**${best.name}** has the highest rating at ${best.rating}/5 stars! Also great: ${others}. Sort by "Rating" to see more.`;
+        }
+      } else if (lowercaseMessage.includes('newest') || lowercaseMessage.includes('recent project')) {
+        // Show newest projects
+        const newest = projects
+          .filter((p: any) => p.category !== 'Tutorial' && p.category !== 'Extension' && p.category !== 'Local Model')
+          .sort((a: any, b: any) => new Date(b.dateCreated).getTime() - new Date(a.dateCreated).getTime())
+          .slice(0, 5);
+        
+        if (newest.length > 0) {
+          const latest = newest.slice(0, 3).map(p => p.name).join(', ');
+          
+          response = `Latest additions: ${latest}. Sort by "Newest" to see all recent projects!`;
+        }
+      } else if (lowercaseMessage.includes('project') || lowercaseMessage.includes('find') || lowercaseMessage.includes('help')) {
+        const samples = projects
+          .filter((p: any) => p.category !== 'Tutorial')
+          .slice(0, 2)
+          .map((p: any) => p.name)
+          .join(', ');
+        
+        response = `${samples ? `Try ${samples} or others! ` : ''}Use the category buttons above or search bar to find what you need. Filter by AI Projects, Extensions, Local Models, or Tutorials.`;
       }
     } else if (!response && pageContext.pageName === 'Learning Hub') {
-      if (lowercaseMessage.includes('setup') || lowercaseMessage.includes('install') || lowercaseMessage.includes('tutorial')) {
-        response = "## 📚 **Learning Hub Guide**\n\nGreat choice! Our tutorials cover:\n\n### **Available Tutorials:**\n• **Gemini API Setup** - Google's AI integration\n• **Local Llama with Ollama** - Private AI deployment\n• **Multi-API Integration** - Using multiple AI providers\n• **ASU Local Wrapper** - Enterprise features\n\n### **Getting Started:**\n1. Choose your **experience level**\n2. Follow **step-by-step instructions**\n3. Watch **video tutorials** for complex concepts\n4. Use the **troubleshooting** sections\n\n*Which tutorial interests you most?*";
+      if (lowercaseMessage.includes('setup') || lowercaseMessage.includes('install') || lowercaseMessage.includes('tutorial') || lowercaseMessage.includes('help')) {
+        response = "We have tutorials for Gemini API, Local Llama setup, Multi-API integration, and the ASU Local Wrapper. Each has videos and step-by-step guides!";
       }
     }
 
     // Ollama-specific responses
-    if (!response && (lowercaseMessage.includes('ollama') || lowercaseMessage.includes('local') || lowercaseMessage.includes('install'))) {
-      response = "## 🤖 **Local AI Setup Guide**\n\nLet's get you set up with **private, local AI**!\n\n### **Quick Setup:**\n1. **Install Ollama** from [ollama.com](https://ollama.com)\n2. **Start the service**: `ollama serve`\n3. **Download a model**: `ollama pull llama3.3:8b`\n\n### **Benefits:**\n• 🔒 **Complete privacy** - no data leaves your machine\n• ⚡ **Fast responses** - no internet required\n• 💰 **No API costs** - run unlimited conversations\n\n### **Popular Models:**\n• **Llama 3.3 8B** - Best balance of speed & quality\n• **Gemma 2B** - Lightweight option\n• **CodeLlama** - Programming assistance\n\n*Need help with any specific step?*";
+    if (!response && (lowercaseMessage.includes('ollama') || lowercaseMessage.includes('local') || lowercaseMessage.includes('setup'))) {
+      response = "Get Ollama from [ollama.com](https://ollama.com), then run `ollama serve` and `ollama pull llama3.3:8b`. You'll have private AI that works offline!";
     }
 
     // Quick actions based on context
     if (!response && (lowercaseMessage.includes('help') || lowercaseMessage.includes('what can you do'))) {
-      const quickActions = pageContext.quickActions.slice(0, 3);
-      const formattedActions = quickActions.map(action => `• ${action}`).join('\n');
-      response = `## 💡 **How I Can Help**\n\nI'm your **${pageContext.pageName}** assistant! Here are popular questions:\n\n${formattedActions}\n\n### **Enhanced with Local AI:**\n${status.isConnected ? '✅ **Ollama Connected** - Enjoying private, enhanced AI!' : '🔧 **Setup Available** - Get private AI with one click!'}\n\n*What would you like to explore?*`;
+      const quickActions = pageContext.quickActions.slice(0, 2);
+      response = `I can help with ${quickActions.join(' or ')}. ${status.isConnected ? 'Running locally for privacy!' : 'Want better responses? Try setting up Ollama!'}`;
     }
 
     // Default context-aware response
     if (!response) {
-      response = `## 🎯 **${pageContext.pageName} Assistant**\n\nI'm here to help with **${pageContext.description}**!\n\n### **Current Page Features:**\n${pageContext.helpTopics.slice(0, 3).map(topic => `• ${topic}`).join('\n')}\n\n### **AI Enhancement:**\n${status.isConnected ? 
-        '🟢 **Local AI Active** - Your conversations are completely private!' : 
-        '🟡 **Local AI Available** - Set up Ollama for enhanced privacy!'}\n\n*How can I assist you today?*`;
+      const topics = pageContext.helpTopics.slice(0, 2).join(' and ');
+      response = `I can help with ${pageContext.description.toLowerCase()}. Ask me about ${topics}, or anything else!`;
     }
 
     // Add relevant web resources
@@ -270,25 +340,25 @@ export const GlobalChatbot: React.FC<GlobalChatbotProps> = ({ onClose, projectDa
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end justify-end p-4">
       <div className="bg-white rounded-lg shadow-2xl w-full max-w-md h-[500px] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-t-lg">
+        <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-red-800 to-yellow-600 text-white rounded-t-lg">
           <div className="flex items-center">
             {status.isConnected ? (
-              <div className="flex items-center">
-                <SparklesIcon className="w-6 h-6 mr-2" />
-                <div>
-                  <h3 className="font-semibold">Local AI Assistant</h3>
-                  <p className="text-xs opacity-80">{status.currentModel}</p>
-                </div>
-              </div>
-            ) : (
-              <div className="flex items-center">
-                <ChatBubbleLeftRightIcon className="w-6 h-6 mr-2" />
-                <div>
-                  <h3 className="font-semibold">{pageContext.pageName} Assistant</h3>
-                  <p className="text-xs opacity-80">Context-aware help</p>
-                </div>
-              </div>
-            )}
+                             <div className="flex items-center">
+                 <SparklesIcon className="w-6 h-6 mr-2" />
+                 <div>
+                   <h3 className="font-semibold">ASU AI Assistant</h3>
+                   <p className="text-xs opacity-80">Local • {status.currentModel}</p>
+                 </div>
+               </div>
+             ) : (
+               <div className="flex items-center">
+                 <ChatBubbleLeftRightIcon className="w-6 h-6 mr-2" />
+                 <div>
+                   <h3 className="font-semibold">ASU AI Assistant</h3>
+                   <p className="text-xs opacity-80">{pageContext.pageName} • MyAI Builder</p>
+                 </div>
+               </div>
+             )}
           </div>
           <button 
             onClick={onClose}
@@ -300,17 +370,17 @@ export const GlobalChatbot: React.FC<GlobalChatbotProps> = ({ onClose, projectDa
 
         {/* Status Banner */}
         {!status.isConnected && !isLoading && (
-          <div className="bg-amber-50 border-l-4 border-amber-400 p-3">
+          <div className="bg-yellow-50 border-l-4 border-yellow-500 p-3">
             <div className="flex items-center">
-              <ExclamationTriangleIcon className="w-5 h-5 text-amber-400 mr-2" />
+              <ExclamationTriangleIcon className="w-5 h-5 text-yellow-600 mr-2" />
               <div className="flex-1">
-                <p className="text-sm text-amber-800">
-                  Ollama not detected. {status.models.length === 0 ? 'Set up local AI for privacy!' : 'Start Ollama for enhanced AI.'}
+                <p className="text-sm text-yellow-800">
+                  Enhanced AI available. {status.models.length === 0 ? 'Set up local Ollama for privacy!' : 'Start Ollama for better responses.'}
                 </p>
               </div>
               <button
                 onClick={handleStartOllama}
-                className="ml-2 flex items-center px-3 py-1 bg-amber-400 text-amber-900 rounded-md text-xs hover:bg-amber-500 transition-colors"
+                className="ml-2 flex items-center px-3 py-1 bg-yellow-500 text-yellow-900 rounded-md text-xs hover:bg-yellow-600 transition-colors"
               >
                 <PlayIcon className="w-4 h-4 mr-1" />
                 Setup
@@ -392,13 +462,13 @@ export const GlobalChatbot: React.FC<GlobalChatbotProps> = ({ onClose, projectDa
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder={status.isConnected ? "Ask me anything..." : "Ask me about this page..."}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-600 text-sm"
               disabled={isTyping}
             />
             <button
               onClick={handleSendMessage}
               disabled={!inputValue.trim() || isTyping}
-              className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 bg-red-800 text-white rounded-md hover:bg-red-900 focus:outline-none focus:ring-2 focus:ring-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
             >
               <PaperAirplaneIcon className="w-4 h-4" />
             </button>

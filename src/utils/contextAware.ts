@@ -174,24 +174,36 @@ export const getPageContext = (pathname: string, projectData?: any): PageContext
   }
 };
 
-export const generateContextualPrompt = (userMessage: string, context: PageContext): string => {
+export const generateContextualPrompt = (userMessage: string, context: PageContext, projects?: any[]): string => {
+  let projectContext = "";
+  
+  if (projects && projects.length > 0 && context.pageName === 'Marketplace') {
+    // Include real project data in the context
+    const sampleProjects = projects.slice(0, 5).map(p => 
+      `- ${p.name} (${p.category}, ${p.clonedCount} uses): ${p.description.substring(0, 100)}`
+    ).join('\n');
+    
+    projectContext = `\n\nCurrent marketplace projects (sample):\n${sampleProjects}\n\nWhen discussing projects, use these REAL projects with actual usage statistics, not generic examples.`;
+  }
+
   return `${context.contextPrompt}
 
 Current page: ${context.pageName} - ${context.description}
 
 Key topics you can help with on this page:
-${context.helpTopics.map(topic => `- ${topic}`).join('\n')}
+${context.helpTopics.map(topic => `- ${topic}`).join('\n')}${projectContext}
 
 User question: ${userMessage}
 
 Please provide a helpful, specific response related to the current page context. If the question isn't directly related to this page, still try to connect it back to relevant features or guide them to the right section of the platform.
 
 Guidelines for responses:
-- Be concise but comprehensive
-- Provide step-by-step instructions when helpful
-- If mentioning external resources, format them as clickable links
-- Focus on practical, actionable advice
-- Connect responses back to the current page/context when possible`;
+- Keep responses SHORT and conversational (this is a small chat box)
+- Be friendly and helpful, like a quick conversation
+- Avoid long bullet point lists or heavy formatting
+- Focus on the most essential information only
+- When discussing projects, use the REAL project data provided above
+- Maximum 2-3 sentences for most responses`;
 };
 
 export const usePageContext = (projectData?: any) => {
