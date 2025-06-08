@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import type { ReactNode } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import HomePage from './pages/HomePage';
+import { DashboardPage } from './pages/DashboardPage';
 import { ProjectDetail } from './components/ProjectDetail';
 import MyProjects from './pages/MyProjects';
 import ProjectEditor from './pages/ProjectEditor';
@@ -26,7 +27,10 @@ import {
   ArrowLeftOnRectangleIcon,
   Bars3Icon,
   XMarkIcon,
-  LightBulbIcon
+  LightBulbIcon,
+  DocumentTextIcon,
+  ChevronDoubleLeftIcon,
+  ChevronDoubleRightIcon
 } from '@heroicons/react/24/outline';
 import siteLogo from './assets/site-logo.png';
 
@@ -36,10 +40,11 @@ interface NavItemProps {
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
   children: ReactNode;
   external?: boolean;
+  collapsed?: boolean;
 }
 
 // NavItem component for consistent styling and active state
-const NavItem: React.FC<NavItemProps> = ({ to, icon, children, external = false }) => {
+const NavItem: React.FC<NavItemProps> = ({ to, icon, children, external = false, collapsed = false }) => {
   const location = useLocation();
   const isActive = location.pathname === to;
   const activeClass = isActive ? "text-maroon-700 font-medium" : "text-gray-700";
@@ -47,18 +52,21 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, children, external = false 
   
   const content = (
     <>
-      <IconComponent className={`w-5 h-5 mr-2 ${isActive ? "text-maroon-700" : "text-gray-500"}`} />
-      {children}
+      <IconComponent className={`w-5 h-5 ${collapsed ? 'mx-auto' : 'mr-2'} ${isActive ? "text-maroon-700" : "text-gray-500"}`} />
+      {!collapsed && children}
     </>
   );
+  
+  const baseClasses = `flex items-center ${collapsed ? 'justify-center px-2' : 'px-4'} py-2 ${activeClass} hover:bg-gray-100 rounded-md ${collapsed ? 'mx-2' : ''}`;
   
   if (external) {
     return (
       <a
         href={to}
-        className={`flex items-center px-4 py-2 ${activeClass} hover:bg-gray-100 rounded-md`}
+        className={baseClasses}
         target="_blank"
         rel="noopener noreferrer"
+        title={collapsed ? children as string : undefined}
       >
         {content}
       </a>
@@ -68,7 +76,8 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, children, external = false 
   return (
     <Link
       to={to}
-      className={`flex items-center px-4 py-2 ${activeClass} hover:bg-gray-100 rounded-md`}
+      className={baseClasses}
+      title={collapsed ? children as string : undefined}
     >
       {content}
     </Link>
@@ -77,6 +86,7 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, children, external = false 
 
 const AppContent = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -96,22 +106,38 @@ const AppContent = () => {
 
       {/* Sidebar */}
       <div 
-        className={`w-64 bg-white shadow-lg flex flex-col fixed inset-y-0 left-0 z-30 transition-transform duration-300 transform md:translate-x-0 ${
+        className={`${sidebarCollapsed ? 'w-16' : 'w-64'} bg-white shadow-lg flex flex-col fixed inset-y-0 left-0 z-30 transition-all duration-300 transform md:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } md:relative`}
       >
         {/* Logo and Title */}
         <div className="p-4 flex items-center">
-          <img src={siteLogo} alt="MyAI Builder Logo" className="w-10 mr-2" />
-          <h1 className="text-base font-bold text-gray-800">MyAI Builder</h1>
-          <div className="inline-flex items-center bg-amber-400 px-2 py-1 text-xs font-bold text-black rounded-md ml-2">
-            BETA
-          </div>
+          <img src={siteLogo} alt="AI Beta Land Logo" className="w-10 mr-2" />
+          {!sidebarCollapsed && (
+            <>
+              <h1 className="text-base font-bold text-gray-800">AI Beta Land</h1>
+              <div className="inline-flex items-center bg-amber-400 px-2 py-1 text-xs font-bold text-black rounded-md ml-2">
+                BETA
+              </div>
+            </>
+          )}
+          
+          {/* Collapse button */}
+          <button
+            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className={`${sidebarCollapsed ? 'ml-auto' : 'ml-auto'} text-gray-500 hover:text-gray-700 transition-colors hidden md:block`}
+          >
+            {sidebarCollapsed ? (
+              <ChevronDoubleRightIcon className="h-5 w-5" />
+            ) : (
+              <ChevronDoubleLeftIcon className="h-5 w-5" />
+            )}
+          </button>
           
           {/* Mobile close button */}
           <button 
             onClick={() => setSidebarOpen(false)}
-            className="ml-auto text-gray-500 md:hidden"
+            className={`${sidebarCollapsed ? 'hidden' : 'ml-2'} text-gray-500 md:hidden`}
           >
             <XMarkIcon className="h-6 w-6" />
           </button>
@@ -120,23 +146,23 @@ const AppContent = () => {
         {/* Main Navigation */}
         <nav className="mt-4 flex-1 overflow-y-auto px-4">
           <div className="space-y-2">
-            <NavItem to="https://platform-beta.aiml.asu.edu/" icon={HomeIcon} external={true}>
+            <NavItem to="/" icon={HomeIcon} collapsed={sidebarCollapsed}>
               Dashboard
             </NavItem>
-            <NavItem to="/contribute" icon={PlusCircleIcon}>
-              Contribute
+            <NavItem to="/prompt-guide" icon={DocumentTextIcon} collapsed={sidebarCollapsed}>
+              Prompt Guide
             </NavItem>
-            <NavItem to="/myprojects" icon={FolderIcon}>
-              My Contributions
+            <NavItem to="/marketplace" icon={RocketLaunchIcon} collapsed={sidebarCollapsed}>
+              Marketplace
             </NavItem>
-            <NavItem to="/marketplace" icon={RocketLaunchIcon}>
-              Beta Land Marketplace
-            </NavItem>
-            <NavItem to="/community-ideas" icon={LightBulbIcon}>
+            <NavItem to="/community-ideas" icon={LightBulbIcon} collapsed={sidebarCollapsed}>
               Community Ideas
             </NavItem>
-            <NavItem to="/prompt-guide" icon={LightBulbIcon}>
-              Prompt Guide
+            <NavItem to="/myprojects" icon={FolderIcon} collapsed={sidebarCollapsed}>
+              My Contributions
+            </NavItem>
+            <NavItem to="/contribute" icon={PlusCircleIcon} collapsed={sidebarCollapsed}>
+              Add to Marketplace
             </NavItem>
           </div>
 
@@ -144,16 +170,21 @@ const AppContent = () => {
           <div className="my-4 border-t border-gray-200"></div>
           
           {/* Other CreateAI apps section */}
-          <div className="mb-2">
-            <h3 className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Other CreateAI apps
-            </h3>
-          </div>
+          {!sidebarCollapsed && (
+            <div className="mb-2">
+              <h3 className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Other CreateAI apps
+              </h3>
+            </div>
+          )}
           <div className="space-y-2">
-            <NavItem to="https://compare-beta.aiml.asu.edu/" icon={ScaleIcon} external={true}>
+            <NavItem to="https://platform-beta.aiml.asu.edu/" icon={HomeIcon} external={true} collapsed={sidebarCollapsed}>
+              MyAI Builder
+            </NavItem>
+            <NavItem to="https://compare-beta.aiml.asu.edu/" icon={ScaleIcon} external={true} collapsed={sidebarCollapsed}>
               Model Comparison
             </NavItem>
-            <NavItem to="https://asugpt-beta.aiml.asu.edu/" icon={ChatBubbleLeftRightIcon} external={true}>
+            <NavItem to="https://asugpt-beta.aiml.asu.edu/" icon={ChatBubbleLeftRightIcon} external={true} collapsed={sidebarCollapsed}>
               ASU GPT
             </NavItem>
           </div>
@@ -162,16 +193,18 @@ const AppContent = () => {
           <div className="my-4 border-t border-gray-200"></div>
           
           {/* Support section */}
-          <div className="mb-2">
-            <h3 className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Support
-            </h3>
-          </div>
+          {!sidebarCollapsed && (
+            <div className="mb-2">
+              <h3 className="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Support
+              </h3>
+            </div>
+          )}
           <div className="space-y-2">
-            <NavItem to="#" icon={ExclamationTriangleIcon}>
+            <NavItem to="#" icon={ExclamationTriangleIcon} collapsed={sidebarCollapsed}>
               Report A Problem
             </NavItem>
-            <NavItem to="#" icon={ChatBubbleOvalLeftEllipsisIcon}>
+            <NavItem to="#" icon={ChatBubbleOvalLeftEllipsisIcon} collapsed={sidebarCollapsed}>
               Give Feedback
             </NavItem>
           </div>
@@ -180,15 +213,16 @@ const AppContent = () => {
         {/* User Controls */}
         <div className="p-4 border-t border-gray-200">
           <div className="space-y-2">
-            <NavItem to="/settings" icon={UserCircleIcon}>
+            <NavItem to="/settings" icon={UserCircleIcon} collapsed={sidebarCollapsed}>
               My Account Settings
             </NavItem>
             <button
-              className="flex items-center w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-md text-left"
+              className={`flex items-center w-full ${sidebarCollapsed ? 'justify-center px-2 mx-2' : 'px-4'} py-2 text-gray-700 hover:bg-gray-100 rounded-md text-left`}
               onClick={() => console.log('Logout clicked')}
+              title={sidebarCollapsed ? 'Logout' : undefined}
             >
-              <ArrowLeftOnRectangleIcon className="w-5 h-5 mr-2 text-gray-500" />
-              Logout
+              <ArrowLeftOnRectangleIcon className={`w-5 h-5 ${sidebarCollapsed ? 'mx-auto' : 'mr-2'} text-gray-500`} />
+              {!sidebarCollapsed && 'Logout'}
             </button>
           </div>
         </div>
@@ -205,7 +239,7 @@ const AppContent = () => {
       {/* Main Content */}
       <div className="flex-1 overflow-auto md:ml-0 pt-16 md:pt-0">
         <Routes>
-          <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<DashboardPage />} />
           <Route path="/marketplace" element={<HomePage />} />
           <Route path="/project/:id" element={<ProjectDetail />} />
           <Route path="/myprojects" element={<MyProjects />} />
@@ -234,3 +268,4 @@ export const App: React.FC = () => {
     </Router>
   );
 };
+
