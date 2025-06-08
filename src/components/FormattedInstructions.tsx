@@ -106,14 +106,63 @@ export const FormattedInstructions: React.FC<FormattedInstructionsProps> = ({ co
     return text.split('\n').map((line, index) => {
       if (line.trim() === '') return <br key={index} />;
       
+      // Check if this line contains a YouTube link that should be embedded
+      const youtubeMatch = line.match(/###?\s*🎯?\s*\[([^\]]+)\]\((https:\/\/(?:www\.)?youtube\.com\/watch\?v=[\w-]+|https:\/\/youtu\.be\/[\w-]+)\)/);
+      
+      if (youtubeMatch) {
+        const [, title, url] = youtubeMatch;
+        let videoId = '';
+        
+        if (url.includes('youtube.com')) {
+          const urlParams = new URLSearchParams(new URL(url).search);
+          videoId = urlParams.get('v') || '';
+        } else if (url.includes('youtu.be')) {
+          videoId = url.split('youtu.be/')[1]?.split('?')[0] || '';
+        }
+        
+        return (
+          <div key={index} className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+            <h4 className="text-lg font-semibold text-blue-900 mb-3 flex items-center">
+              🎬 {title}
+            </h4>
+            {videoId && (
+              <div className="mb-3 relative" style={{ paddingBottom: '56.25%', height: 0 }}>
+                <iframe
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+                  src={`https://www.youtube.com/embed/${videoId}`}
+                  title={title}
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                  className="rounded-lg"
+                ></iframe>
+              </div>
+            )}
+            <a
+              href={url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium"
+            >
+              📺 Watch on YouTube
+            </a>
+          </div>
+        );
+      }
+      
       // Format inline code
       let formattedLine = line.replace(/`([^`]+)`/g, '<code class="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-gray-800">$1</code>');
       
       // Format bold text
       formattedLine = formattedLine.replace(/\*\*([^*]+)\*\*/g, '<strong class="font-semibold text-gray-900">$1</strong>');
       
-      // Format links
-      formattedLine = formattedLine.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" class="text-blue-600 hover:text-blue-800 underline" target="_blank" rel="noopener noreferrer">$1</a>');
+      // Format links (excluding YouTube links which are handled above)
+      formattedLine = formattedLine.replace(/\[([^\]]+)\]\(([^)]+)\)/g, (match, text, url) => {
+        if (url.includes('youtube.com') || url.includes('youtu.be')) {
+          return match; // Don't format YouTube links as regular links
+        }
+        return `<a href="${url}" class="text-blue-600 hover:text-blue-800 underline" target="_blank" rel="noopener noreferrer">${text}</a>`;
+      });
       
       return (
         <span key={index} dangerouslySetInnerHTML={{ __html: formattedLine }} />
@@ -182,13 +231,19 @@ export const FormattedInstructions: React.FC<FormattedInstructionsProps> = ({ co
     const videoElements: JSX.Element[] = [];
     
     lines.forEach((line, index) => {
-      // Check for YouTube links with titles
-      const youtubeMatch = line.match(/###?\s*🎯?\s*\[([^\]]+)\]\((https:\/\/www\.youtube\.com\/watch\?v=[\w-]+|https:\/\/youtu\.be\/[\w-]+)\)/);
+      // Check for YouTube links with titles - more flexible pattern
+      const youtubeMatch = line.match(/###?\s*🎯?\s*\[([^\]]+)\]\((https:\/\/(?:www\.)?youtube\.com\/watch\?v=[\w-]+|https:\/\/youtu\.be\/[\w-]+)\)/);
+      
       if (youtubeMatch) {
         const [, title, url] = youtubeMatch;
-        const videoId = url.includes('youtube.com') 
-          ? url.split('v=')[1]?.split('&')[0]
-          : url.split('youtu.be/')[1]?.split('?')[0];
+        let videoId = '';
+        
+        if (url.includes('youtube.com')) {
+          const urlParams = new URLSearchParams(new URL(url).search);
+          videoId = urlParams.get('v') || '';
+        } else if (url.includes('youtu.be')) {
+          videoId = url.split('youtu.be/')[1]?.split('?')[0] || '';
+        }
         
         videoElements.push(
           <div key={index} className="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
@@ -196,10 +251,9 @@ export const FormattedInstructions: React.FC<FormattedInstructionsProps> = ({ co
               🎬 {title}
             </h4>
             {videoId && (
-              <div className="mb-3">
+              <div className="mb-3 relative" style={{ paddingBottom: '56.25%', height: 0 }}>
                 <iframe
-                  width="100%"
-                  height="315"
+                  style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
                   src={`https://www.youtube.com/embed/${videoId}`}
                   title={title}
                   frameBorder="0"
@@ -219,12 +273,19 @@ export const FormattedInstructions: React.FC<FormattedInstructionsProps> = ({ co
             </a>
           </div>
         );
-      } else if (line.match(/^\*[^*]/)) {
-        // Description line after video
+      } else if (line.match(/^\*[^*]/) && !line.includes('youtube.com') && !line.includes('youtu.be')) {
+        // Description line after video (but not containing YouTube links)
         videoElements.push(
           <p key={index} className="text-gray-600 italic text-sm mb-4">
             {line.replace(/^\*\s*/, '')}
           </p>
+        );
+      } else if (line.trim() && !youtubeMatch) {
+        // Regular text content that should be formatted normally
+        videoElements.push(
+          <div key={index} className="mb-4 text-gray-700 leading-relaxed">
+            {formatTextContent(line)}
+          </div>
         );
       }
     });
