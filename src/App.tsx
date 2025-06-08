@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import HomePage from './pages/HomePage';
@@ -89,6 +89,23 @@ const NavItem: React.FC<NavItemProps> = ({ to, icon, children, external = false,
 const AppContent = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const location = useLocation(); // Get current location
+  
+  // Check if mobile and handle resizing
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768); // Define a breakpoint for mobile
+    };
+
+    handleResize();
+
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
 
   return (
     <div className="flex h-screen bg-gray-100">
@@ -250,8 +267,8 @@ const AppContent = () => {
         </Routes>
       </div>
 
-      {/* Global Floating Chat Assistant */}
-      <FloatingChatButton />
+      {/* Global Floating Chat Assistant - Hidden on AsuGptPage */}
+      {location.pathname !== '/asugpt' && <FloatingChatButton />}
     </div>
   );
 };

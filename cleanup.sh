@@ -1,4 +1,4 @@
-#!/bin/bash
+d#!/bin/bash
 
 echo "====== macOS Disk Space Cleanup Script ======"
 echo "This script will help clean up unnecessary files to free up disk space."
