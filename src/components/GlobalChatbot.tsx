@@ -1,18 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  XMarkIcon, 
-  PaperAirplaneIcon, 
-  ChatBubbleLeftRightIcon,
-  PlayIcon,
-  ExclamationTriangleIcon,
-  LightBulbIcon,
-  CommandLineIcon,
+import {
+  XMarkIcon,
+  PaperAirplaneIcon,
   SparklesIcon
 } from '@heroicons/react/24/outline';
 import { useChatService } from '../hooks/useChatService';
 import { usePageContext, generateContextualPrompt } from '../utils/contextAware';
 import { getRelevantResources, formatResourcesForResponse } from '../utils/webKnowledge';
-import { MarkdownMessage } from './MarkdownMessage';
 
 interface ChatMessage {
   id: string;
@@ -46,26 +40,24 @@ export const GlobalChatbot: React.FC<GlobalChatbotProps> = ({ onClose, projectDa
     scrollToBottom();
   }, [messages]);
 
-  // Initialize welcome message based on context
+  // Initialize with welcome message
   useEffect(() => {
     if (messages.length === 0) {
       const welcomeMessage: ChatMessage = {
-        id: '1',
+        id: 'welcome',
         text: generateWelcomeMessage(),
         isUser: false,
         timestamp: new Date()
       };
       setMessages([welcomeMessage]);
     }
-  }, [status.isConnected, pageContext.pageName]);
+  }, [isConnected, pageContext.pageName]);
 
   const generateWelcomeMessage = (): string => {
-    if (status.isConnected && status.currentModel) {
-      return `Hi! I'm your ASU AI Assistant running locally with ${status.currentModel}. I can help with ${pageContext.description.toLowerCase()}. What do you need?`;
-    } else if (status.error) {
-      return `Hi! I'm your ASU AI Assistant. I can help with ${pageContext.description.toLowerCase()}. Want better responses? Set up Ollama for private local AI!`;
+    if (isConnected) {
+      return `Hi! I'm your ASU AI Assistant running with ${providerName}. I can help with ${pageContext.description.toLowerCase()}. What do you need?`;
     } else {
-      return `Hi! I'm your ASU AI Assistant. I can help with ${pageContext.description.toLowerCase()}. What can I do for you?`;
+      return `Hi! I'm your ASU AI Assistant. I can help with ${pageContext.description.toLowerCase()}. Configure your AI service in settings for better responses!`;
     }
   };
 
@@ -87,11 +79,11 @@ export const GlobalChatbot: React.FC<GlobalChatbotProps> = ({ onClose, projectDa
     try {
       let response: string;
 
-      if (status.isConnected) {
-        // Use local Ollama with context-aware prompt including real project data
+      try {
+        // Use AI service with context-aware prompt including real project data
         const contextualPrompt = generateContextualPrompt(currentInput, pageContext, projects);
         response = await sendMessage(contextualPrompt);
-      } else {
+      } catch (error) {
         // Fallback to predefined responses with context awareness
         response = generateFallbackResponse(currentInput);
       }
@@ -107,7 +99,7 @@ export const GlobalChatbot: React.FC<GlobalChatbotProps> = ({ onClose, projectDa
     } catch (error) {
       const errorResponse: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        text: `Sorry, I encountered an error: ${error}. You can try asking again or start Ollama for better local AI assistance.`,
+        text: `Sorry, I encountered an error: ${error}. You can try asking again or configure your AI service in settings.`,
         isUser: false,
         timestamp: new Date(),
         isError: true
@@ -192,31 +184,6 @@ export const GlobalChatbot: React.FC<GlobalChatbotProps> = ({ onClose, projectDa
         } else {
           response = `Use the sort dropdown above to see popular projects by usage.`;
         }
-             } else if (lowercaseMessage.includes('top rated') || lowercaseMessage.includes('best project')) {
-        // Show top-rated projects
-        const topRated = projects
-          .filter((p: any) => p.category !== 'Tutorial' && p.category !== 'Extension' && p.category !== 'Local Model')
-          .sort((a: any, b: any) => b.rating - a.rating)
-          .slice(0, 5);
-        
-        if (topRated.length > 0) {
-          const best = topRated[0];
-          const others = topRated.slice(1, 3).map(p => `${p.name} (${p.rating}/5)`).join(', ');
-          
-          response = `**${best.name}** has the highest rating at ${best.rating}/5 stars! Also great: ${others}. Sort by "Rating" to see more.`;
-        }
-      } else if (lowercaseMessage.includes('newest') || lowercaseMessage.includes('recent project')) {
-        // Show newest projects
-        const newest = projects
-          .filter((p: any) => p.category !== 'Tutorial' && p.category !== 'Extension' && p.category !== 'Local Model')
-          .sort((a: any, b: any) => new Date(b.dateCreated).getTime() - new Date(a.dateCreated).getTime())
-          .slice(0, 5);
-        
-        if (newest.length > 0) {
-          const latest = newest.slice(0, 3).map(p => p.name).join(', ');
-          
-          response = `Latest additions: ${latest}. Sort by "Newest" to see all recent projects!`;
-        }
       } else if (lowercaseMessage.includes('project') || lowercaseMessage.includes('find') || lowercaseMessage.includes('help')) {
         const samples = projects
           .filter((p: any) => p.category !== 'Tutorial')
@@ -232,15 +199,15 @@ export const GlobalChatbot: React.FC<GlobalChatbotProps> = ({ onClose, projectDa
       }
     }
 
-    // Ollama-specific responses
+    // AI service setup responses
     if (!response && (lowercaseMessage.includes('ollama') || lowercaseMessage.includes('local') || lowercaseMessage.includes('setup'))) {
-      response = "Get Ollama from [ollama.com](https://ollama.com), then run `ollama serve` and `ollama pull llama3.3:8b`. You'll have private AI that works offline!";
+      response = "Get Ollama from [ollama.com](https://ollama.com), then run `ollama serve` and `ollama pull llama3.3:8b`. You'll have private AI that works offline! Or configure Gemini API in settings for cloud-based AI.";
     }
 
     // Quick actions based on context
     if (!response && (lowercaseMessage.includes('help') || lowercaseMessage.includes('what can you do'))) {
       const quickActions = pageContext.quickActions.slice(0, 2);
-      response = `I can help with ${quickActions.join(' or ')}. ${status.isConnected ? 'Running locally for privacy!' : 'Want better responses? Try setting up Ollama!'}`;
+      response = `I can help with ${quickActions.join(' or ')}. ${isConnected ? `Running with ${providerName}!` : 'Configure your AI service in settings for better responses!'}`;
     }
 
     // Default context-aware response
@@ -253,72 +220,11 @@ export const GlobalChatbot: React.FC<GlobalChatbotProps> = ({ onClose, projectDa
     const relevantResources = getRelevantResources(userMessage, 2);
     const resourcesText = formatResourcesForResponse(relevantResources);
     
-    return response + resourcesText;
-  };
-
-  const handleStartOllama = async () => {
-    setIsTyping(true);
-    try {
-      const result = await startOllama();
-      
-      const statusMessage: ChatMessage = {
-        id: Date.now().toString(),
-        text: result.success 
-          ? "✅ Ollama started successfully! You now have private local AI."
-          : "💡 To start Ollama, open your terminal and run: `ollama serve`\n\nThen I'll be able to provide enhanced AI assistance with complete privacy!",
-        isUser: false,
-        timestamp: new Date()
-      };
-      
-      setMessages(prev => [...prev, statusMessage]);
-      
-      // Check status after a delay
-      setTimeout(() => {
-        checkOllamaStatus();
-      }, 3000);
-      
-    } catch (error) {
-      const errorMessage: ChatMessage = {
-        id: Date.now().toString(),
-        text: "Unable to start Ollama automatically. Please run `ollama serve` in your terminal manually.",
-        isUser: false,
-        timestamp: new Date(),
-        isError: true
-      };
-      setMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsTyping(false);
+    if (resourcesText) {
+      response += `\n\n${resourcesText}`;
     }
-  };
 
-  const handlePullModel = async (modelName: string = 'llama3.3:8b') => {
-    setIsTyping(true);
-    try {
-      const result = await pullModel(modelName);
-      
-      const statusMessage: ChatMessage = {
-        id: Date.now().toString(),
-        text: result.success 
-          ? `✅ ${modelName} downloaded successfully! Ready for private AI conversations.`
-          : `❌ Failed to download ${modelName}: ${result.message}`,
-        isUser: false,
-        timestamp: new Date(),
-        isError: !result.success
-      };
-      
-      setMessages(prev => [...prev, statusMessage]);
-    } catch (error) {
-      const errorMessage: ChatMessage = {
-        id: Date.now().toString(),
-        text: `Error downloading model: ${error}`,
-        isUser: false,
-        timestamp: new Date(),
-        isError: true
-      };
-      setMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsTyping(false);
-    }
+    return response;
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -328,66 +234,29 @@ export const GlobalChatbot: React.FC<GlobalChatbotProps> = ({ onClose, projectDa
     }
   };
 
-  const quickActions = status.isConnected 
-    ? pageContext.quickActions 
-    : [
-        "Help me set up local AI",
-        "What is Ollama?",
-        ...pageContext.quickActions.slice(0, 2)
-      ];
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-end justify-end p-4">
-      <div className="bg-white rounded-lg shadow-2xl w-full max-w-md h-[500px] flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl h-[600px] flex flex-col">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-red-800 to-yellow-600 text-white rounded-t-lg">
+        <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className="flex items-center">
-            {status.isConnected ? (
-                             <div className="flex items-center">
-                 <SparklesIcon className="w-6 h-6 mr-2" />
-                 <div>
-                   <h3 className="font-semibold">ASU AI Assistant</h3>
-                   <p className="text-xs opacity-80">Local • {status.currentModel}</p>
-                 </div>
-               </div>
-             ) : (
-               <div className="flex items-center">
-                 <ChatBubbleLeftRightIcon className="w-6 h-6 mr-2" />
-                 <div>
-                   <h3 className="font-semibold">ASU AI Assistant</h3>
-                   <p className="text-xs opacity-80">{pageContext.pageName} • MyAI Builder</p>
-                 </div>
-               </div>
-             )}
-          </div>
-          <button 
-            onClick={onClose}
-            className="p-1 hover:bg-white hover:bg-opacity-20 rounded-md transition-colors"
-          >
-            <XMarkIcon className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Status Banner */}
-        {!status.isConnected && !isLoading && (
-          <div className="bg-yellow-50 border-l-4 border-yellow-500 p-3">
-            <div className="flex items-center">
-              <ExclamationTriangleIcon className="w-5 h-5 text-yellow-600 mr-2" />
-              <div className="flex-1">
-                <p className="text-sm text-yellow-800">
-                  Enhanced AI available. {status.models.length === 0 ? 'Set up local Ollama for privacy!' : 'Start Ollama for better responses.'}
-                </p>
-              </div>
-              <button
-                onClick={handleStartOllama}
-                className="ml-2 flex items-center px-3 py-1 bg-yellow-500 text-yellow-900 rounded-md text-xs hover:bg-yellow-600 transition-colors"
-              >
-                <PlayIcon className="w-4 h-4 mr-1" />
-                Setup
-              </button>
+            <div className="w-8 h-8 bg-gradient-to-r from-red-600 to-yellow-500 rounded-full flex items-center justify-center mr-3">
+              <SparklesIcon className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900">ASU AI Assistant</h3>
+              <p className="text-sm text-gray-500">
+                {isConnected ? `Connected via ${providerName}` : 'Offline mode'}
+              </p>
             </div>
           </div>
-        )}
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <XMarkIcon className="w-6 h-6" />
+          </button>
+        </div>
 
         {/* Messages */}
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -397,23 +266,28 @@ export const GlobalChatbot: React.FC<GlobalChatbotProps> = ({ onClose, projectDa
               className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                className={`max-w-[80%] p-3 rounded-lg ${
                   message.isUser
-                    ? 'bg-blue-600 text-white'
-                    : message.isError 
-                    ? 'bg-red-100 text-red-900 border border-red-200'
+                    ? 'bg-red-600 text-white'
+                    : message.isError
+                    ? 'bg-red-50 text-red-800 border border-red-200'
                     : 'bg-gray-100 text-gray-900'
                 }`}
               >
-                <MarkdownMessage content={message.text} />
+                <div className="whitespace-pre-wrap">{message.text}</div>
+                <div className={`text-xs mt-1 ${
+                  message.isUser ? 'text-red-100' : 'text-gray-500'
+                }`}>
+                  {message.timestamp.toLocaleTimeString()}
+                </div>
               </div>
             </div>
           ))}
           
           {isTyping && (
             <div className="flex justify-start">
-              <div className="bg-gray-100 text-gray-900 px-4 py-2 rounded-lg">
-                <div className="flex space-x-1">
+              <div className="bg-gray-100 text-gray-900 p-3 rounded-lg">
+                <div className="flex items-center space-x-1">
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
@@ -425,54 +299,32 @@ export const GlobalChatbot: React.FC<GlobalChatbotProps> = ({ onClose, projectDa
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Quick Actions */}
-        {messages.length <= 2 && (
-          <div className="px-4 pb-2">
-            <p className="text-xs text-gray-500 mb-2">Quick actions:</p>
-            <div className="grid grid-cols-1 gap-2">
-              {quickActions.slice(0, 3).map((action, index) => (
-                <button
-                  key={index}
-                  onClick={() => setInputValue(action)}
-                  className="flex items-center p-2 text-xs bg-gray-50 hover:bg-gray-100 rounded-md transition-colors text-left"
-                >
-                  <LightBulbIcon className="w-4 h-4 mr-1 text-gray-400" />
-                  <span className="truncate">{action}</span>
-                </button>
-              ))}
-              {!status.isConnected && status.models.length === 0 && (
-                <button
-                  onClick={() => handlePullModel('llama3.3:8b')}
-                  className="flex items-center p-2 text-xs bg-blue-50 hover:bg-blue-100 rounded-md transition-colors text-left text-blue-700"
-                >
-                  <CommandLineIcon className="w-4 h-4 mr-1 text-blue-500" />
-                  <span>Download Llama 3.3 model</span>
-                </button>
-              )}
-            </div>
-          </div>
-        )}
-
         {/* Input */}
-        <div className="p-4 border-t">
+        <div className="p-4 border-t border-gray-200">
           <div className="flex space-x-2">
-            <input
-              type="text"
+            <textarea
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value)}
               onKeyPress={handleKeyPress}
-              placeholder={status.isConnected ? "Ask me anything..." : "Ask me about this page..."}
-              className="flex-1 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-600 text-sm"
-              disabled={isTyping}
+              placeholder="Ask me anything about the marketplace..."
+              className="flex-1 resize-none border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500"
+              rows={1}
+              disabled={isLoading}
             />
             <button
               onClick={handleSendMessage}
-              disabled={!inputValue.trim() || isTyping}
-              className="px-4 py-2 bg-red-800 text-white rounded-md hover:bg-red-900 focus:outline-none focus:ring-2 focus:ring-red-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+              disabled={!inputValue.trim() || isLoading}
+              className="bg-red-600 text-white p-2 rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <PaperAirplaneIcon className="w-4 h-4" />
+              <PaperAirplaneIcon className="w-5 h-5" />
             </button>
           </div>
+          
+          {!isConnected && (
+            <div className="mt-2 text-sm text-amber-600">
+              💡 Configure your AI service in settings for enhanced responses
+            </div>
+          )}
         </div>
       </div>
     </div>
