@@ -21,7 +21,7 @@ const currentUser = "ASU Enterprise Technology";
 
 interface ContributionItem {
   id: string;
-  type: 'ai-project' | 'extension' | 'local-model' | 'tutorial';
+  type: 'ai-project' | 'extension' | 'local-model' | 'tutorial' | 'viewed';
   name: string;
   description: string;
   link: string;
@@ -90,7 +90,49 @@ const MyContributions: React.FC = () => {
         stats: { views: 890, uses: 156, rating: 4.5, reviews: 19 }
       }
     ];
-    setContributions(mockContributions);
+    
+    // Add user's community ideas to contributions
+    const communityIdeas = JSON.parse(localStorage.getItem('communityIdeas') || '[]');
+    const userCommunityIdeas = communityIdeas
+      .filter((idea: any) => !idea.creator || idea.creator.name === currentUser || idea.isFromPromptGuide)
+      .map((idea: any) => ({
+        id: idea.id,
+        type: 'ai-project',
+        name: idea.title,
+        description: idea.description || idea.prompt,
+        link: `/community-ideas/${idea.id}`,
+        category: idea.category || 'Development',
+        tags: idea.tags || [idea.category, idea.difficulty],
+        createdAt: idea.timestamp || new Date().toISOString(),
+        lastUpdated: idea.lastSuggested || idea.timestamp || new Date().toISOString(),
+        status: 'published',
+        stats: { 
+          views: 0, 
+          uses: idea.popularity || 0, 
+          rating: 0, 
+          reviews: 0 
+        }
+      }));
+      
+    // Add user's viewed items from contribution history
+    const userContributions = JSON.parse(localStorage.getItem('userContributions') || '[]');
+    const userViewedItems = userContributions
+      .filter((contribution: any) => contribution.type === 'viewed')
+      .map((contribution: any) => ({
+        id: contribution.id,
+        type: 'viewed',
+        name: contribution.title,
+        description: 'You viewed this item recently',
+        link: `/community-ideas/${contribution.id}`,
+        category: 'history',
+        tags: ['viewed', 'history'],
+        createdAt: contribution.timestamp,
+        lastUpdated: contribution.timestamp,
+        status: 'published',
+        stats: { views: 1, uses: 0, rating: 0, reviews: 0 }
+      }));
+    
+    setContributions([...userCommunityIdeas, ...mockContributions, ...userViewedItems]);
   }, []);
 
   const getFilteredItems = () => {
@@ -149,6 +191,7 @@ const MyContributions: React.FC = () => {
       case 'extension': return PuzzlePieceIcon;
       case 'local-model': return CpuChipIcon;
       case 'tutorial': return AcademicCapIcon;
+      case 'viewed': return EyeIcon;
       default: return DocumentDuplicateIcon;
     }
   };
@@ -159,6 +202,7 @@ const MyContributions: React.FC = () => {
       case 'extension': return 'from-blue-500 to-cyan-500';
       case 'local-model': return 'from-purple-500 to-pink-500';
       case 'tutorial': return 'from-green-500 to-teal-500';
+      case 'viewed': return 'from-amber-500 to-orange-500';
       default: return 'from-gray-500 to-gray-600';
     }
   };

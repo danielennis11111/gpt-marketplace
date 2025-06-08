@@ -75,7 +75,7 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
-  const handleProviderChange = (provider: 'ollama' | 'gemini') => {
+  const handleProviderChange = (provider: 'ollama' | 'gemini' | 'llama4scout') => {
     if (provider === 'gemini' && !isGeminiConfigured()) {
       // Don't allow switching to Gemini if not configured
       return;
@@ -117,6 +117,23 @@ export const SettingsPage: React.FC = () => {
                   <div className="font-medium text-gray-900">Ollama (Local)</div>
                   <div className="text-sm text-gray-500">
                     Run AI models locally on your machine. Free but requires setup.
+                  </div>
+                </div>
+              </label>
+
+              <label className="flex items-center p-4 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                <input
+                  type="radio"
+                  name="chatProvider"
+                  value="llama4scout"
+                  checked={settings.preferredChatProvider === 'llama4scout'}
+                  onChange={() => handleProviderChange('llama4scout')}
+                  className="text-red-600 focus:ring-red-500"
+                />
+                <div className="ml-3">
+                  <div className="font-medium text-gray-900">Llama 4 Scout (Local)</div>
+                  <div className="text-sm text-gray-500">
+                    Advanced local AI model with enhanced reasoning capabilities. Requires Ollama setup.
                   </div>
                 </div>
               </label>

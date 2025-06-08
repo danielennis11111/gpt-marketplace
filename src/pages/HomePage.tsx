@@ -180,7 +180,7 @@ const HomePage: React.FC = () => {
         >
           <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
             <div className="text-center">
-              <h1 className="text-4xl font-bold text-white mb-4">BetaLand Marketplace</h1>
+              <h1 className="text-4xl font-bold text-white mb-4">Beta aiLand Marketplace</h1>
               <p className="text-xl text-gray-200 max-w-2xl">
                 Discover AI-powered tools, educational resources, and productivity solutions
               </p>

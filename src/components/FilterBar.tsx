@@ -39,7 +39,7 @@ export const FilterBar: React.FC<FilterBarProps> = ({
           <div className="flex-grow">
             <input
               type="text"
-              placeholder="Search BetaLand Templates..."
+              placeholder="Search Beta aiLand Templates..."
               className="w-full px-4 py-2 border border-gray-300 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
               onChange={(e) => onSearch(e.target.value)}
             />

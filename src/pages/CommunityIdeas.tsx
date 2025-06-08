@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { HoneInChatbot } from '../components/HoneInChatbot';
 import { useChatService } from '../hooks/useChatService';
 import { 
@@ -200,6 +200,7 @@ const SORT_OPTIONS = [
 ];
 
 const CommunityIdeas: React.FC = () => {
+  const navigate = useNavigate();
   const [ideas, setIdeas] = useState(MOCK_COMMUNITY_IDEAS);
   const [filteredIdeas, setFilteredIdeas] = useState(MOCK_COMMUNITY_IDEAS);
   const [searchTerm, setSearchTerm] = useState('');
@@ -207,10 +208,6 @@ const CommunityIdeas: React.FC = () => {
   const [sortBy, setSortBy] = useState('suggested');
   const [expandedIdeas, setExpandedIdeas] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
-  const [honeInChatbot, setHoneInChatbot] = useState<{
-    isOpen: boolean;
-    idea: any | null;
-  }>({ isOpen: false, idea: null });
   const chatService = useChatService();
 
   // Load ideas from Prompt Guide
@@ -222,18 +219,20 @@ const CommunityIdeas: React.FC = () => {
         id: idea.id,
         title: idea.title,
         creator: {
-          name: 'Community Member',
-          avatar: 'https://ui-avatars.com/api/?name=CM&background=random'
+          name: 'AI Assistant',
+          avatar: 'https://ui-avatars.com/api/?name=AI&background=FF5733'
         },
-        createdAt: new Date(idea.timestamp).toISOString().split('T')[0],
+        createdAt: new Date(idea.timestamp || idea.lastSuggested || Date.now()).toISOString().split('T')[0],
         idea: idea.description,
-        aiConceptualization: `Generated AI Prompt:\n\n${idea.prompt}`,
-        likes: 0,
+        aiConceptualization: idea.aiSystemInstructions || idea.prompt || "No AI conceptualization available",
+        likes: idea.likes || 0,
         tags: [idea.category.toLowerCase(), idea.difficulty],
         isFeatured: false,
-        comments: 0,
-        saves: 0,
+        comments: idea.comments || 0,
+        saves: idea.saves || 0,
+        popularity: idea.popularity || 1,
         isFromPromptGuide: true,
+        hasAIResult: true,
         difficulty: idea.difficulty,
         originalPrompt: idea.prompt
       }));
@@ -325,16 +324,7 @@ const CommunityIdeas: React.FC = () => {
     // In a real app, this would navigate to the create project page with the idea pre-filled
   };
 
-  const handleHoneIn = (idea: any) => {
-    setHoneInChatbot({
-      isOpen: true,
-      idea: {
-        title: idea.title,
-        description: idea.idea,
-        aiConceptualization: idea.aiConceptualization
-      }
-    });
-  };
+
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -444,7 +434,10 @@ const CommunityIdeas: React.FC = () => {
                         className="w-10 h-10 rounded-full mr-4"
                       />
                       <div>
-                        <h2 className="text-xl font-semibold text-gray-900 hover:text-amber-600 transition-colors">
+                        <h2 
+                          className="text-xl font-semibold text-gray-900 hover:text-amber-600 transition-colors cursor-pointer"
+                          onClick={() => navigate(`/community-ideas/${idea.id}`)}
+                        >
                           {idea.title}
                         </h2>
                         <p className="text-sm text-gray-600">
@@ -535,7 +528,7 @@ const CommunityIdeas: React.FC = () => {
                       
                       <div className="mt-4 flex justify-end">
                         <button
-                          onClick={() => handleHoneIn(idea)}
+                          onClick={() => navigate(`/community-ideas/${idea.id}`)}
                           className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-red-600 to-yellow-500 text-white rounded-lg hover:from-red-700 hover:to-yellow-600 transition-all transform hover:scale-105 shadow-lg"
                         >
                           <DocumentDuplicateIcon className="w-5 h-5 mr-2" />
@@ -550,15 +543,6 @@ const CommunityIdeas: React.FC = () => {
           )}
         </div>
       </div>
-
-      {/* Hone In Chatbot */}
-      {honeInChatbot.idea && (
-        <HoneInChatbot
-          isOpen={honeInChatbot.isOpen}
-          onClose={() => setHoneInChatbot({ isOpen: false, idea: null })}
-          initialIdea={honeInChatbot.idea}
-        />
-      )}
     </div>
   );
 };

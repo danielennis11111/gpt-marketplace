@@ -15,7 +15,7 @@ const LearningPage: React.FC = () => {
               without requiring extensive technical knowledge.
             </p>
             <p className="mb-4">
-              The BetaLand Templates are a curated marketplace of pre-built AI templates that can be cloned and customized to fit specific needs.
+              The Beta aiLand Templates are a curated marketplace of pre-built AI templates that can be cloned and customized to fit specific needs.
               These templates are designed to address common use cases across the university, from course design to research assistance.
             </p>
             <div className="bg-amber-100 p-4 rounded-lg mb-4">
@@ -34,7 +34,7 @@ const LearningPage: React.FC = () => {
           <div>
             <h2 className="text-2xl font-bold mb-4">Finding the Right Template</h2>
             <p className="mb-4">
-              The BetaLand Templates offer multiple ways to discover templates that match your needs.
+              The Beta aiLand Templates offer multiple ways to discover templates that match your needs.
               Understanding the filtering and search options will help you quickly find relevant projects.
             </p>
             

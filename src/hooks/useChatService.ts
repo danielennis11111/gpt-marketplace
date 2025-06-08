@@ -17,6 +17,7 @@ export const useChatService = (): ChatServiceResult => {
 
   const isGeminiAvailable = settings.geminiApiKey.trim().length > 0;
   const shouldUseGemini = settings.preferredChatProvider === 'gemini' && isGeminiAvailable;
+  const shouldUseLlama4Scout = settings.preferredChatProvider === 'llama4scout';
 
   const sendMessage = useCallback(async (message: string): Promise<string> => {
     if (shouldUseGemini) {
@@ -30,13 +31,18 @@ export const useChatService = (): ChatServiceResult => {
         }
         throw new Error('Neither Gemini nor Ollama is available');
       }
+    } else if (shouldUseLlama4Scout) {
+      if (ollama.status.isConnected) {
+        return await ollama.sendMessageToLlama4Scout(message);
+      }
+      throw new Error('Ollama is not connected for Llama 4 Scout');
     } else {
       if (ollama.status.isConnected) {
         return await ollama.sendMessage(message);
       }
       throw new Error('Ollama is not connected');
     }
-  }, [shouldUseGemini, settings.geminiApiKey, ollama]);
+  }, [shouldUseGemini, shouldUseLlama4Scout, settings.geminiApiKey, ollama]);
 
   const testConnection = useCallback(async (): Promise<{ success: boolean; message: string }> => {
     if (shouldUseGemini) {
@@ -47,6 +53,20 @@ export const useChatService = (): ChatServiceResult => {
         return {
           success: false,
           message: error instanceof Error ? error.message : 'Gemini connection failed'
+        };
+      }
+    } else if (shouldUseLlama4Scout) {
+      try {
+        if (ollama.status.isConnected) {
+          await ollama.sendMessageToLlama4Scout('Test message');
+          return { success: true, message: 'Llama 4 Scout connection successful' };
+        } else {
+          return { success: false, message: 'Ollama is not connected for Llama 4 Scout' };
+        }
+      } catch (error) {
+        return {
+          success: false,
+          message: error instanceof Error ? error.message : 'Llama 4 Scout connection failed'
         };
       }
     } else {
@@ -64,13 +84,18 @@ export const useChatService = (): ChatServiceResult => {
         };
       }
     }
-  }, [shouldUseGemini, settings.geminiApiKey, ollama]);
+  }, [shouldUseGemini, shouldUseLlama4Scout, settings.geminiApiKey, ollama]);
 
   return {
     isConnected: shouldUseGemini ? isGeminiAvailable : ollama.status.isConnected,
     isLoading: ollama.isLoading,
     sendMessage,
-    providerName: shouldUseGemini ? 'Gemini 2.0 Flash' : 'Ollama',
+    providerName: shouldUseGemini ? 'Gemini 2.0 Flash' : 
+                shouldUseLlama4Scout ? 
+                  (ollama.status.models.find(m => m.name === 'llama4scout') ? 'Llama 4 Scout' : 
+                   ollama.status.models.find(m => m.name === 'llama3.3:8b') ? 'Llama 3.3 8B' : 
+                   ollama.status.models.find(m => m.name === 'gemma3:4b') ? 'Gemma 3 4B' : 'Ollama') : 
+                'Ollama',
     testConnection,
   };
 }; 

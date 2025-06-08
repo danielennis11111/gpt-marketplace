@@ -13,6 +13,7 @@ import { FloatingChatButton } from './components/FloatingChatButton';
 import { ProjectsProvider } from './contexts/ProjectsContext';
 import { SettingsProvider } from './contexts/SettingsContext';
 import { SettingsPage } from './pages/SettingsPage';
+import { CommunityIdeaDetail } from './pages/CommunityIdeaDetail';
 import {
   HomeIcon,
   PlusCircleIcon,
@@ -106,19 +107,20 @@ const AppContent = () => {
 
       {/* Sidebar */}
       <div 
-        className={`${sidebarCollapsed ? 'w-16' : 'w-64'} bg-white shadow-lg flex flex-col fixed inset-y-0 left-0 z-30 transition-all duration-300 transform md:translate-x-0 ${
+        className={`${sidebarCollapsed ? 'w-24' : 'w-64'} bg-white shadow-lg flex flex-col fixed inset-y-0 left-0 z-30 transition-all duration-300 transform md:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         } md:relative`}
       >
         {/* Logo and Title */}
         <div className="p-4 flex items-center">
-          <img src={siteLogo} alt="AI Beta Land Logo" className="w-10 mr-2" />
+          <img src={siteLogo} alt="Beta aiLand Logo" className="w-10 mr-2" />
           {!sidebarCollapsed && (
             <>
-              <h1 className="text-base font-bold text-gray-800">AI Beta Land</h1>
               <div className="inline-flex items-center bg-amber-400 px-2 py-1 text-xs font-bold text-black rounded-md ml-2">
-                BETA
+                BETA 
               </div>
+              <h1 className="text-base font-bold text-gray-800"> &nbsp;aiLand</h1>
+              
             </>
           )}
           
@@ -247,6 +249,7 @@ const AppContent = () => {
           <Route path="/contribute" element={<ContributePage />} />
           <Route path="/prompt-guide" element={<PromptGuidePage />} />
           <Route path="/community-ideas" element={<CommunityIdeas />} />
+          <Route path="/community-ideas/:id" element={<CommunityIdeaDetail />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       </div>

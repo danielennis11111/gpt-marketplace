@@ -129,6 +129,46 @@ export const useOllama = () => {
     }
   }, [status.isConnected, status.currentModel]);
 
+  // Send message specifically to Llama 4 Scout
+  const sendMessageToLlama4Scout = useCallback(async (message: string) => {
+    if (!status.isConnected) {
+      throw new Error('Ollama is not connected');
+    }
+
+    // Define the model names we can use (in order of preference)
+    const modelOptions = ['llama4scout', 'llama3.3:8b', 'gemma3:4b', 'llama2'];
+    
+    // Check if any of our preferred models are available
+    const availableModel = status.models.find(model => 
+      modelOptions.includes(model.name)
+    )?.name || 'llama2'; // Fallback to llama2
+    
+    try {
+      console.log(`Using model: ${availableModel} for Llama 4 Scout request`);
+      
+      const response = await fetch('http://localhost:11434/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: availableModel,
+          prompt: message,
+          stream: false,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Ollama API error: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data.response;
+    } catch (error) {
+      throw new Error(`Failed to send message using available model: ${error}`);
+    }
+  }, [status.isConnected, status.models]);
+
   // Pull/download a model
   const pullModel = useCallback(async (modelName: string) => {
     try {
@@ -175,6 +215,7 @@ export const useOllama = () => {
     checkOllamaStatus,
     startOllama,
     sendMessage,
+    sendMessageToLlama4Scout,
     pullModel,
   };
 }; 

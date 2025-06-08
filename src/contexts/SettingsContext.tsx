@@ -2,7 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 
 export interface UserSettings {
-  preferredChatProvider: 'ollama' | 'gemini';
+  preferredChatProvider: 'ollama' | 'gemini' | 'llama4scout';
   geminiApiKey: string;
   theme: 'light' | 'dark';
   notificationsEnabled: boolean;
@@ -16,7 +16,7 @@ interface SettingsContextType {
 }
 
 const defaultSettings: UserSettings = {
-  preferredChatProvider: 'ollama',
+  preferredChatProvider: 'llama4scout',
   geminiApiKey: '',
   theme: 'light',
   notificationsEnabled: true,
