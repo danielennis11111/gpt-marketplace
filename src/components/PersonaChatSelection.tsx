@@ -1,5 +1,6 @@
-import React from 'react';
-import { PlusIcon } from '@heroicons/react/24/outline';
+import React, { useState } from 'react';
+import { PlusIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import { MODEL_LIMITS } from '../utils/rate-limiter/tokenCounter';
 
 // Import participant data from ConversationParticipant
 import { ASU_PARTICIPANTS } from './ConversationParticipant';
@@ -17,12 +18,11 @@ export type PersonaChatTemplate = {
 };
 
 // Create persona-based chat templates
-export const PERSONA_CHAT_TEMPLATES: PersonaChatTemplate[] = [
+export const PERSONA_CHAT_TEMPLATES: Omit<PersonaChatTemplate, 'modelId'>[] = [
   {
     id: 'michael-crow-chat',
     name: 'Chat with Michael Crow',
     description: 'Have a thoughtful conversation about education, leadership, and institutional innovation with ASU\'s visionary president.',
-    modelId: 'gpt-4o',
     persona: 'Michael Crow',
     icon: ASU_PARTICIPANTS.find(p => p.id === 'michael-crow')?.imgSrc || '/images/participants/michael-crow.jpg',
     color: 'bg-gradient-to-r from-blue-600 to-indigo-700',
@@ -48,7 +48,6 @@ I'm here to engage in genuine dialogue about education, leadership, institutiona
     id: 'elizabeth-reilley-chat',
     name: 'Chat with Elizabeth Reilley',
     description: 'Explore ideas, discuss innovation, and get insights from ASU\'s AI acceleration expert.',
-    modelId: 'gemini-2.0-flash',
     persona: 'Elizabeth Reilley',
     icon: ASU_PARTICIPANTS.find(p => p.id === 'elizabeth-reilley')?.imgSrc || '/images/participants/elizabeth-reilley.jpg',
     color: 'bg-gradient-to-r from-purple-600 to-pink-600',
@@ -78,7 +77,6 @@ I adapt to whatever direction our conversation takes - from deep technical discu
     id: 'zohair-chat',
     name: 'Chat with Zohair',
     description: 'Get technical expertise and coding guidance from ASU\'s computer science researcher.',
-    modelId: 'gpt-4-turbo',
     persona: 'Zohair Alam',
     icon: ASU_PARTICIPANTS.find(p => p.id === 'zohair')?.imgSrc || '/images/participants/zohair-alam.jpg',
     color: 'bg-gradient-to-r from-blue-600 to-cyan-700',
@@ -109,7 +107,6 @@ Whether we're discussing theoretical computer science, practical coding challeng
     id: 'jennifer-werner-chat',
     name: 'Chat with Jennifer Werner',
     description: 'Discuss sustainability initiatives and environmental science with ASU\'s sustainability director.',
-    modelId: 'gemini-2.0-flash',
     persona: 'Jennifer Werner',
     icon: ASU_PARTICIPANTS.find(p => p.id === 'jennifer-werner')?.imgSrc || '/images/participants/jennifer-werner.jpg',
     color: 'bg-gradient-to-r from-green-600 to-emerald-600',
@@ -138,6 +135,58 @@ Whether we're discussing global environmental challenges, campus sustainability 
   }
 ];
 
+// Available models grouped by provider
+const AVAILABLE_MODELS = {
+  'OpenAI': [
+    { id: 'gpt-4o', name: 'GPT-4o' },
+    { id: 'gpt-4o-mini', name: 'GPT-4o Mini' },
+    { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' },
+  ],
+  'Google': [
+    { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash' },
+    { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' },
+  ],
+  'Anthropic': [
+    { id: 'claude-3.7-sonnet', name: 'Claude 3.7 Sonnet' },
+    { id: 'claude-3.5-sonnet', name: 'Claude 3.5 Sonnet' },
+    { id: 'claude-3.5-haiku', name: 'Claude 3.5 Haiku' },
+  ],
+  'Local Models': [
+    { id: 'llama4-scout', name: 'Llama 4 Scout' },
+    { id: 'llama3.2:3b', name: 'Llama 3.2 3B' },
+    { id: 'llama3.1:8b', name: 'Llama 3.1 8B' },
+    { id: 'mistral-7b', name: 'Mistral 7B' },
+    { id: 'phi-3', name: 'Phi-3' },
+  ]
+};
+
+// Get default model based on persona
+const getDefaultModelForPersona = (persona: string): string => {
+  const DEFAULT_MODEL = 'llama3.2:3b'; // Fallback default
+  
+  switch (persona) {
+    case 'Michael Crow':
+      return 'gpt-4o';
+    case 'Elizabeth Reilley':
+      return 'gemini-2.0-flash';
+    case 'Zohair Alam':
+      return 'llama4-scout';
+    case 'Jennifer Werner':
+      return 'claude-3.5-sonnet';
+    default:
+      return DEFAULT_MODEL;
+  }
+};
+
+// Find model name from ID
+const getModelName = (modelId: string): string => {
+  for (const provider in AVAILABLE_MODELS) {
+    const model = AVAILABLE_MODELS[provider as keyof typeof AVAILABLE_MODELS].find(m => m.id === modelId);
+    if (model) return model.name;
+  }
+  return modelId;
+};
+
 interface PersonaChatSelectionProps {
   onSelectChat: (template: PersonaChatTemplate) => void;
   className?: string;
@@ -153,6 +202,52 @@ const PersonaChatSelection: React.FC<PersonaChatSelectionProps> = ({
   onSelectChat, 
   className = '' 
 }) => {
+  // Keep track of selected model for each persona
+  const [selectedModels, setSelectedModels] = useState<Record<string, string>>({});
+  // Track which model dropdowns are open
+  const [openDropdowns, setOpenDropdowns] = useState<Record<string, boolean>>({});
+
+  // Set default models for each persona
+  React.useEffect(() => {
+    const defaultModels: Record<string, string> = {};
+    PERSONA_CHAT_TEMPLATES.forEach(template => {
+      defaultModels[template.id] = getDefaultModelForPersona(template.persona);
+    });
+    setSelectedModels(defaultModels);
+  }, []);
+
+  // Toggle model dropdown for a specific persona
+  const toggleDropdown = (templateId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setOpenDropdowns(prev => ({
+      ...prev,
+      [templateId]: !prev[templateId]
+    }));
+  };
+
+  // Select a model for a specific persona
+  const selectModel = (templateId: string, modelId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedModels(prev => ({
+      ...prev,
+      [templateId]: modelId
+    }));
+    setOpenDropdowns(prev => ({
+      ...prev,
+      [templateId]: false
+    }));
+  };
+
+  // Handle selecting a chat with the chosen model
+  const handleSelectChat = (template: Omit<PersonaChatTemplate, 'modelId'>, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const modelId = selectedModels[template.id] || getDefaultModelForPersona(template.persona);
+    onSelectChat({
+      ...template,
+      modelId
+    });
+  };
+
   return (
     <div className={`${className} px-4 py-6`}>
       <div className="max-w-6xl mx-auto">
@@ -166,7 +261,7 @@ const PersonaChatSelection: React.FC<PersonaChatSelectionProps> = ({
             <div
               key={template.id}
               className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer border border-gray-200"
-              onClick={() => onSelectChat(template)}
+              onClick={(e) => handleSelectChat(template, e)}
             >
               <div className={`h-3 ${template.color}`}></div>
               <div className="p-6">
@@ -193,12 +288,48 @@ const PersonaChatSelection: React.FC<PersonaChatSelectionProps> = ({
                 </p>
                 
                 <div className="flex justify-between items-center">
-                  <span className="text-xs text-gray-500">
-                    Model: {template.modelId}
-                  </span>
+                  {/* Model selector dropdown */}
+                  <div className="relative">
+                    <button
+                      onClick={(e) => toggleDropdown(template.id, e)}
+                      className="flex items-center text-xs text-gray-500 border border-gray-300 rounded px-2 py-1 hover:bg-gray-50"
+                    >
+                      <span>Model: {getModelName(selectedModels[template.id] || getDefaultModelForPersona(template.persona))}</span>
+                      <ChevronDownIcon className="h-3 w-3 ml-1" />
+                    </button>
+                    
+                    {openDropdowns[template.id] && (
+                      <div className="absolute z-10 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 max-h-60 overflow-auto w-48 left-0">
+                        {Object.entries(AVAILABLE_MODELS).map(([provider, models]) => (
+                          <div key={provider} className="px-1 py-1">
+                            <div className="px-2 py-1 text-xs font-semibold text-gray-500">
+                              {provider}
+                            </div>
+                            
+                            {models.map(model => (
+                              <button
+                                key={model.id}
+                                onClick={(e) => selectModel(template.id, model.id, e)}
+                                className={`flex items-center w-full px-3 py-1 text-xs rounded-md ${
+                                  selectedModels[template.id] === model.id
+                                    ? 'bg-yellow-100 text-black'
+                                    : 'text-gray-700 hover:bg-gray-100'
+                                }`}
+                              >
+                                {model.name}
+                              </button>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  
+                  {/* Start Chat button */}
                   <button 
                     className="flex items-center justify-center px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 transition-colors"
                     style={{ backgroundColor: '#FFC627' }}
+                    onClick={(e) => handleSelectChat(template, e)}
                   >
                     <PlusIcon className="h-4 w-4 mr-1" />
                     Start Chat

@@ -174,28 +174,49 @@ export const AsuGptPage: React.FC = () => {
   // Handle selecting a persona chat template
   const handleSelectPersonaChat = (template: PersonaChatTemplate) => {
     try {
-      // Create a conversation template from the persona template
-      const conversationTemplate: ConversationTemplate = {
-        id: template.id,
-        name: template.name,
-        description: template.description,
-        systemPrompt: template.systemPrompt,
-        modelId: template.modelId,
-        persona: template.persona,
-        suggestedQuestions: [] // Empty array for suggested questions
-      };
+      // Create a conversation using the default template
+      const conversation = conversationManager.createConversation('default-chat');
       
-      // Check if we already have this template
-      const existingTemplateIndex = templates.findIndex(t => t.id === template.id);
+      // Update the conversation title to match the persona
+      conversationManager.updateConversationTitle(conversation.id, template.name);
       
-      // If the template doesn't exist, add it to our internal state
-      if (existingTemplateIndex === -1) {
-        // Add template to local state
-        setTemplates(prev => [...prev, conversationTemplate]);
+      // Add system message with the persona's system prompt to replace default
+      conversationManager.addMessage(conversation.id, {
+        role: 'system',
+        content: template.systemPrompt,
+        isVisible: false
+      });
+      
+      // Set the model ID for the conversation if available
+      if (template.modelId) {
+        // In a real implementation, we would update the conversation's model ID
+        // This is a mock-up since the example doesn't have this feature
+        console.log(`Setting model to: ${template.modelId} for conversation ${conversation.id}`);
+        
+        // Add a message indicating which model is being used
+        conversationManager.addMessage(conversation.id, {
+          role: 'assistant',
+          content: `This conversation is using the ${template.modelId} model with the ${template.persona} persona.`,
+          isVisible: true
+        });
       }
       
-      // Create a new conversation with this template
-      handleCreateConversation(template.id);
+      // Set as active conversation
+      conversationManager.setActiveConversation(conversation.id);
+      
+      // Update local state
+      const updatedConversations = conversationManager.getAllConversations();
+      setConversations(updatedConversations);
+      
+      const updatedActive = conversationManager.getActiveConversation();
+      setActiveConversation(updatedActive);
+      
+      setShowWelcome(false);
+      
+      // Close sidebar on mobile
+      if (isMobile) {
+        setIsSidebarOpen(false);
+      }
     } catch (error) {
       console.error('Error creating persona chat:', error);
       setError('Failed to create a new conversation. Please try again.');
