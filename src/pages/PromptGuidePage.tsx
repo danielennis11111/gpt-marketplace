@@ -28,6 +28,15 @@ export const PromptGuidePage: React.FC = () => {
   const [generatedPrompt, setGeneratedPrompt] = useState<PromptIdea | null>(null);
   const [duplicateFound, setDuplicateFound] = useState<PromptIdea | null>(null);
 
+  // Debug function to reset community ideas
+  const resetCommunityIdeas = () => {
+    if (confirm("Reset all community ideas? This will clear all existing ideas.")) {
+      localStorage.setItem('communityIdeas', '[]');
+      alert("Community ideas reset. The database is now empty.");
+      console.log("Community ideas database reset");
+    }
+  };
+
   // Simulate existing ideas (in real app, would fetch from API)
   React.useEffect(() => {
     const mockIdeas: PromptIdea[] = [
@@ -59,25 +68,25 @@ export const PromptGuidePage: React.FC = () => {
     console.log("AI Connection Status:", isConnected);
     console.log("Provider:", providerName);
 
-    // First check for existing community ideas and redirect if found
+    // First check for existing community ideas - using very loose matching
     const existingCommunityIdeas = JSON.parse(localStorage.getItem('communityIdeas') || '[]');
     console.log("Existing community ideas count:", existingCommunityIdeas.length);
     
+    // Almost always create a new idea by default
+    // Only match if the idea is EXACTLY the same (exact title match, case insensitive)
     const similarCommunityIdea = existingCommunityIdeas.find((idea: any) => 
-      idea.title.toLowerCase().includes(userIdea.toLowerCase()) ||
-      idea.description.toLowerCase().includes(userIdea.toLowerCase()) ||
-      userIdea.toLowerCase().includes(idea.title.toLowerCase()) ||
-      // Check for partial word matches
-      userIdea.toLowerCase().split(' ').some((word: string) => 
-        word.length > 3 && (idea.title.toLowerCase().includes(word) || idea.description.toLowerCase().includes(word))
-      )
+      idea.title.toLowerCase() === userIdea.toLowerCase()
     );
 
     if (similarCommunityIdea) {
-      console.log("Found similar idea:", similarCommunityIdea.title);
-      // Navigate to the existing community idea's dedicated page
-      navigate(`/community-ideas/${similarCommunityIdea.id}`);
-      return;
+      console.log("Found EXACT same idea:", similarCommunityIdea.title);
+      const confirmRedirect = confirm(`We found an identical idea: "${similarCommunityIdea.title}". View it instead?`);
+      if (confirmRedirect) {
+        // Only navigate if user confirms
+        navigate(`/community-ideas/${similarCommunityIdea.id}`);
+        return;
+      }
+      // Otherwise continue with new idea generation
     }
 
     setIsGenerating(true);
@@ -188,13 +197,14 @@ If someone asks what's next, I provide a succinct but detailed plan and go throu
       // Parse the response
       console.log("Parsing prompt response");
       const lines = promptResponse.split('\n');
-      // Create a unique title with timestamp to avoid duplicate detection issues
-      const timestamp = new Date().toISOString().slice(11, 16).replace(':', '');
+      // Create a unique title with detailed timestamp to avoid duplicate detection issues
+      const timestamp = Date.now();
+      const timeDisplay = new Date().toLocaleTimeString().replace(/:/g, '');
       const parsed = {
-        title: lines.find(l => l.startsWith('TITLE:'))?.replace('TITLE:', '').trim() || 
+        title: (lines.find(l => l.startsWith('TITLE:'))?.replace('TITLE:', '').trim() || 
                (userIdea.length > 30 ? 
                  userIdea.substring(0, 30) + '...' : 
-                 userIdea) + ` [${timestamp}]`,
+                 userIdea)) + ` [${timeDisplay}]`,
         description: lines.find(l => l.startsWith('DESCRIPTION:'))?.replace('DESCRIPTION:', '').trim() || `An AI assistant that helps with: ${userIdea}`,
         category: lines.find(l => l.startsWith('CATEGORY:'))?.replace('CATEGORY:', '').trim() || 'Productivity',
         difficulty: lines.find(l => l.startsWith('DIFFICULTY:'))?.replace('DIFFICULTY:', '').trim() as 'beginner' | 'intermediate' | 'advanced' || 'intermediate',
@@ -228,34 +238,33 @@ If someone asks what's next, I provide a succinct but detailed plan and go throu
     // Get existing community ideas with popularity tracking
     const existingIdeas = JSON.parse(localStorage.getItem('communityIdeas') || '[]');
     
-    // Check if similar idea already exists - using more precise matching
+    // Check if idea EXACTLY matches an existing one - very strict matching
     const similarIdea = existingIdeas.find((idea: any) => {
-      // Only match if at least 3 words in common or 60% similarity
-      const ideaWords = idea.title.toLowerCase().split(' ');
-      const promptWords = generatedPrompt.title.toLowerCase().split(' ');
+      // Only match if it's the exact same title (ignoring timestamps in brackets)
+      const ideaTitle = idea.title.toLowerCase().replace(/\s*\[\d+\]$/, '').trim();
+      const promptTitle = generatedPrompt.title.toLowerCase().replace(/\s*\[\d+\]$/, '').trim();
       
-      // Count matching words
-      const matchingWords = promptWords.filter(word => 
-        word.length > 3 && ideaWords.includes(word)
-      );
-      
-      // Calculate similarity percentage
-      const maxLength = Math.max(ideaWords.length, promptWords.length);
-      const similarity = matchingWords.length / maxLength;
-      
-      // Return true only if very similar
-      return matchingWords.length >= 3 || similarity > 0.6;
+      // Exact match only
+      return ideaTitle === promptTitle;
     });
 
     if (similarIdea) {
-      // Increment popularity of existing idea and navigate to its page
-      similarIdea.popularity = (similarIdea.popularity || 1) + 1;
-      similarIdea.lastSuggested = new Date().toISOString();
-      localStorage.setItem('communityIdeas', JSON.stringify(existingIdeas));
+      // Ask user if they want to create a new idea anyway
+      const createNewAnyway = confirm(`This exact idea already exists as "${similarIdea.title}". Create a new copy anyway?`);
       
-      alert(`Similar idea found! We've increased the popularity of "${similarIdea.title}".`);
-      navigate(`/community-ideas/${similarIdea.id}`);
-      return;
+      if (createNewAnyway) {
+        // User wants to create a new copy - continue with creation
+        console.log("Creating duplicate by user request");
+      } else {
+        // Increment popularity of existing idea and navigate to its page
+        similarIdea.popularity = (similarIdea.popularity || 1) + 1;
+        similarIdea.lastSuggested = new Date().toISOString();
+        localStorage.setItem('communityIdeas', JSON.stringify(existingIdeas));
+        
+        console.log(`Using existing idea: "${similarIdea.title}"`);
+        navigate(`/community-ideas/${similarIdea.id}`);
+        return;
+      }
     }
     
     // Format the current date in MM/DD/YYYY format
@@ -266,9 +275,11 @@ If someone asks what's next, I provide a succinct but detailed plan and go throu
     });
     
     // Add new idea with AI result and hone-in capability
+    const uniqueId = `prompt-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+    console.log("Creating new idea with ID:", uniqueId);
     const newIdea = {
       ...generatedPrompt,
-      id: `prompt-${Date.now()}`,
+      id: uniqueId,
       timestamp: new Date().toISOString(),
       lastSuggested: new Date().toISOString(),
       likes: 0,
@@ -293,8 +304,6 @@ If someone asks what's next, I provide a succinct but detailed plan and go throu
     navigate(`/community-ideas/${newIdea.id}`);
   };
 
-
-
   return (
     <div className="min-h-screen bg-gray-50 py-8 px-4">
       <div className="max-w-4xl mx-auto">
@@ -309,6 +318,12 @@ If someone asks what's next, I provide a succinct but detailed plan and go throu
           <p className="text-lg text-gray-600 max-w-2xl mx-auto">
             Transform your ideas into well-defined AI projects with comprehensive guidance, RAG knowledge base integration from local files, ASU AI platform resources, and professional system instructions for MyAI Builder
           </p>
+          <button 
+            onClick={resetCommunityIdeas}
+            className="mt-2 text-xs text-gray-400 hover:text-gray-600"
+          >
+            Reset Community Ideas DB
+          </button>
         </div>
 
         {/* Main Content */}
