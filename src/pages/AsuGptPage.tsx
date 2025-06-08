@@ -14,6 +14,8 @@ import { llamaService } from '../utils/rate-limiter/llamaService';
 import SafeCustomModelStatusBar from '../components/SafeCustomModelStatusBar';
 import SafeCustomConversationView from '../components/SafeCustomConversationView';
 import OllamaStatusIndicator from '../components/OllamaStatusIndicator';
+import PersonaChatSelection, { PERSONA_CHAT_TEMPLATES } from '../components/PersonaChatSelection';
+import type { PersonaChatTemplate } from '../components/PersonaChatSelection';
 
 export const AsuGptPage: React.FC = () => {
   const { settings } = useSettings();
@@ -169,6 +171,37 @@ export const AsuGptPage: React.FC = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
+  // Handle selecting a persona chat template
+  const handleSelectPersonaChat = (template: PersonaChatTemplate) => {
+    try {
+      // Create a conversation template from the persona template
+      const conversationTemplate: ConversationTemplate = {
+        id: template.id,
+        name: template.name,
+        description: template.description,
+        systemPrompt: template.systemPrompt,
+        modelId: template.modelId,
+        persona: template.persona,
+        suggestedQuestions: [] // Empty array for suggested questions
+      };
+      
+      // Check if we already have this template
+      const existingTemplateIndex = templates.findIndex(t => t.id === template.id);
+      
+      // If the template doesn't exist, add it to our internal state
+      if (existingTemplateIndex === -1) {
+        // Add template to local state
+        setTemplates(prev => [...prev, conversationTemplate]);
+      }
+      
+      // Create a new conversation with this template
+      handleCreateConversation(template.id);
+    } catch (error) {
+      console.error('Error creating persona chat:', error);
+      setError('Failed to create a new conversation. Please try again.');
+    }
+  };
+
   // Show error message if something went wrong
   if (error) {
     return (
@@ -236,7 +269,7 @@ export const AsuGptPage: React.FC = () => {
           <div className="p-4 border-t border-gray-200">
             <button
               className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-              onClick={() => handleCreateConversation(templates[0]?.id)}
+              onClick={() => setShowWelcome(true)}
             >
               New Conversation
             </button>
@@ -269,33 +302,20 @@ export const AsuGptPage: React.FC = () => {
           </div>
 
           {/* Welcome Content */}
-          <div className="flex-1 overflow-auto p-8">
-            <div className="max-w-3xl mx-auto">
-              <h1 className="text-3xl font-bold text-gray-900 mb-6">Welcome to ASU GPT</h1>
-              <p className="text-lg text-gray-700 mb-4">
-                A powerful AI assistant to help with your questions about ASU, academics, and more.
-              </p>
-              
-              <div className="mb-8 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                <OllamaStatusIndicator />
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {templates.map(template => (
-                  <div 
-                    key={template.id}
-                    className="bg-white p-6 rounded-lg shadow-md hover:shadow-lg transition-shadow cursor-pointer"
-                    onClick={() => handleCreateConversation(template.id)}
-                  >
-                    <h2 className="text-xl font-semibold mb-2">{template.name}</h2>
-                    <p className="text-gray-600 mb-4">{template.description}</p>
-                    <button
-                      className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                    >
-                      Start Conversation
-                    </button>
-                  </div>
-                ))}
+          <div className="flex-1 overflow-auto">
+            <div className="max-w-6xl mx-auto">
+              <div className="p-8">
+                <h1 className="text-3xl font-bold text-gray-900 mb-6">Welcome to ASU GPT</h1>
+                <p className="text-lg text-gray-700 mb-4">
+                  A powerful AI assistant to help with your questions about ASU, academics, and more.
+                </p>
+                
+                <div className="mb-8 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+                  <OllamaStatusIndicator />
+                </div>
+                
+                {/* Persona Chat Selection Component */}
+                <PersonaChatSelection onSelectChat={handleSelectPersonaChat} />
               </div>
             </div>
           </div>
