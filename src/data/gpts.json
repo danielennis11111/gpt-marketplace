@@ -605,96 +605,58 @@
     ]
   },
   {
-    "id": "repo-001",
-    "name": "ASU Local Wrapper",
-    "description": "A rate-limiting wrapper for running AI models locally while maintaining enterprise-level security and usage controls. Perfect for organizations that need to deploy AI tools with proper governance and monitoring.",
+    "id": "ext-002",
+    "name": "ASU Local Wrapper - Enterprise AI Deployment",
+    "description": "A comprehensive rate-limiting wrapper for running AI models locally with enterprise-level security and usage controls. Features voice interaction, file uploads, conversation templates, and robust governance. Perfect for organizations deploying AI tools with proper oversight.",
     "creator": {
       "name": "ASU Enterprise Technology",
       "avatar": "/asu-logo.png"
     },
-    "category": "Repository",
-    "tags": ["local-deployment", "rate-limiting", "security", "enterprise", "wrapper", "governance"],
-    "instructionsSnippet": "git clone https://github.com/danielennis11111/rate-limiter\ncd rate-limiter\nnpm install\nnpm run setup",
+    "category": "Extension",
+    "tags": ["local-deployment", "rate-limiting", "security", "enterprise", "wrapper", "governance", "voice-interaction", "file-upload"],
+    "instructionsSnippet": "ENTERPRISE AI WRAPPER - LOCAL DEPLOYMENT\n\nComplete rate-limiting wrapper for secure AI deployment:\n\n## Quick Setup\n\n1. Clone the repository:\n```bash\ngit clone /repositories/asu-local-wrapper\ncd asu-local-wrapper\nnpm install\n```\n\n2. Configure environment:\n```bash\ncp .env.example .env\n# Edit .env with your API keys and settings\n```\n\n3. Start the wrapper:\n```bash\nnpm run dev\n```\n\n## Key Features\n\n✅ **Rate Limiting**: 15 requests/minute with visual feedback\n✅ **Voice Interaction**: Speech-to-text and text-to-speech support\n✅ **File Upload Support**: PDF and image processing\n✅ **11 AI Templates**: Pre-configured conversation templates\n✅ **Security Controls**: Enterprise-grade logging and monitoring\n✅ **Multi-Provider Support**: OpenAI, Anthropic, Google Gemini\n✅ **Conversation History**: Sidebar with conversation management\n✅ **Responsive Design**: Works on desktop and mobile\n\n## Configuration\n\nEdit `src/config/models.js` to add your API providers:\n\n```javascript\nconst models = {\n  openai: {\n    provider: 'openai',\n    model: 'gpt-4',\n    apiKey: process.env.OPENAI_API_KEY\n  },\n  gemini: {\n    provider: 'google',\n    model: 'gemini-1.5-pro',\n    apiKey: process.env.GEMINI_API_KEY\n  }\n};\n```\n\n## Available Templates\n\n1. General Assistant - Helpful AI assistant\n2. Creative Writing - Story and content creation\n3. Programming Mentor - Code review and guidance\n4. Academic Tutor - Subject-specific tutoring\n5. Research Assistant - Research and analysis\n6. Language Learning - Language practice\n7. Business Advisor - Strategy and planning\n8. Health & Wellness - General wellness guidance\n9. Technical Support - IT and tech help\n10. Data Analyst - Data analysis and visualization\n11. Project Manager - Project planning and management\n\n## Security Features\n\n- Request rate limiting with visual feedback\n- API key encryption and secure storage\n- User session management\n- Enterprise logging and audit trails\n- Conversation data protection\n- Configurable usage controls\n\n## Deployment Options\n\n- **Local Development**: npm run dev\n- **Production**: npm run build && npm start\n- **Docker**: docker-compose up\n- **Cloud**: Deploy to AWS, Azure, or GCP\n\nPerfect for universities, enterprises, and organizations requiring controlled AI deployment with comprehensive governance and security.",
     "clonedCount": 892,
     "rating": 4.7,
     "reviewCount": 156,
     "verified": true,
-    "previewDemoLink": "https://github.com/danielennis11111/rate-limiter",
+    "previewDemoLink": "/repositories/asu-local-wrapper",
     "canBeCloned": true,
     "feedbackWanted": true,
     "asuriteSpecific": false,
-    "capabilities": ["Rate Limiting", "Security Controls", "Local Deployment"],
+    "capabilities": ["Rate Limiting", "Voice Interaction", "File Upload", "Multi-Provider", "Enterprise Security"],
     "actions": ["Clone", "Deploy", "Configure"],
     "version": "1.3.2",
     "dateCreated": "2024-11-10",
-    "lastUpdated": "2025-01-18",
+    "lastUpdated": "2025-01-20",
     "reviews": [
       {
         "user": "IT Security Manager",
         "rating": 5,
-        "comment": "Exactly what we needed for enterprise AI deployment. The security controls are comprehensive."
+        "comment": "Exactly what we needed for enterprise AI deployment. The security controls and rate limiting are comprehensive."
       },
       {
         "user": "DevOps Engineer",
         "rating": 4,
-        "comment": "Easy to set up and configure. Documentation could be more detailed but the code is clean."
+        "comment": "Easy to set up and configure. The voice interaction and file upload features are impressive."
+      },
+      {
+        "user": "University CTO",
+        "rating": 5,
+        "comment": "Perfect for our campus deployment. The conversation templates and governance features saved us months of development."
       }
     ],
     "exampleConversations": [
       {
         "user": "How do I set rate limits for different user groups?",
-        "assistant": "Configure rate limits in the config.yml file. You can set different limits for admin, faculty, and student groups."
+        "assistant": "Configure rate limits in the config.yml file. You can set different limits for admin, faculty, and student groups with granular controls."
       },
       {
         "user": "Can this work with cloud deployments?",
-        "assistant": "Yes! While designed for local deployment, it supports hybrid cloud setups with proper configuration."
-      }
-    ]
-  },
-  {
-    "id": "repo-002",
-    "name": "HuggingFace Spaces Collection",
-    "description": "Access to curated HuggingFace Spaces featuring the latest AI models and applications. Discover, test, and deploy cutting-edge AI tools from the community's largest model repository.",
-    "creator": {
-      "name": "HuggingFace Community",
-      "avatar": "https://ui-avatars.com/api/?name=HF&background=ff9900"
-    },
-    "category": "Repository",
-    "tags": ["huggingface", "spaces", "community", "models", "deployment", "ai-apps"],
-    "instructionsSnippet": "Visit https://huggingface.co/spaces to explore thousands of AI applications and models. Use the search and filters to find tools for your specific needs.",
-    "clonedCount": 2156,
-    "rating": 4.8,
-    "reviewCount": 487,
-    "verified": true,
-    "previewDemoLink": "https://huggingface.co/spaces",
-    "canBeCloned": true,
-    "feedbackWanted": true,
-    "asuriteSpecific": false,
-    "capabilities": ["Model Discovery", "Community Apps", "Direct Testing"],
-    "actions": ["Browse", "Test", "Fork"],
-    "version": "Community",
-    "dateCreated": "2023-06-01",
-    "lastUpdated": "2025-01-20",
-    "reviews": [
-      {
-        "user": "AI Researcher",
-        "rating": 5,
-        "comment": "Amazing resource for discovering new AI models and applications. The community is incredibly active."
+        "assistant": "Yes! While designed for local deployment, it supports hybrid cloud setups with proper configuration and maintains all security features."
       },
       {
-        "user": "Data Scientist",
-        "rating": 5,
-        "comment": "Perfect for rapid prototyping and testing different models without local setup."
-      }
-    ],
-    "exampleConversations": [
-      {
-        "user": "How do I find image generation models?",
-        "assistant": "Use the search filters on HuggingFace Spaces. Filter by 'Computer Vision' and 'Image Generation' to find the latest models."
-      },
-      {
-        "user": "Can I deploy these models locally?",
-        "assistant": "Many spaces provide the code and instructions for local deployment. Check the 'Files and versions' tab for implementation details."
+        "user": "What file types can I upload?",
+        "assistant": "The wrapper supports PDF documents and images (PNG, JPG, GIF). Files are processed locally for security and can be analyzed by the AI."
       }
     ]
   },

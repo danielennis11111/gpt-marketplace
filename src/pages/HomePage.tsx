@@ -35,14 +35,7 @@ const PRODUCT_TYPES = [
     categories: ['Extension'],
     color: 'bg-green-100 text-green-800 border-green-200'
   },
-  {
-    id: 'repositories',
-    name: 'Repositories',
-    icon: DocumentTextIcon,
-    description: 'Code repositories and development resources',
-    categories: ['Repository'],
-    color: 'bg-purple-100 text-purple-800 border-purple-200'
-  },
+
   {
     id: 'local-models',
     name: 'Local Models',

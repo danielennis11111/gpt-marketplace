@@ -54,7 +54,7 @@ const SAMPLE_RESPONSES = [
     response: "Extensions are embeddable chatbots and website integrations! These allow you to add AI functionality directly to your websites. Perfect for customer support or interactive assistance."
   },
   {
-    trigger: ['repository', 'repo', 'code', 'github', 'development'],
+            trigger: ['code', 'github', 'development', 'deployment'],
     response: "Repositories contain code and development resources! You can find links to GitHub repos, development tools, and other coding resources to help with your projects."
   },
   {
