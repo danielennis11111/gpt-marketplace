@@ -2,37 +2,25 @@ import React from 'react';
 import { ExclamationTriangleIcon, InformationCircleIcon, XCircleIcon } from '@heroicons/react/24/outline';
 
 interface ContextLimitWarningProps {
-  usagePercentage: number;
-  totalTokens: number;
-  maxTokens: number;
-  remainingTokens: number;
-  onCompressHistory?: () => void;
-  onCreateNewConversation?: () => void;
+  percentage: number;
+  onCompress?: () => void;
 }
 
 /**
  * Warning component that displays when approaching or exceeding context window limits
  */
 const ContextLimitWarning: React.FC<ContextLimitWarningProps> = ({
-  usagePercentage,
-  totalTokens,
-  maxTokens,
-  remainingTokens,
-  onCompressHistory,
-  onCreateNewConversation
+  percentage,
+  onCompress
 }) => {
   // Determine warning level
-  const isCritical = usagePercentage >= 95;
-  const isWarning = usagePercentage >= 80 && usagePercentage < 95;
-  const isNotice = usagePercentage >= 60 && usagePercentage < 80;
+  const isCritical = percentage >= 95;
+  const isWarning = percentage >= 80 && percentage < 95;
+  const isNotice = percentage >= 60 && percentage < 80;
 
   if (!isNotice && !isWarning && !isCritical) {
     return null;
   }
-
-  const formatNumber = (num: number): string => {
-    return new Intl.NumberFormat().format(num);
-  };
 
   return (
     <div
@@ -81,49 +69,29 @@ const ContextLimitWarning: React.FC<ContextLimitWarningProps> = ({
             }`}
           >
             {isCritical
-              ? `You've used ${usagePercentage.toFixed(1)}% of available context. Only ${formatNumber(
-                  remainingTokens
-                )} tokens remain for your conversation.`
+              ? `You've used ${percentage.toFixed(1)}% of available context. Consider compressing history or starting a new chat.`
               : isWarning
-              ? `You're using ${usagePercentage.toFixed(1)}% of available context (${formatNumber(
-                  totalTokens
-                )} of ${formatNumber(maxTokens)} tokens).`
-              : `You're using ${usagePercentage.toFixed(1)}% of your context window.`}
+              ? `You're using ${percentage.toFixed(1)}% of available context. Optimization may be needed soon.`
+              : `You're using ${percentage.toFixed(1)}% of your context window.`}
           </p>
         </div>
       </div>
 
       {/* Actions */}
-      {(onCompressHistory || onCreateNewConversation) && (
+      {onCompress && (
         <div className="flex flex-wrap gap-2 mt-1">
-          {onCompressHistory && (
-            <button
-              onClick={onCompressHistory}
-              className={`text-xs px-3 py-1 rounded-md font-medium ${
-                isCritical
-                  ? 'bg-red-100 text-red-800 hover:bg-red-200'
-                  : isWarning
-                  ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
-                  : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
-              }`}
-            >
-              Compress conversation history
-            </button>
-          )}
-          {onCreateNewConversation && (
-            <button
-              onClick={onCreateNewConversation}
-              className={`text-xs px-3 py-1 rounded-md font-medium ${
-                isCritical
-                  ? 'bg-white text-red-800 border border-red-300 hover:bg-red-50'
-                  : isWarning
-                  ? 'bg-white text-yellow-800 border border-yellow-300 hover:bg-yellow-50'
-                  : 'bg-white text-blue-800 border border-blue-300 hover:bg-blue-50'
-              }`}
-            >
-              Start new conversation
-            </button>
-          )}
+          <button
+            onClick={onCompress}
+            className={`text-xs px-3 py-1 rounded-md font-medium ${
+              isCritical
+                ? 'bg-red-100 text-red-800 hover:bg-red-200'
+                : isWarning
+                ? 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'
+                : 'bg-blue-100 text-blue-800 hover:bg-blue-200'
+            }`}
+          >
+            Compress conversation history
+          </button>
         </div>
       )}
 
@@ -137,7 +105,7 @@ const ContextLimitWarning: React.FC<ContextLimitWarningProps> = ({
               ? 'bg-yellow-500'
               : 'bg-blue-500'
           }`}
-          style={{ width: `${Math.min(100, usagePercentage)}%` }}
+          style={{ width: `${Math.min(100, percentage)}%` }}
         />
       </div>
     </div>

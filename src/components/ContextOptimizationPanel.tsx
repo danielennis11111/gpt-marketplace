@@ -1,15 +1,34 @@
 import React, { useState } from 'react';
 import { CompressionEngine } from '../utils/rate-limiter/compressionEngine';
 import type { CompressionStrategy } from '../utils/rate-limiter/compressionEngine';
-import { ArrowPathIcon, LightBulbIcon, CheckIcon } from '@heroicons/react/24/outline';
+import { 
+  ArrowPathIcon, 
+  LightBulbIcon, 
+  CheckIcon, 
+  ShieldExclamationIcon,
+  DocumentTextIcon,
+  ClockIcon,
+  ArchiveBoxIcon,
+  CpuChipIcon
+} from '@heroicons/react/24/outline';
 
 interface ContextOptimizationPanelProps {
-  conversationId: string;
-  onCompress: (strategy: CompressionStrategy) => void;
-  tokenUsage: {
+  conversationId?: string;
+  onCompress?: (strategy: CompressionStrategy) => void;
+  onApplyCompression?: (strategy: CompressionStrategy) => void;
+  tokenUsage?: {
     total: number;
     percentage: number;
   };
+  compressionStrategies?: Array<{
+    type: string;
+    id: string;
+    name: string;
+    description?: string;
+    savings?: string;
+    accuracy?: string;
+    recommended?: boolean;
+  }>;
 }
 
 /**
@@ -17,103 +36,149 @@ interface ContextOptimizationPanelProps {
  * with various compression strategies
  */
 const ContextOptimizationPanel: React.FC<ContextOptimizationPanelProps> = ({
-  conversationId,
   onCompress,
-  tokenUsage
+  onApplyCompression,
+  tokenUsage,
+  compressionStrategies = []
 }) => {
   const [selectedStrategy, setSelectedStrategy] = useState<CompressionStrategy['type']>('lossless');
-  const [isCompressing, setIsCompressing] = useState(false);
+  const [isAdvancedMode, setIsAdvancedMode] = useState(false);
   
-  const compressionEngine = CompressionEngine.getInstance();
-
-  const strategies = [
-    { 
-      id: 'lossless', 
-      name: 'Lossless Compression', 
-      description: 'Preserves all information with pattern-based compression',
+  // Define default strategies if none provided
+  const strategies = compressionStrategies.length > 0 ? compressionStrategies : [
+    {
+      type: 'lossless',
+      id: 'lossless',
+      name: 'Lossless Compression',
+      description: 'Preserves all information with minimal compression',
       savings: '20-30%',
       accuracy: '100%',
-      recommended: tokenUsage.percentage < 70
+      recommended: tokenUsage?.percentage && tokenUsage.percentage < 70
     },
-    { 
-      id: 'semantic', 
-      name: 'Semantic Compression', 
-      description: 'Preserves key meaning while reducing redundancy',
+    {
+      type: 'semantic',
+      id: 'semantic',
+      name: 'Semantic Compression',
+      description: 'Retains core meaning while reducing redundant content',
       savings: '40-60%',
-      accuracy: '85-95%',
-      recommended: tokenUsage.percentage >= 70 && tokenUsage.percentage < 90
+      accuracy: '95%',
+      recommended: tokenUsage?.percentage && tokenUsage.percentage >= 70 && tokenUsage.percentage < 85
     },
-    { 
-      id: 'summary', 
-      name: 'Summary Compression', 
-      description: 'Creates concise summaries of previous exchanges',
-      savings: '70-90%',
-      accuracy: '70-80%',
-      recommended: tokenUsage.percentage >= 90
+    {
+      type: 'summary',
+      id: 'summary',
+      name: 'Summary Compression',
+      description: 'Creates concise summaries of conversation history',
+      savings: '70-80%',
+      accuracy: '85%',
+      recommended: tokenUsage?.percentage && tokenUsage.percentage >= 85
+    },
+    {
+      type: 'hybrid',
+      id: 'hybrid',
+      name: 'Hybrid Compression',
+      description: 'Combines multiple strategies for optimal balance',
+      savings: '50-70%',
+      accuracy: '90%',
+      recommended: false
     }
   ];
 
-  const handleCompression = () => {
-    setIsCompressing(true);
+  const handleApplyCompression = () => {
+    const strategy: CompressionStrategy = {
+      type: selectedStrategy
+    };
     
-    try {
-      // Create strategy object
-      const strategy: CompressionStrategy = { 
-        type: selectedStrategy,
-        options: {
-          preserveRatio: selectedStrategy === 'semantic' ? 0.8 : 0.6,
-          includeChecksum: true
-        }
-      };
-      
-      // Call the compression handler
+    if (onApplyCompression) {
+      onApplyCompression(strategy);
+    } else if (onCompress) {
       onCompress(strategy);
-    } catch (error) {
-      console.error("Compression error:", error);
-    } finally {
-      setIsCompressing(false);
+    }
+  };
+
+  const handleQuickCompress = () => {
+    // Find the recommended strategy based on current usage
+    let recommendedStrategy = strategies.find(s => s.recommended)?.id || 'lossless';
+    
+    // If nothing is recommended, base it on token usage
+    if (!recommendedStrategy && tokenUsage) {
+      if (tokenUsage.percentage >= 85) {
+        recommendedStrategy = 'summary';
+      } else if (tokenUsage.percentage >= 70) {
+        recommendedStrategy = 'semantic';
+      } else {
+        recommendedStrategy = 'lossless';
+      }
+    }
+    
+    const strategy: CompressionStrategy = {
+      type: recommendedStrategy as CompressionStrategy['type']
+    };
+    
+    if (onApplyCompression) {
+      onApplyCompression(strategy);
+    } else if (onCompress) {
+      onCompress(strategy);
+    }
+  };
+
+  // Get icon for strategy type
+  const getStrategyIcon = (type: string) => {
+    switch (type) {
+      case 'lossless':
+        return <DocumentTextIcon className="w-5 h-5 text-green-500" />;
+      case 'semantic':
+        return <LightBulbIcon className="w-5 h-5 text-[#FFC627]" />;
+      case 'summary':
+        return <ArchiveBoxIcon className="w-5 h-5 text-purple-500" />;
+      case 'hybrid':
+        return <CpuChipIcon className="w-5 h-5 text-blue-500" />;
+      default:
+        return <DocumentTextIcon className="w-5 h-5 text-gray-500" />;
     }
   };
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
-      <div className="p-4 border-b border-gray-200">
-        <h3 className="text-lg font-medium text-gray-900">Context Window Optimization</h3>
-        <p className="text-sm text-gray-500 mt-1">
-          {tokenUsage.percentage >= 90
-            ? "Context window nearly full. Compression highly recommended."
-            : tokenUsage.percentage >= 70
-            ? "Context window getting full. Consider compression to save space."
-            : "Optimize your context window to fit more content."}
-        </p>
+    <div className="space-y-4">
+      {/* Quick action button - visible even in simple mode */}
+      <button
+        onClick={handleQuickCompress}
+        className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-[#FFC627] text-black font-medium rounded-lg hover:bg-[#FFD24D] transition-colors"
+      >
+        <ArrowPathIcon className="w-5 h-5" />
+        <span>Smart Compress Context Window</span>
+      </button>
+
+      {/* Toggle advanced mode */}
+      <div className="flex justify-center">
+        <button
+          onClick={() => setIsAdvancedMode(!isAdvancedMode)}
+          className="text-sm text-gray-600 hover:text-[#FFC627] flex items-center space-x-1"
+        >
+          <span>{isAdvancedMode ? 'Hide advanced options' : 'Show advanced options'}</span>
+          <svg 
+            className={`w-4 h-4 transform transition-transform ${isAdvancedMode ? 'rotate-180' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
       </div>
 
-      <div className="p-4">
-        <div className="mb-4">
-          <div className="flex justify-between text-sm mb-1">
-            <span className="text-gray-600">Context Usage:</span>
-            <span className={`font-medium ${
-              tokenUsage.percentage >= 90 ? 'text-red-600' :
-              tokenUsage.percentage >= 70 ? 'text-yellow-600' :
-              'text-green-600'
-            }`}>
-              {tokenUsage.percentage}%
-            </span>
-          </div>
-          <div className="w-full h-2 bg-gray-200 rounded-full overflow-hidden">
-            <div 
-              className={`h-full transition-all duration-300 ${
-                tokenUsage.percentage >= 90 ? 'bg-red-500' :
-                tokenUsage.percentage >= 70 ? 'bg-yellow-500' :
-                'bg-green-500'
-              }`}
-              style={{ width: `${Math.min(100, tokenUsage.percentage)}%` }}
-            />
-          </div>
-        </div>
-
+      {/* Advanced options */}
+      {isAdvancedMode && (
         <div className="space-y-3">
-          {strategies.map(strategy => (
+          {strategies.map(strategy => {
+            // Add default properties for external strategies
+            const recommended = 'recommended' in strategy ? strategy.recommended : false;
+            const description = 'description' in strategy ? strategy.description : '';
+            const savings = 'savings' in strategy ? strategy.savings : '20-30%';
+            const accuracy = 'accuracy' in strategy ? strategy.accuracy : '90%';
+            
+            return (
             <div 
               key={strategy.id}
               className={`relative p-3 rounded-lg border cursor-pointer ${
@@ -123,65 +188,67 @@ const ContextOptimizationPanel: React.FC<ContextOptimizationPanelProps> = ({
               }`}
               onClick={() => setSelectedStrategy(strategy.id as CompressionStrategy['type'])}
             >
-              <div className="flex justify-between">
-                <div className="flex items-start space-x-3">
-                  <div className={`w-5 h-5 rounded-full flex items-center justify-center ${
-                    selectedStrategy === strategy.id
-                      ? 'bg-blue-500 text-white'
-                      : 'bg-gray-200'
-                  }`}>
-                    {selectedStrategy === strategy.id && (
-                      <CheckIcon className="w-3 h-3" />
-                    )}
-                  </div>
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-900 flex items-center">
-                      {strategy.name}
-                      {strategy.recommended && (
-                        <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                          Recommended
-                        </span>
-                      )}
-                    </h4>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {strategy.description}
-                    </p>
-                  </div>
+              {/* Recommended badge */}
+              {recommended && (
+                <div className="absolute -top-2 -right-2 bg-[#FFC627] text-black text-xs font-bold px-2 py-0.5 rounded-full">
+                  Recommended
+                </div>
+              )}
+              
+              <div className="flex items-start">
+                {/* Strategy icon */}
+                <div className="mr-3 mt-1">
+                  {getStrategyIcon(strategy.type)}
                 </div>
                 
-                <div className="text-right text-xs">
-                  <div className="text-green-600 font-medium">
-                    {strategy.savings} savings
+                <div className="flex-1">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-medium text-gray-900">{strategy.name}</h4>
+                    {selectedStrategy === strategy.id && (
+                      <CheckIcon className="w-5 h-5 text-blue-500" />
+                    )}
                   </div>
-                  <div className="text-blue-600">
-                    {strategy.accuracy} accuracy
+                  
+                  <p className="text-sm text-gray-600 mt-1">{description}</p>
+                  
+                  <div className="flex items-center space-x-4 mt-2 text-xs">
+                    <div className="flex items-center">
+                      <ArrowPathIcon className="w-3.5 h-3.5 mr-1 text-green-500" />
+                      <span className="text-gray-700">Savings: <span className="font-medium text-green-600">{savings}</span></span>
+                    </div>
+                    
+                    <div className="flex items-center">
+                      <ClockIcon className="w-3.5 h-3.5 mr-1 text-blue-500" />
+                      <span className="text-gray-700">Accuracy: <span className="font-medium text-blue-600">{accuracy}</span></span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          ))}
-        </div>
-
-        <button
-          onClick={handleCompression}
-          disabled={isCompressing}
-          className="mt-4 w-full py-2 px-4 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 flex justify-center items-center space-x-2"
-        >
-          {isCompressing ? (
-            <>
-              <ArrowPathIcon className="w-4 h-4 animate-spin" />
-              <span>Compressing...</span>
-            </>
-          ) : (
-            <>
-              <LightBulbIcon className="w-4 h-4" />
-              <span>Apply {selectedStrategy} Compression</span>
-            </>
+          )})}
+          
+          <button
+            onClick={handleApplyCompression}
+            className="w-full flex items-center justify-center space-x-2 px-4 py-3 bg-blue-500 text-white font-medium rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            <ArrowPathIcon className="w-5 h-5" />
+            <span>Apply Selected Compression</span>
+          </button>
+          
+          {/* Warning for critical context usage */}
+          {tokenUsage && tokenUsage.percentage > 90 && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-sm text-red-800 flex items-start">
+              <ShieldExclamationIcon className="w-5 h-5 text-red-500 mr-2 mt-0.5 shrink-0" />
+              <div>
+                <p className="font-medium">Critical context usage detected ({tokenUsage.percentage.toFixed(0)}%)</p>
+                <p className="mt-1">Your context window is nearly full. Compression is recommended to maintain conversation quality and avoid potential truncation.</p>
+              </div>
+            </div>
           )}
-        </button>
-      </div>
+        </div>
+      )}
     </div>
   );
 };
 
-export default ContextOptimizationPanel; 
+export default ContextOptimizationPanel;

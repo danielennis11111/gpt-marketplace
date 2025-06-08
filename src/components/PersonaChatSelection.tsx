@@ -241,7 +241,7 @@ const PersonaChatSelection: React.FC<PersonaChatSelectionProps> = ({
   // Handle selecting a chat with the chosen model
   const handleSelectChat = (template: Omit<PersonaChatTemplate, 'modelId'>, e: React.MouseEvent) => {
     e.stopPropagation();
-    const modelId = selectedModels[template.id] || getDefaultModelForPersona(template.persona);
+    const modelId = selectedModels[template.id] || getDefaultModelForPersona(template.persona) || 'gpt-4o-mini';
     onSelectChat({
       ...template,
       modelId

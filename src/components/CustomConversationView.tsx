@@ -53,9 +53,9 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
   const [compressionEngine] = useState(() => CompressionEngine.getInstance());
   const [tokenUsage, setTokenUsage] = useState({
     total: 0,
-    remaining: 0,
+    remaining: 32000,
     percentage: 0,
-    maxTokens: 0
+    maxTokens: 32000 // Default max context window size
   });
   
   // Add state for RAG documents
@@ -63,6 +63,8 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
   const [isFileLoading, setIsFileLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState(settings.preferredChatProvider === 'gemini' ? 'gemini-2.0-flash' : (ollama.status.currentModel || 'llama3.1:8b'));
   const [activeParticipant, setActiveParticipant] = useState<string | undefined>(undefined);
+  const [isTokenCalculating, setIsTokenCalculating] = useState(false);
+  const [isScrolling, setIsScrolling] = useState(false);
   
   // Auto-scroll to bottom of messages
   useEffect(() => {
@@ -72,6 +74,9 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
   // Calculate token usage when messages change
   useEffect(() => {
     const calculateTokens = () => {
+      // Show loading state
+      setIsTokenCalculating(true);
+      
       // Determine which model is being used
       const currentModel = settings.preferredChatProvider === 'gemini' ? 'gemini-2.0-flash' : 
                           ollama.status.currentModel || 'llama3.1:8b';
@@ -95,12 +100,16 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
       const remaining = Math.max(0, maxTokens - totalTokens);
       const percentage = Math.min(100, Math.round((totalTokens / maxTokens) * 100));
       
-      setTokenUsage({
-        total: totalTokens,
-        remaining,
-        percentage,
-        maxTokens
-      });
+      // Update with a small delay to show loading animation
+      setTimeout(() => {
+        setTokenUsage({
+          total: totalTokens,
+          remaining,
+          percentage,
+          maxTokens
+        });
+        setIsTokenCalculating(false);
+      }, 300);
     };
     
     calculateTokens();
@@ -108,7 +117,13 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
   
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
+      setIsScrolling(true);
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+      
+      // Reset scrolling state after animation completes
+      setTimeout(() => {
+        setIsScrolling(false);
+      }, 500);
     }
   };
   
@@ -377,7 +392,7 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
               {conversation.title || 'New Conversation'}
             </h2>
             <p className="text-sm text-gray-500">
-              {getProviderInfo()}
+              {providerInfo.name} - {providerInfo.status}
             </p>
           </div>
           
@@ -410,10 +425,10 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
             {visibleMessages.map((message, index) => (
               <div 
                 key={message.id || index} 
-                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-fadeIn`}
               >
                 <div 
-                  className={`max-w-3xl rounded-lg p-3 ${
+                  className={`max-w-3xl rounded-lg p-3 transition-all duration-300 ${
                     message.role === 'user' 
                       ? 'bg-blue-500 text-white' 
                       : 'bg-white border border-gray-200 text-gray-900'
@@ -427,7 +442,17 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
                 </div>
               </div>
             ))}
-            <div ref={messagesEndRef} />
+            {isLoading && (
+              <div className="flex justify-start animate-pulse">
+                <div className="max-w-3xl rounded-lg p-3 bg-white border border-gray-200 text-gray-400">
+                  <div className="flex items-center space-x-2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
+                    <span>AI is thinking...</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} className={`h-4 ${isScrolling ? 'animate-bounce' : ''}`} />
           </div>
         </div>
         
@@ -444,7 +469,8 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
               <TokenUsagePreview 
                 total={tokenUsage.total} 
                 remaining={tokenUsage.remaining} 
-                max={tokenUsage.maxTokens} 
+                max={tokenUsage.maxTokens}
+                isLoading={isTokenCalculating}
               />
               
               {/* Only show warning if approaching limit */}
@@ -478,7 +504,7 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
                   <ul className="space-y-1">
                     {ragDocuments.map((doc, index) => (
                       <li key={index} className="flex items-center justify-between text-sm">
-                        <span className="truncate flex-1">{doc.title}</span>
+                        <span className="truncate flex-1">{doc.name || 'Document'}</span>
                         <span className="text-xs text-gray-500 ml-2">{doc.tokenCount} tokens</span>
                         <button 
                           onClick={() => removeRagDocument(index)}
@@ -502,7 +528,12 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
           >
             <ContextOptimizationPanel 
               onApplyCompression={handleCompressHistory}
-              compressionStrategies={Object.values(CompressionStrategy)}
+              compressionStrategies={[
+                { type: 'lossless', id: 'lossless', name: 'Lossless Compression' },
+                { type: 'semantic', id: 'semantic', name: 'Semantic Compression' },
+                { type: 'summary', id: 'summary', name: 'Summary Compression' },
+                { type: 'hybrid', id: 'hybrid', name: 'Hybrid Compression' }
+              ]}
             />
           </CollapsiblePanel>
         </div>

@@ -171,10 +171,10 @@ export const AsuGptPage: React.FC = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
-  // Handle selecting a persona chat template
+  // Handle selecting a persona chat
   const handleSelectPersonaChat = (template: PersonaChatTemplate) => {
     try {
-      // Create a conversation using the default template
+      // Create a new conversation based on the selected template
       const conversation = conversationManager.createConversation('default-chat');
       
       // Update the conversation title to match the persona
@@ -188,18 +188,18 @@ export const AsuGptPage: React.FC = () => {
       });
       
       // Set the model ID for the conversation if available
-      if (template.modelId) {
-        // In a real implementation, we would update the conversation's model ID
-        // This is a mock-up since the example doesn't have this feature
-        console.log(`Setting model to: ${template.modelId} for conversation ${conversation.id}`);
-        
-        // Add a message indicating which model is being used
-        conversationManager.addMessage(conversation.id, {
-          role: 'assistant',
-          content: `This conversation is using the ${template.modelId} model with the ${template.persona} persona.`,
-          isVisible: true
-        });
-      }
+      const modelId = template.modelId || 'gpt-4o-mini'; // Default to gpt-4o-mini if modelId is undefined
+      
+      // In a real implementation, we would update the conversation's model ID
+      // This is a mock-up since the example doesn't have this feature
+      console.log(`Setting model to: ${modelId} for conversation ${conversation.id}`);
+      
+      // Add a message indicating which model is being used
+      conversationManager.addMessage(conversation.id, {
+        role: 'assistant',
+        content: `This conversation is using the ${modelId} model with the ${template.persona} persona.`,
+        isVisible: true
+      });
       
       // Set as active conversation
       conversationManager.setActiveConversation(conversation.id);
@@ -289,8 +289,9 @@ export const AsuGptPage: React.FC = () => {
           {/* Create New Button */}
           <div className="p-4 border-t border-gray-200">
             <button
-              className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+              className="w-full px-4 py-2 bg-[#FFC627] text-black font-medium rounded-md hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-300 transition-colors"
               onClick={() => setShowWelcome(true)}
+              style={{ backgroundColor: '#FFC627' }}
             >
               New Conversation
             </button>
@@ -392,8 +393,9 @@ export const AsuGptPage: React.FC = () => {
         {/* Create New Button */}
         <div className="p-4 border-t border-gray-200">
           <button
-            className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            className="w-full px-4 py-2 bg-[#FFC627] text-black font-medium rounded-md hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-300 transition-colors"
             onClick={() => handleCreateConversation(templates[0]?.id)}
+            style={{ backgroundColor: '#FFC627' }}
           >
             New Conversation
           </button>
