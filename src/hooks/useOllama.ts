@@ -117,14 +117,49 @@ export const useOllama = () => {
     try {
       setIsLoading(true);
       
-      // Attempt to start Ollama via system command
-      // Note: This requires backend support or browser extension
-      // For now, we'll provide instructions to the user
+      // First check if Ollama is already running
+      try {
+        const testResponse = await fetch('http://localhost:11434/api/tags', { 
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+          // Set a short timeout since we're just checking
+          signal: AbortSignal.timeout(1000)
+        });
+        
+        if (testResponse.ok) {
+          // Ollama is already running, refresh status
+          await checkOllamaStatus();
+          return {
+            success: true,
+            message: 'Ollama is already running',
+          };
+        }
+      } catch (e) {
+        // Expected if Ollama is not running
+        console.log('Ollama not detected, will attempt to start it');
+      }
       
-      // Check if it's already running after a delay
+      // Use OS detection to try different approaches
+      const osName = typeof navigator !== 'undefined' ? navigator.platform.toLowerCase() : '';
+      
+      if (osName.includes('mac')) {
+        // Try to open Terminal with the command on macOS
+        if (typeof window !== 'undefined') {
+          window.open('terminal:ollama serve');
+          // Also open Terminal app as fallback
+          window.open('file:///Applications/Utilities/Terminal.app');
+        }
+      } else if (osName.includes('win')) {
+        // Try Windows command prompt
+        if (typeof window !== 'undefined') {
+          window.open('cmd:ollama serve');
+        }
+      }
+      
+      // Check if it started after a delay
       setTimeout(async () => {
         await checkOllamaStatus();
-      }, 2000);
+      }, 5000);
       
       return {
         success: false,

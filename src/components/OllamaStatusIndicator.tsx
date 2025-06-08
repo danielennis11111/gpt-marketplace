@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useOllama } from '../hooks/useOllama';
 import { useSettings } from '../contexts/SettingsContext';
 
@@ -8,6 +8,7 @@ import { useSettings } from '../contexts/SettingsContext';
 const OllamaStatusIndicator: React.FC = () => {
   const ollama = useOllama();
   const { settings } = useSettings();
+  const [isStarting, setIsStarting] = useState(false);
   
   // Check if Gemini is configured
   const hasGeminiApiKey = !!settings.geminiApiKey && settings.geminiApiKey.trim() !== '';
@@ -39,6 +40,14 @@ const OllamaStatusIndicator: React.FC = () => {
       details: ollama.status.currentModel || 'Connected'
     };
   }
+
+  const handleStartOllama = async () => {
+    setIsStarting(true);
+    await ollama.startOllama();
+    setTimeout(() => {
+      setIsStarting(false);
+    }, 5000);
+  };
   
   return (
     <div className="flex items-center gap-2 text-sm">
@@ -52,6 +61,21 @@ const OllamaStatusIndicator: React.FC = () => {
           ? `${statusInfo.name} Connected: ${statusInfo.details}` 
           : 'No AI Provider Connected'}
       </span>
+      
+      {/* Show start button for Ollama when not connected */}
+      {!statusInfo.isConnected && preferredProvider === 'ollama' && (
+        <button
+          onClick={handleStartOllama}
+          disabled={isStarting}
+          className={`ml-2 text-xs px-2 py-1 rounded ${
+            isStarting 
+              ? 'bg-gray-300 text-gray-700 cursor-wait' 
+              : 'bg-red-600 text-white hover:bg-red-700'
+          }`}
+        >
+          {isStarting ? 'Starting...' : 'Start Ollama'}
+        </button>
+      )}
     </div>
   );
 };

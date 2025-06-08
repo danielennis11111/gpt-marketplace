@@ -18,7 +18,7 @@ interface SettingsContextType {
 }
 
 const defaultSettings: UserSettings = {
-  preferredChatProvider: 'ollama',
+  preferredChatProvider: 'gemini',
   ollamaModel: '',
   geminiApiKey: '',
   theme: 'light',
