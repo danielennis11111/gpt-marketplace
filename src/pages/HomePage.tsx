@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { FilterBar } from '../components/FilterBar';
 import { ProjectCard } from '../components/ProjectCard';
-import { ChatbotWidget } from '../components/ChatbotWidget';
+
 import gptsData from '../data/gpts.json';
 import heroImage from '../assets/ws-header-1920x516.jpg';
 import { 
@@ -64,7 +64,7 @@ const HomePage: React.FC = () => {
   const [productTypeFilter, setProductTypeFilter] = useState('');
   const [sortBy, setSortBy] = useState('popular');
   const [isGridView, setIsGridView] = useState(true);
-  const [showChatbot, setShowChatbot] = useState(false);
+
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -184,13 +184,11 @@ const HomePage: React.FC = () => {
               <p className="text-xl text-gray-200 max-w-2xl">
                 Discover AI-powered tools, educational resources, and productivity solutions
               </p>
-              <button
-                onClick={() => setShowChatbot(true)}
-                className="mt-6 inline-flex items-center px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                <MegaphoneIcon className="w-5 h-5 mr-2" />
-                Need Help? Ask Our AI Assistant
-              </button>
+              <div className="mt-6 text-center">
+                <p className="text-lg text-gray-200">
+                  Need help? Click the AI assistant button in the bottom-right corner! 🤖
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -286,13 +284,10 @@ const HomePage: React.FC = () => {
             )}
           </div>
           
-          <button
-            onClick={() => setShowChatbot(true)}
-            className="hidden sm:flex items-center px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
-          >
+          <div className="hidden sm:flex items-center px-4 py-2 text-blue-600 rounded-md">
             <LightBulbIcon className="w-4 h-4 mr-2" />
-            Need help finding something?
-          </button>
+            <span>Need help? Try the AI assistant! ➡️</span>
+          </div>
         </div>
 
         {projects.length === 0 ? (
@@ -305,13 +300,10 @@ const HomePage: React.FC = () => {
               <p className="text-gray-500 mb-6">
                 Try adjusting your filters or search terms to find what you're looking for.
               </p>
-              <button
-                onClick={() => setShowChatbot(true)}
-                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
+              <div className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg">
                 <LightBulbIcon className="w-4 h-4 mr-2" />
-                Get Help Finding Projects
-              </button>
+                Try the AI assistant in the bottom-right! 🤖
+              </div>
             </div>
           </div>
         ) : (
@@ -328,14 +320,7 @@ const HomePage: React.FC = () => {
         )}
       </main>
 
-      {/* Chatbot Widget */}
-      {showChatbot && (
-        <ChatbotWidget 
-          onClose={() => setShowChatbot(false)}
-          projects={gptsData}
-          productTypes={PRODUCT_TYPES}
-        />
-      )}
+
     </div>
   );
 };

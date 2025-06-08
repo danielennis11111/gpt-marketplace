@@ -9,6 +9,8 @@ import ProjectEditor from './pages/ProjectEditor';
 import CreateProject from './pages/CreateProject';
 import CommunityIdeas from './pages/CommunityIdeas';
 import { RateLimiterWrapper } from './components/RateLimiterWrapper';
+import { FloatingChatButton } from './components/FloatingChatButton';
+import { ProjectsProvider } from './contexts/ProjectsContext';
 import {
   HomeIcon,
   PlusCircleIcon,
@@ -216,6 +218,9 @@ const AppContent = () => {
           <Route path="/rate-limiter" element={<RateLimiterWrapper />} />
         </Routes>
       </div>
+
+      {/* Global Floating Chat Assistant */}
+      <FloatingChatButton />
     </div>
   );
 };
@@ -223,7 +228,9 @@ const AppContent = () => {
 export const App: React.FC = () => {
   return (
     <Router>
-      <AppContent />
+      <ProjectsProvider>
+        <AppContent />
+      </ProjectsProvider>
     </Router>
   );
 };
