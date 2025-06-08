@@ -16,7 +16,7 @@ export class GeminiService {
     this.apiKey = apiKey;
   }
 
-  async generateContent(prompt: string, model: string = 'gemini-2.0-flash-exp'): Promise<string> {
+  async generateContent(prompt: string, model: string = 'gemini-2.0-flash'): Promise<string> {
     if (!this.apiKey) {
       throw new Error('Gemini API key not configured');
     }
@@ -93,7 +93,7 @@ export class GeminiService {
       return data.models?.map((model: any) => model.name.replace('models/', '')) || [];
     } catch (error) {
       console.error('Error fetching models:', error);
-      return ['gemini-2.0-flash-exp']; // fallback
+      return ['gemini-2.0-flash']; // fallback
     }
   }
 

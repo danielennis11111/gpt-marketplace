@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useSettings } from '../contexts/SettingsContext';
 import { useChatService } from '../hooks/useChatService';
 import { useOllama } from '../hooks/useOllama';
+import EmbeddedTerminal from '../components/EmbeddedTerminal';
 import {
   CogIcon,
   KeyIcon,
@@ -330,70 +331,65 @@ export const SettingsPage: React.FC = () => {
                         </div>
                       </>
                     ) : (
-                      <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                        <div className="flex items-start">
-                          <XCircleIcon className="w-4 h-4 text-yellow-600 mt-0.5 mr-1.5 flex-shrink-0" />
-                          <div className="flex-1">
-                            <p className="text-yellow-800 text-xs font-medium">Ollama is not running</p>
-                            <p className="text-yellow-700 text-xs mt-1">
-                              Start the Ollama server to use local AI models
-                            </p>
-                            <div className="mt-3 flex flex-col space-y-2">
-                              <button
-                                onClick={() => {
-                                  // Create a terminal URL that will try to open the terminal with the command
-                                  // This works on macOS but has limitations on other platforms
-                                  const command = encodeURIComponent("ollama serve");
-                                  // Open a new window with special URL protocols
-                                  const osName = navigator.platform.toLowerCase();
-                                  
-                                  // Show different guidance based on OS
-                                  if (osName.includes('mac')) {
-                                    // On macOS, we can try to open Terminal
-                                    window.open(`terminal:ollama serve`);
-                                    // Also open the Terminal app as fallback
-                                    window.open(`file:///Applications/Utilities/Terminal.app`);
-                                  } else if (osName.includes('win')) {
-                                    // On Windows, we'll try cmd.exe protocol
-                                    window.open(`cmd:ollama serve`);
-                                  } else {
-                                    // Linux or other, just show an alert with instructions
-                                    alert("Please open a terminal and run: ollama serve");
-                                  }
-                                  
-                                  // Set a timeout to check if Ollama is running after some time
-                                  setTimeout(() => {
-                                    ollama.checkOllamaStatus();
-                                  }, 5000);
-                                }}
-                                className="flex items-center justify-center text-xs font-medium py-1.5 px-3 bg-red-600 text-white rounded hover:bg-red-700 transition-colors"
-                              >
-                                <ServerIcon className="w-3 h-3 mr-1.5" />
-                                Start Ollama Server
-                              </button>
+                      <div className="space-y-4">
+                        <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                          <div className="flex items-start">
+                            <XCircleIcon className="w-4 h-4 text-yellow-600 mt-0.5 mr-1.5 flex-shrink-0" />
+                            <div className="flex-1">
+                              <p className="text-yellow-800 text-xs font-medium">Ollama is not running</p>
+                              <p className="text-yellow-700 text-xs mt-1">
+                                Start the Ollama server to use local AI models
+                              </p>
                               
-                              <button
-                                onClick={ollama.checkOllamaStatus}
-                                className="flex items-center justify-center text-xs font-medium py-1.5 px-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                              >
-                                <ArrowPathIcon className="w-3 h-3 mr-1.5" />
-                                Check Connection
-                              </button>
+                              <div className="mt-3 flex items-center gap-2">
+                                <button
+                                  onClick={ollama.checkOllamaStatus}
+                                  className="flex items-center justify-center text-xs font-medium py-1.5 px-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                                >
+                                  <ArrowPathIcon className="w-3 h-3 mr-1.5" />
+                                  Check Connection
+                                </button>
+                                
+                                <a 
+                                  href="https://ollama.com/download" 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="flex items-center justify-center text-xs font-medium py-1.5 px-3 bg-gray-600 text-white rounded hover:bg-gray-700 transition-colors"
+                                >
+                                  <ArrowTopRightOnSquareIcon className="w-3 h-3 mr-1.5" />
+                                  Download Ollama
+                                </a>
+                              </div>
                             </div>
-                            
-                            <div className="mt-2 p-2 bg-yellow-100 rounded text-xs text-yellow-800">
-                              <p className="font-medium">Manual instructions:</p>
-                              <ol className="list-decimal ml-4 mt-1 space-y-1">
-                                <li>Open a terminal window</li>
-                                <li>Run: <code className="bg-yellow-200 px-1 py-0.5 rounded">ollama serve</code></li>
-                                <li>Wait for server to start, then click "Check Connection"</li>
-                              </ol>
-                            </div>
-                            
-                            <p className="text-yellow-700 text-xs mt-2">
-                              First time? <a href="https://ollama.com/download" target="_blank" rel="noopener noreferrer" className="underline">Download Ollama</a> and then install a model with <code className="bg-yellow-100 px-1 py-0.5 rounded">ollama pull llama3:8b</code>
-                            </p>
                           </div>
+                        </div>
+                        
+                        {/* Embedded Terminal */}
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-700 mb-2 flex items-center">
+                            <ServerIcon className="w-4 h-4 mr-1.5 text-red-600" />
+                            Embedded Terminal
+                          </h4>
+                          <p className="text-xs text-gray-600 mb-2">
+                            Use this terminal to start the Ollama server directly from your browser
+                          </p>
+                          
+                          <div className="border border-gray-200 rounded-lg overflow-hidden">
+                            <EmbeddedTerminal 
+                              onCommandRun={() => {
+                                // Set a timeout to check Ollama status
+                                setTimeout(() => {
+                                  ollama.checkOllamaStatus();
+                                }, 5000);
+                              }}
+                              autoFocus={true}
+                            />
+                          </div>
+                          
+                          <p className="text-xs text-gray-500 mt-2">
+                            Type <code className="bg-gray-100 px-1 py-0.5 rounded">ollama serve</code> in the terminal above to start the Ollama server.
+                            After installing Ollama, you can pull models with <code className="bg-gray-100 px-1 py-0.5 rounded">ollama pull llama3:8b</code>
+                          </p>
                         </div>
                       </div>
                     )}

@@ -8,7 +8,7 @@
 import { useSettings } from '../../contexts/SettingsContext';
 
 // The model ID for Gemini 2.0 Flash
-const GEMINI_MODEL_ID = 'gemini-1.5-flash';
+const GEMINI_MODEL_ID = 'gemini-2.0-flash';
 
 class GeminiService {
   private apiKey: string = '';

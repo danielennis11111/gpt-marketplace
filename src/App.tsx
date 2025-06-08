@@ -8,7 +8,7 @@ import MyProjects from './pages/MyProjects';
 import ProjectEditor from './pages/ProjectEditor';
 import CommunityIdeas from './pages/CommunityIdeas';
 import { ContributePage } from './pages/ContributePage';
-import { PromptGuidePage } from './pages/PromptGuidePage';
+import { LaunchPadPage } from './pages/LaunchPadPage';
 import { AsuGptPage } from './pages/AsuGptPage';
 import { FloatingChatButton } from './components/FloatingChatButton';
 import { ProjectsProvider } from './contexts/ProjectsContext';
@@ -172,8 +172,8 @@ const AppContent = () => {
             <NavItem to="/marketplace" icon={RocketLaunchIcon} collapsed={sidebarCollapsed}>
               Marketplace
             </NavItem>
-            <NavItem to="/prompt-guide" icon={DocumentTextIcon} collapsed={sidebarCollapsed}>
-              Prompt Guide
+            <NavItem to="/launch-pad" icon={LightBulbIcon} collapsed={sidebarCollapsed}>
+              Launch Pad
             </NavItem>
             <NavItem to="/community-ideas" icon={LightBulbIcon} collapsed={sidebarCollapsed}>
               Community Ideas
@@ -259,7 +259,7 @@ const AppContent = () => {
           <Route path="/myprojects" element={<MyProjects />} />
           <Route path="/edit-project/:id" element={<ProjectEditor />} />
           <Route path="/contribute" element={<ContributePage />} />
-          <Route path="/prompt-guide" element={<PromptGuidePage />} />
+          <Route path="/launch-pad" element={<LaunchPadPage />} />
           <Route path="/community-ideas" element={<CommunityIdeas />} />
           <Route path="/community-ideas/:id" element={<CommunityIdeaDetail />} />
           <Route path="/asugpt" element={<AsuGptPage />} />
