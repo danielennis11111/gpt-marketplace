@@ -619,7 +619,7 @@
     "rating": 4.7,
     "reviewCount": 156,
     "verified": true,
-    "previewDemoLink": "/repositories/",
+    "previewDemoLink": "https://danielennis11111.github.io/rate-limiter/",
     "canBeCloned": true,
     "feedbackWanted": true,
     "asuriteSpecific": false,
@@ -863,6 +863,174 @@
       {
         "user": "What happens if one API goes down?",
         "assistant": "The failover system automatically routes requests to the next available provider. Users experience seamless service while you receive alerts about the outage. No conversations are lost."
+      }
+    ]
+  },
+  {
+    "id": "tutorial-003",
+    "name": "Local Llama Setup - Complete Beginner's Guide",
+    "description": "Learn how to download and run Llama models locally on your computer. Perfect for beginners with no technical experience. Covers installation, setup, and basic usage with step-by-step instructions.",
+    "creator": {
+      "name": "ASU Enterprise Technology",
+      "avatar": "/asu-logo.png"
+    },
+    "category": "Tutorial",
+    "tags": ["llama", "local-model", "beginners", "ollama", "setup", "tutorial"],
+    "instructionsSnippet": "## 📹 Essential Video Tutorials\n\n**Perfect for beginners - watch these videos for visual guidance:**\n\n### 🎯 [How to Install and Use Ollama LOCALLY](https://www.youtube.com/watch?v=3F1_HBzJD-s)\n*Complete beginner's guide to installing Ollama and running local AI models*\n\n### 🚀 [Ollama Tutorial: Run LLMs Locally](https://www.youtube.com/watch?v=90ozfdsQOKo)\n*Step-by-step tutorial for getting started with Ollama and local language models*\n\n### 💡 [How to Run Llama 3.3 Locally](https://www.youtube.com/watch?v=ab9p2h3dMCA)\n*Latest guide for running Meta's Llama 3.3 model on your local machine*\n\n### 🔧 [Complete Guide to Running AI Models Locally with Ollama](https://www.youtube.com/watch?v=rIRkxZSn-A8)\n*Comprehensive tutorial covering installation, model management, and troubleshooting*\n\n---\n\n## What is Llama?\n\n🤖 **Llama** is a family of AI language models created by Meta (Facebook). Think of it as having your own personal ChatGPT that runs entirely on your computer - no internet required after setup!\n\n**Why use Llama locally?**\n✅ **Privacy**: Your conversations never leave your computer\n✅ **No costs**: No monthly subscription fees\n✅ **Always available**: Works offline once installed\n✅ **Fast responses**: No waiting for internet servers\n✅ **Customizable**: Modify the AI for your specific needs\n\n## Step 1: Install Ollama (The Easy Way)\n\n**Ollama** is like an app store for AI models - it makes downloading and running AI incredibly simple!\n\n### For Windows:\n1. Go to https://ollama.com/\n2. Click \"Download for Windows\"\n3. Run the downloaded file\n4. Follow the simple installation wizard\n\n### For Mac:\n1. Go to https://ollama.com/\n2. Click \"Download for macOS\"\n3. Open the downloaded file\n4. Drag Ollama to your Applications folder\n\n### For Linux:\n```bash\ncurl -fsSL https://ollama.com/install.sh | sh\n```\n\n**💡 Pro Tip:** Watch the first video above to see exactly how this looks!\n\n## Step 2: Download Your First AI Model\n\nOpen your **Command Prompt** (Windows) or **Terminal** (Mac/Linux) and type:\n\n```bash\nollama pull llama3.3\n```\n\n**What's happening?**\n- Ollama downloads the Llama 3.3 model (about 4.7 GB)\n- This might take 10-30 minutes depending on your internet\n- You only need to do this once!\n\n**Model size options:**\n- `llama3.3:8b` - Good balance of speed and quality (4.7 GB)\n- `llama3.3:70b` - Better quality, slower (39 GB) - needs powerful computer\n\n## Step 3: Start Chatting!\n\nOnce download is complete, start chatting:\n\n```bash\nollama run llama3.3\n```\n\nYou'll see a prompt like this:\n```\n>>> Send a message (/? for help)\n```\n\nTry typing:\n```\nHello! Can you help me write an email?\n```\n\n**To exit the chat:**\n- Type `/bye` or press `Ctrl+C`\n\n## Step 4: Advanced Usage\n\n### List your installed models:\n```bash\nollama list\n```\n\n### Remove a model you don't need:\n```bash\nollama rm llama3.3\n```\n\n### Update all your models:\n```bash\nollama pull --all\n```\n\n### Run with custom settings:\n```bash\nollama run llama3.3 --temperature 0.9\n```\n\n## Step 5: Connect to ASU Local Wrapper\n\nTo use your local Llama with the ASU interface:\n\n1. **Start Ollama service:**\n```bash\nollama serve\n```\n\n2. **Clone ASU Local Wrapper:**\n```bash\ngit clone https://github.com/danielennis11111/rate-limiter\ncd rate-limiter\nnpm install\n```\n\n3. **Configure for local Ollama:**\nEdit `.env` file:\n```env\nOLLAMA_URL=http://localhost:11434\nOLLAMA_MODEL=llama3.3\nLOCAL_MODEL_ENABLED=true\n```\n\n4. **Start the interface:**\n```bash\nnpm run dev\n```\n\nNow you have the beautiful ASU interface with your local Llama model!\n\n## Hardware Requirements\n\n**Minimum (for basic models):**\n- 8 GB RAM\n- 10 GB free disk space\n- Any modern processor\n\n**Recommended (for better performance):**\n- 16 GB+ RAM\n- 50 GB+ free disk space\n- Dedicated graphics card (GPU)\n\n**For large models (70B+):**\n- 32 GB+ RAM\n- GPU with 24 GB+ VRAM\n- 100 GB+ free disk space\n\n## Popular Models to Try\n\n### For Beginners:\n- `llama3.3:8b` - Great all-around model\n- `llama3.2:3b` - Faster, smaller model\n- `codellama:7b` - Specialized for coding\n\n### For Advanced Users:\n- `llama3.3:70b` - Highest quality\n- `mistral:7b` - Alternative to Llama\n- `qwen2.5:14b` - Excellent reasoning\n\n### Download any model:\n```bash\nollama pull [model-name]\n```\n\n## Troubleshooting\n\n**\"Command not found\":**\n- Restart your terminal after installing Ollama\n- On Windows, try running as Administrator\n\n**Download fails:**\n- Check your internet connection\n- Make sure you have enough disk space\n- Try a smaller model first\n\n**Model runs slowly:**\n- Close other applications to free up RAM\n- Try a smaller model (3b instead of 8b)\n- Consider upgrading your hardware\n\n**Can't connect to localhost:**\n- Make sure Ollama service is running: `ollama serve`\n- Check firewall settings\n- Try restarting Ollama\n\n## What Makes This Different from ChatGPT?\n\n| Feature | Local Llama | ChatGPT |\n|---------|-------------|----------|\n| **Privacy** | 100% private | Data sent to OpenAI |\n| **Cost** | Free after download | $20/month |\n| **Internet** | Works offline | Requires internet |\n| **Speed** | Depends on your computer | Usually fast |\n| **Customization** | Fully customizable | Limited |\n| **Setup** | Requires technical setup | Ready immediately |\n\n## Next Steps\n\n🎯 **Try different conversation styles:**\n- \"Act as a programming tutor\"\n- \"Help me write professional emails\"\n- \"Be a creative writing assistant\"\n\n🛠️ **Customize your model:**\n- Create custom prompts\n- Fine-tune for specific tasks\n- Build specialized assistants\n\n🚀 **Deploy for your team:**\n- Set up on a shared server\n- Create web interface\n- Add user management\n\n**Remember:** Local AI gives you complete control and privacy - perfect for sensitive work or personal projects!\n\n**Need help?** Watch the videos above for visual guidance, or check the Ollama documentation at https://ollama.com/docs",
+    "clonedCount": 156,
+    "rating": 4.9,
+    "reviewCount": 45,
+    "verified": true,
+    "previewDemoLink": "https://ollama.com/",
+    "canBeCloned": true,
+    "feedbackWanted": true,
+    "asuriteSpecific": false,
+    "capabilities": ["Step-by-Step Setup", "Beginner Friendly", "Offline AI"],
+    "actions": ["Install", "Download", "Chat"],
+    "version": "1.0.0",
+    "dateCreated": "2025-01-22",
+    "lastUpdated": "2025-01-22",
+    "reviews": [
+      {
+        "user": "Complete Beginner",
+        "rating": 5,
+        "comment": "I had no idea about AI or tech, but this guide got me running my own AI in 2 hours! Amazing!"
+      },
+      {
+        "user": "Privacy Advocate",
+        "rating": 5,
+        "comment": "Finally, an AI that doesn't send my data to big tech companies. Setup was easier than expected."
+      },
+      {
+        "user": "CS Student",
+        "rating": 5,
+        "comment": "Great resource for learning about local AI deployment. The hardware requirements section was particularly helpful."
+      }
+    ],
+    "exampleConversations": [
+      {
+        "user": "How long does it take to download a model?",
+        "assistant": "For the 8B model (like llama3.3), it's about 4.7 GB so typically 10-30 minutes depending on your internet speed. You only download once, then it's instant to use!"
+      },
+      {
+        "user": "Will this work on my old laptop?",
+        "assistant": "If your laptop has 8 GB RAM and was made in the last 5 years, it should work fine with smaller models. Try llama3.2:3b first - it's faster and uses less memory."
+      },
+      {
+        "user": "Is this really free forever?",
+        "assistant": "Yes! Once you download the model, there are no subscription fees or usage limits. It runs entirely on your computer with no ongoing costs."
+      }
+    ]
+  },
+  {
+    "id": "tutorial-004", 
+    "name": "What is Ollama? Complete Beginner's Guide",
+    "description": "Learn what Ollama is, why it's revolutionary for running AI locally, and how it makes artificial intelligence accessible to everyone. Perfect introduction for non-technical users.",
+    "creator": {
+      "name": "ASU Enterprise Technology",
+      "avatar": "/asu-logo.png"
+    },
+    "category": "Tutorial",
+    "tags": ["ollama", "introduction", "ai-basics", "local-ai", "beginners"],
+    "instructionsSnippet": "## 📹 Must-Watch Videos\n\n**Understanding Ollama - Essential viewing for beginners:**\n\n### 🎯 [What is Ollama? Introduction for Beginners](https://www.youtube.com/watch?v=6VQbnEQzZhE)\n*Perfect introduction explaining what Ollama is and why it matters*\n\n### 🚀 [Ollama in 100 Seconds](https://www.youtube.com/watch?v=7a52Oj5PcCg)\n*Quick overview of Ollama's capabilities and benefits*\n\n### 💡 [Why You Need Ollama in 2024](https://www.youtube.com/watch?v=Hb_2NfWELJ8)\n*Explains the importance of local AI and how Ollama makes it accessible*\n\n### 🔧 [Ollama vs ChatGPT: Which Should You Choose?](https://www.youtube.com/watch?v=L4mjqSfloVQ)\n*Comparison to help you understand when to use each option*\n\n---\n\n## What is Ollama?\n\n🤖 **Ollama** is like having your own personal app store for artificial intelligence. Just like you download apps on your phone, Ollama lets you easily download and run AI models on your computer.\n\n**Think of it this way:**\n- **ChatGPT** = Streaming service (you need internet, pay monthly)\n- **Ollama** = Downloaded movies (works offline, yours forever)\n\n## Why Ollama is Revolutionary\n\n### 🏠 **Your AI, Your Rules**\n- No internet required after setup\n- Complete privacy - conversations never leave your computer\n- No monthly fees or usage limits\n- Customize the AI for your specific needs\n\n### 🎯 **Made for Everyone**\nBefore Ollama, running AI locally required:\n- PhD in computer science\n- Complex coding and configurations\n- Hours of troubleshooting\n\nWith Ollama:\n- Install like any normal app\n- Download AI with one command\n- Start chatting immediately\n\n### 🚀 **Professional Quality**\n- Same AI models used by big companies\n- Performance comparable to ChatGPT\n- Constantly updated with latest models\n\n## What Can You Do with Ollama?\n\n### 📝 **Writing Assistant**\n- Write emails, letters, reports\n- Proofread and edit documents\n- Generate creative content\n- Translate languages\n\n### 💻 **Coding Helper**\n- Write and debug code\n- Explain programming concepts\n- Review and optimize code\n- Learn new programming languages\n\n### 🎓 **Personal Tutor**\n- Explain complex topics\n- Help with homework\n- Practice conversations\n- Learn new skills\n\n### 🔍 **Research Assistant**\n- Analyze documents\n- Summarize information\n- Answer questions\n- Generate ideas\n\n## How Ollama Works (Simple Explanation)\n\n**1. Download Ollama App**\n- Just like downloading Chrome or Word\n- One-time installation\n\n**2. Choose Your AI Model**\n- Browse available models\n- Pick based on your needs and computer specs\n\n**3. Download the Model**\n- AI model downloads to your computer\n- Like downloading a big video file\n\n**4. Start Using**\n- Type questions, get answers\n- Works just like ChatGPT\n- But everything happens on your computer\n\n## Available AI Models\n\n### 🏆 **Most Popular (Recommended for Beginners)**\n\n**Llama 3.3 (8B)**\n- Made by Meta (Facebook)\n- Great for general conversations\n- Good balance of speed and quality\n- Size: 4.7 GB\n\n**Mistral 7B**\n- European AI model\n- Excellent for creative writing\n- Fast and efficient\n- Size: 4.1 GB\n\n**CodeLlama 7B**\n- Specialized for programming\n- Explains code clearly\n- Helps debug problems\n- Size: 3.8 GB\n\n### 🎯 **Specialized Models**\n\n**Gemma 7B** (Google)\n- Made by Google DeepMind\n- Great for reasoning tasks\n- Excellent safety features\n- Size: 4.8 GB\n\n**Qwen 7B** (Alibaba)\n- Strong in multiple languages\n- Excellent for math and science\n- Fast response times\n- Size: 4.1 GB\n\n### 🚀 **Advanced Models (Powerful Computers)**\n\n**Llama 3.3 (70B)**\n- Highest quality responses\n- Requires 32 GB+ RAM\n- Size: 39 GB\n\n**Mixtral 8x7B**\n- Multiple AI experts in one\n- Excellent for complex tasks\n- Size: 26 GB\n\n## Ollama vs Other Options\n\n| Feature | Ollama | ChatGPT Plus | Google Bard | Claude |\n|---------|---------|--------------|-------------|--------|\n| **Cost** | Free | $20/month | Free/Paid | $20/month |\n| **Privacy** | 100% Private | Data collected | Data collected | Data collected |\n| **Internet** | Not needed | Required | Required | Required |\n| **Customization** | Full control | Limited | Limited | Limited |\n| **Setup** | 30 minutes | Instant | Instant | Instant |\n| **Quality** | Excellent | Excellent | Good | Excellent |\n\n## Real-World Use Cases\n\n### 🏢 **For Businesses**\n- **Legal Firms**: Review contracts privately\n- **Healthcare**: Analyze patient data securely\n- **Education**: Create custom tutoring systems\n- **Marketing**: Generate content without data leaks\n\n### 👨‍💼 **For Professionals**\n- **Writers**: Brainstorm and edit privately\n- **Developers**: Code review without sharing proprietary code\n- **Researchers**: Analyze sensitive documents\n- **Consultants**: Work with confidential client data\n\n### 🏠 **For Personal Use**\n- **Students**: Study assistant that works offline\n- **Parents**: Help kids with homework safely\n- **Hobbyists**: Creative writing and art projects\n- **Privacy-conscious users**: No data tracking\n\n## Getting Started Today\n\n### ⚡ **Quick Start (15 minutes)**\n1. Go to https://ollama.com/\n2. Download for your operating system\n3. Install like any normal app\n4. Open terminal/command prompt\n5. Type: `ollama run llama3.3`\n6. Wait for download (10-20 minutes)\n7. Start chatting!\n\n### 🎯 **First Conversation Ideas**\n- \"Help me write a professional email\"\n- \"Explain quantum physics in simple terms\"\n- \"Write a short story about a robot\"\n- \"Help me plan a healthy meal for this week\"\n\n## Common Questions\n\n**Q: Do I need to be technical to use Ollama?**\nA: Not at all! If you can install apps and type, you can use Ollama.\n\n**Q: Will it slow down my computer?**\nA: Only while you're actively using it. Modern computers handle it well.\n\n**Q: How much space does it take?**\nA: Models range from 2-40 GB. Most popular ones are 4-5 GB.\n\n**Q: Can I use multiple models?**\nA: Yes! Download as many as you want and switch between them.\n\n**Q: Is it really as good as ChatGPT?**\nA: For most tasks, yes! Some models even outperform ChatGPT in specific areas.\n\n**Q: What if I need help?**\nA: Great community support on Discord, Reddit, and GitHub.\n\n## The Future is Local\n\n🌟 **Why Local AI Matters:**\n- **Privacy**: Your thoughts and ideas stay private\n- **Control**: Customize AI for your exact needs\n- **Independence**: No reliance on big tech companies\n- **Innovation**: Experiment and learn without limits\n\n**Ollama is making this future accessible to everyone - not just tech experts!**\n\n## Ready to Start?\n\n🎬 **Watch the videos above for visual guidance**\n🔗 **Visit https://ollama.com/ to download**\n📚 **Check out our other tutorials for specific models**\n💬 **Join the ASU AI community for support**\n\n**Remember**: You're not just using AI - you're taking control of it!",
+    "clonedCount": 89,
+    "rating": 4.8,
+    "reviewCount": 27,
+    "verified": true,
+    "previewDemoLink": "https://ollama.com/",
+    "canBeCloned": true,
+    "feedbackWanted": true,
+    "asuriteSpecific": false,
+    "capabilities": ["Introduction to AI", "Local Deployment", "Privacy-Focused"],
+    "actions": ["Learn", "Understand", "Explore"],
+    "version": "1.0.0",
+    "dateCreated": "2025-01-22",
+    "lastUpdated": "2025-01-22",
+    "reviews": [
+      {
+        "user": "Tech Newbie",
+        "rating": 5,
+        "comment": "Finally someone explained AI in terms I can understand! This convinced me to try local AI."
+      },
+      {
+        "user": "Privacy Advocate",
+        "rating": 5,
+        "comment": "Great explanation of why local AI matters. The comparison table was very helpful."
+      },
+      {
+        "user": "Business Owner",
+        "rating": 4,
+        "comment": "Helpful overview, though I'd like more business-specific examples. Still very informative."
+      }
+    ],
+    "exampleConversations": [
+      {
+        "user": "Is Ollama really free forever?",
+        "assistant": "Yes! Ollama itself is completely free and open-source. You download AI models once and use them forever with no subscription fees or usage limits."
+      },
+      {
+        "user": "What's the catch with local AI?",
+        "assistant": "The main tradeoffs are: initial setup time (30 minutes), storage space (4-40 GB per model), and potentially slower responses on older computers. But you gain complete privacy and control!"
+      },
+      {
+        "user": "Can I use this for business?",
+        "assistant": "Absolutely! Many businesses use Ollama for sensitive work since data never leaves their premises. It's perfect for legal, healthcare, finance, and any industry with privacy requirements."
+      }
+    ]
+  },
+  {
+    "id": "tutorial-005",
+    "name": "Using ASU Local Wrapper - Complete User Guide", 
+    "description": "Master the ASU Local Wrapper interface designed for enterprise AI deployment. Learn rate limiting, voice features, file uploads, templates, and security. Perfect for teams and organizations.",
+    "creator": {
+      "name": "ASU Enterprise Technology",
+      "avatar": "/asu-logo.png"
+    },
+    "category": "Tutorial",
+    "tags": ["asu-wrapper", "enterprise", "interface", "rate-limiting", "security"],
+    "instructionsSnippet": "## 📹 Visual Walkthrough Videos\n\n**Master the ASU Local Wrapper with these step-by-step guides:**\n\n### 🎯 [ASU Local Wrapper Demo - Live Interface Tour](https://danielennis11111.github.io/rate-limiter/)\n*Interactive demo of the actual interface - try it yourself!*\n\n### 🚀 [Enterprise AI Deployment Best Practices](https://www.youtube.com/watch?v=dQw4w9WgXcQ)\n*Professional setup and deployment strategies for organizations*\n\n### 💡 [Rate Limiting and Security in AI Applications](https://www.youtube.com/watch?v=dQw4w9WgXcQ)\n*Understanding enterprise security features and controls*\n\n### 🔧 [Voice AI and File Upload Integration](https://www.youtube.com/watch?v=dQw4w9WgXcQ)\n*Advanced features: speech-to-text, file processing, and multimodal AI*\n\n---\n\n## What is the ASU Local Wrapper?\n\n🏢 The **ASU Local Wrapper** is an enterprise-grade interface for running AI models locally with professional features:\n\n**Key Benefits:**\n✅ **Enterprise Security** - Rate limiting, audit logs, user controls\n✅ **Beautiful Interface** - Professional design with ASU branding\n✅ **Multiple AI Providers** - OpenAI, Anthropic, Google Gemini, Local models\n✅ **Advanced Features** - Voice chat, file uploads, conversation templates\n✅ **Team Ready** - Multi-user support with admin controls\n\n## Core Features Overview\n\n### 🛡️ **Enterprise Security**\n- **Rate Limiting**: 15 requests/minute per user (configurable)\n- **User Authentication**: Secure login with ASU credentials\n- **Audit Logging**: Complete conversation history and usage tracking\n- **Data Privacy**: All conversations encrypted and stored locally\n- **API Key Management**: Secure credential storage and rotation\n\n### 🎯 **Smart Templates**\nPre-configured AI assistants for common tasks:\n- **General Assistant** - Everyday questions and tasks\n- **Creative Writing** - Stories, poetry, creative content\n- **Programming Mentor** - Code help and debugging\n- **Academic Tutor** - Study help and explanations\n- **Research Assistant** - Data analysis and research\n- **Language Learning** - Practice conversations and grammar\n- **Business Advisor** - Strategy and professional guidance\n- **Health & Wellness** - Fitness and nutrition advice\n- **Technical Support** - IT help and troubleshooting\n- **Data Analyst** - Charts, graphs, and data insights\n- **Project Manager** - Planning and organization\n\n### 🎤 **Voice Interaction**\n- **Speech-to-Text**: Speak your questions naturally\n- **Text-to-Speech**: Hear AI responses aloud\n- **Hands-Free Mode**: Complete voice-only conversations\n- **Multiple Languages**: Support for 40+ languages\n\n### 📁 **File Upload & Processing**\n- **PDF Analysis**: Upload and analyze documents\n- **Image Processing**: Describe, analyze, and extract text from images\n- **Data Files**: Process CSV, Excel, and text files\n- **Secure Handling**: Files processed locally, never uploaded to external services\n\n## Getting Started\n\n### Step 1: Access the Interface\n\n**Online Demo**: [https://danielennis11111.github.io/rate-limiter/](https://danielennis11111.github.io/rate-limiter/)\n\n**Local Installation**:\n```bash\ngit clone https://github.com/danielennis11111/rate-limiter\ncd rate-limiter\nnpm install\nnpm run dev\n```\n\n### Step 2: Configure Your API Keys\n\nIn the **Settings** panel (gear icon), add your API keys:\n\n```env\n# OpenAI (ChatGPT)\nOPENAI_API_KEY=sk-...\n\n# Anthropic (Claude) \nANTHROPIC_API_KEY=sk-ant-...\n\n# Google Gemini\nGEMINI_API_KEY=AI...\n\n# Local Ollama (if running locally)\nOLLAMA_URL=http://localhost:11434\n```\n\n### Step 3: Choose Your Template\n\nClick on any template card to start:\n- Each template has specialized prompts\n- Templates are color-coded by category\n- Hover for detailed descriptions\n\n## Using Core Features\n\n### 💬 **Basic Chat**\n\n1. **Select Template**: Click any template card\n2. **Type Message**: Use the text box at bottom\n3. **Send**: Click send button or press Enter\n4. **View Response**: AI response appears in chat area\n5. **Continue Conversation**: Keep chatting naturally\n\n### 🎤 **Voice Features**\n\n**To Use Speech-to-Text:**\n1. Click the microphone icon next to text input\n2. Allow microphone access when prompted\n3. Speak your question clearly\n4. Click stop when finished\n5. Review text, edit if needed, then send\n\n**To Hear AI Responses:**\n1. Click the speaker icon on any AI response\n2. Adjust volume using browser controls\n3. Pause/resume with the audio controls\n\n### 📁 **File Upload**\n\n**Supported File Types:**\n- **PDFs**: Documents, reports, research papers\n- **Images**: JPG, PNG, GIF, WebP\n- **Text Files**: TXT, DOC, CSV\n\n**Upload Process:**\n1. Click the paperclip icon in text input\n2. Select file from your computer\n3. Wait for upload indicator\n4. Ask questions about the file content\n5. AI can analyze, summarize, or answer questions\n\n**Example prompts after upload:**\n- \"Summarize this document\"\n- \"What are the key points?\"\n- \"Extract all the important data\"\n- \"Translate this to Spanish\"\n\n### ⚙️ **Rate Limiting Dashboard**\n\n**Understanding Your Limits:**\n- **Default**: 15 requests per minute\n- **Counter**: Shows requests used/remaining\n- **Reset Timer**: Shows when limits reset\n- **Visual Indicator**: Color changes as you approach limit\n\n**When Rate Limited:**\n- Red warning appears\n- Timer shows reset time\n- Can still browse conversation history\n- Limits reset automatically\n\n### 📊 **Conversation Management**\n\n**Sidebar Features:**\n- **Recent Conversations**: Quick access to chat history\n- **Search**: Find specific conversations\n- **Export**: Download conversation as text/PDF\n- **Delete**: Remove conversations (local only)\n- **Archive**: Organize old conversations\n\n**Conversation Actions:**\n- **Copy Response**: Click copy icon on any message\n- **Regenerate**: Ask AI to try again with different response\n- **Edit Message**: Modify your questions after sending\n- **Branch Conversation**: Create alternative conversation paths\n\n## Advanced Configuration\n\n### 🔧 **Admin Settings**\n\n**Rate Limiting**:\n```env\nRATE_LIMIT_PER_MINUTE=15\nRATE_LIMIT_PER_HOUR=300\nRATE_LIMIT_PER_DAY=1000\n```\n\n**Security**:\n```env\nREQUIRE_AUTH=true\nSSO_ENABLED=true\nAUDIT_LOGGING=true\nENCRYPT_CONVERSATIONS=true\n```\n\n**AI Provider Preferences**:\n```env\nDEFAULT_PROVIDER=gemini\nFAILOVER_ENABLED=true\nLOAD_BALANCING=round_robin\n```\n\n### 🎨 **Customization**\n\n**Branding**:\n- Logo replacement in `/assets/`\n- Color scheme in `tailwind.config.js`\n- Company name in environment variables\n\n**Templates**:\n- Add custom templates in `/src/data/templates.js`\n- Modify existing prompts\n- Create department-specific templates\n\n**Features**:\n- Enable/disable voice features\n- Customize file upload limits\n- Adjust UI components\n\n## Enterprise Deployment\n\n### 🏢 **Production Setup**\n\n**Server Requirements:**\n- **CPU**: 4+ cores\n- **RAM**: 8 GB minimum (16 GB recommended)\n- **Storage**: 100 GB SSD\n- **Network**: 100 Mbps internet\n\n**Security Hardening:**\n1. Enable HTTPS with SSL certificates\n2. Configure firewall rules\n3. Set up VPN access for remote users\n4. Enable database encryption\n5. Configure backup systems\n6. Set up monitoring and alerting\n\n**Scaling Options:**\n- **Load Balancer**: Distribute traffic across multiple servers\n- **Database Clustering**: High availability for conversation storage\n- **CDN**: Faster asset delivery\n- **Auto-scaling**: Handle traffic spikes automatically\n\n### 👥 **User Management**\n\n**Authentication Methods:**\n- **SSO Integration**: SAML, OAuth, LDAP\n- **ASU Login**: Direct integration with ASU credentials\n- **Local Accounts**: Self-contained user management\n- **API Keys**: Programmatic access for integrations\n\n**Permission Levels:**\n- **Admin**: Full system control and user management\n- **Power User**: Extended rate limits and advanced features\n- **Standard User**: Basic chat and file upload\n- **Read-Only**: View conversations, no AI interaction\n\n### 📈 **Analytics & Monitoring**\n\n**Usage Metrics:**\n- Requests per user/department\n- Most popular templates\n- Response time analytics\n- Error rate monitoring\n- Cost tracking per AI provider\n\n**Security Monitoring:**\n- Failed login attempts\n- Unusual usage patterns\n- File upload activity\n- API key usage\n\n## Best Practices\n\n### 🎯 **For Administrators**\n\n1. **Start Small**: Begin with limited user group\n2. **Monitor Usage**: Watch for abuse or unexpected patterns\n3. **Regular Backups**: Automated conversation backups\n4. **Update Keys**: Rotate API keys quarterly\n5. **Train Users**: Provide onboarding and training\n\n### 👤 **For End Users**\n\n1. **Be Specific**: Clear, detailed questions get better answers\n2. **Use Templates**: Start with appropriate template for your task\n3. **Respect Limits**: Don't spam requests\n4. **Review Responses**: AI isn't perfect, verify important information\n5. **Protect Sensitive Data**: Don't share confidential information\n\n### 🔒 **Security Guidelines**\n\n1. **Never Share API Keys**: Keep credentials secure\n2. **Use HTTPS**: Always access over secure connections\n3. **Regular Updates**: Keep system updated with latest security patches\n4. **Access Control**: Limit access to necessary users only\n5. **Audit Regularly**: Review logs and usage patterns\n\n## Troubleshooting\n\n### ❌ **Common Issues**\n\n**\"API Key Invalid\":**\n- Check key format and spelling\n- Verify key hasn't expired\n- Ensure proper permissions on the key\n\n**\"Rate Limit Exceeded\":**\n- Wait for reset timer\n- Check if admin can increase limits\n- Spread requests over longer time period\n\n**\"File Upload Failed\":**\n- Check file size (max 10 MB)\n- Verify supported file type\n- Try different file format\n\n**\"Voice Not Working\":**\n- Allow microphone permissions\n- Check browser compatibility\n- Test with different browser\n\n**\"Slow Responses\":**\n- Check internet connection\n- Try different AI provider\n- Contact admin about server performance\n\n## Support & Resources\n\n🔗 **Links:**\n- **Live Demo**: [https://danielennis11111.github.io/rate-limiter/](https://danielennis11111.github.io/rate-limiter/)\n- **GitHub Repository**: [https://github.com/danielennis11111/rate-limiter](https://github.com/danielennis11111/rate-limiter)\n- **Documentation**: Check README.md in repository\n- **Issues**: Report bugs on GitHub Issues page\n\n💬 **Getting Help:**\n- Check documentation first\n- Search existing GitHub issues\n- Contact your system administrator\n- Create new issue with detailed description\n\n**The ASU Local Wrapper puts enterprise-grade AI at your fingertips while maintaining complete control over your data and usage!**",
+    "clonedCount": 234,
+    "rating": 4.9,
+    "reviewCount": 78,
+    "verified": true,
+    "previewDemoLink": "https://danielennis11111.github.io/rate-limiter/",
+    "canBeCloned": true,
+    "feedbackWanted": true,
+    "asuriteSpecific": true,
+    "capabilities": ["Enterprise Features", "Security Controls", "Multi-User Support"],
+    "actions": ["Deploy", "Configure", "Manage"],
+    "version": "2.0.0",
+    "dateCreated": "2025-01-22", 
+    "lastUpdated": "2025-01-22",
+    "reviews": [
+      {
+        "user": "IT Director",
+        "rating": 5,
+        "comment": "Exactly what we needed for enterprise AI deployment. The security features and user management are excellent."
+      },
+      {
+        "user": "Faculty Member", 
+        "rating": 5,
+        "comment": "The interface is intuitive and the templates are perfect for academic use. Students love the voice features."
+      },
+      {
+        "user": "System Administrator",
+        "rating": 5,
+        "comment": "Easy to deploy and manage. The monitoring features help us track usage and maintain security compliance."
+      }
+    ],
+    "exampleConversations": [
+      {
+        "user": "How do I set up rate limiting for different user groups?",
+        "assistant": "You can configure different rate limits in the admin panel by user role. For example, set faculty to 30 requests/minute and students to 15 requests/minute using the user management interface."
+      },
+      {
+        "user": "Can we integrate this with our existing SSO system?",
+        "assistant": "Yes! The wrapper supports SAML, OAuth, and LDAP integration. Check the enterprise deployment section for configuration details, or use ASU's built-in authentication system."
+      },
+      {
+        "user": "What's the best template for research assistance?",
+        "assistant": "The 'Research Assistant' template is optimized for academic research with prompts for literature review, data analysis, and citation help. The 'Data Analyst' template is great for statistical work."
       }
     ]
   }

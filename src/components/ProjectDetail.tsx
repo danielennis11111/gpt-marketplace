@@ -5,6 +5,7 @@ import { DocumentDuplicateIcon, ArrowLeftIcon } from '@heroicons/react/24/outlin
 import { StarIcon as StarIconOutline } from '@heroicons/react/24/outline';
 import gptsData from '../data/gpts.json';
 import type { GPT } from '../types';
+import { FormattedInstructions } from './FormattedInstructions';
 
 export const ProjectDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -54,6 +55,33 @@ export const ProjectDetail: React.FC = () => {
       link.href = '/examples/copy-paste-solution/asu-chatbot.js';
       link.download = 'asu-chatbot.js';
       link.click();
+      
+      // Increment the cloned count
+      const storedMarketplaceProjects = localStorage.getItem('marketplaceProjects');
+      if (storedMarketplaceProjects) {
+        const marketplaceProjects = JSON.parse(storedMarketplaceProjects);
+        const projectIndex = marketplaceProjects.findIndex((p: GPT) => p.id === project.id);
+        
+        if (projectIndex !== -1) {
+          marketplaceProjects[projectIndex] = {
+            ...marketplaceProjects[projectIndex],
+            clonedCount: marketplaceProjects[projectIndex].clonedCount + 1
+          };
+          localStorage.setItem('marketplaceProjects', JSON.stringify(marketplaceProjects));
+        }
+      }
+      
+      setTimeout(() => {
+        setCloningProject(false);
+      }, 1000);
+      
+      return;
+    }
+    
+    // Special handling for the ASU Local Wrapper (ext-002)
+    if (project.id === 'ext-002') {
+      // Redirect to GitHub repository for download
+      window.open('https://github.com/danielennis11111/rate-limiter', '_blank');
       
       // Increment the cloned count
       const storedMarketplaceProjects = localStorage.getItem('marketplaceProjects');
@@ -236,7 +264,9 @@ export const ProjectDetail: React.FC = () => {
 
           <div className="mb-6">
             <h2 className="text-xl font-semibold mb-4">Instructions</h2>
-            <p className="text-gray-700 whitespace-pre-wrap">{project.instructionsSnippet}</p>
+            <div className="bg-gray-50 p-6 rounded-lg border border-gray-200">
+              <FormattedInstructions content={project.instructionsSnippet} />
+            </div>
           </div>
 
           {project.exampleConversations && project.exampleConversations.length > 0 && (
@@ -372,12 +402,12 @@ export const ProjectDetail: React.FC = () => {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
-                    Copying Template...
+                    {project.id === 'ext-002' ? 'Opening GitHub...' : 'Copying Template...'}
                   </>
                 ) : (
                   <>
                     <DocumentDuplicateIcon className="h-5 w-5 mr-2" />
-                    Use Template
+                    {project.id === 'ext-002' ? 'Download from GitHub' : 'Use Template'}
                   </>
                 )}
               </button>
