@@ -2,7 +2,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 
 export interface UserSettings {
-  preferredChatProvider: 'ollama' | 'gemini' | 'llama4scout';
+  preferredChatProvider: 'ollama' | 'gemini';
+  ollamaModel: string;
   geminiApiKey: string;
   theme: 'light' | 'dark';
   notificationsEnabled: boolean;
@@ -16,7 +17,8 @@ interface SettingsContextType {
 }
 
 const defaultSettings: UserSettings = {
-  preferredChatProvider: 'llama4scout',
+  preferredChatProvider: 'ollama',
+  ollamaModel: '',
   geminiApiKey: '',
   theme: 'light',
   notificationsEnabled: true,
@@ -45,6 +47,12 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
       const savedSettings = localStorage.getItem('userSettings');
       if (savedSettings) {
         const parsedSettings = JSON.parse(savedSettings);
+        
+        // Handle migration from old format with llama4scout
+        if (parsedSettings.preferredChatProvider === 'llama4scout') {
+          parsedSettings.preferredChatProvider = 'ollama';
+        }
+        
         setSettings({ ...defaultSettings, ...parsedSettings });
       }
     } catch (error) {

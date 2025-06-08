@@ -10,7 +10,7 @@ export interface GeminiStatus {
 }
 
 export const useGemini = () => {
-  const { settings } = useSettings();
+  const { settings, updateSettings } = useSettings();
   const [geminiService, setGeminiService] = useState<GeminiService | null>(null);
   const [status, setStatus] = useState<GeminiStatus>({
     isConnected: false,
@@ -78,16 +78,30 @@ export const useGemini = () => {
     }
 
     try {
-      console.log(`Sending message to Gemini using model: ${model || status.currentModel}`);
-      return await geminiService.generateContent(message, model || status.currentModel);
+      const modelToUse = model || status.currentModel;
+      console.log(`Sending message to Gemini using model: ${modelToUse}`);
+      return await geminiService.generateContent(message, modelToUse);
     } catch (error) {
       console.error('Error sending message to Gemini:', error);
       throw error;
     }
   }, [geminiService, status.isConnected, status.currentModel]);
+  
+  // Set current model
+  const setCurrentModel = useCallback((modelName: string) => {
+    if (status.models.includes(modelName)) {
+      setStatus(prev => ({
+        ...prev,
+        currentModel: modelName
+      }));
+      return true;
+    }
+    return false;
+  }, [status.models]);
 
   return {
     status,
     sendMessage,
+    setCurrentModel
   };
 }; 

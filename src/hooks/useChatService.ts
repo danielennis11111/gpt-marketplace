@@ -18,7 +18,6 @@ export const useChatService = (): ChatServiceResult => {
 
   const isGeminiAvailable = gemini.status.isConnected;
   const shouldUseGemini = settings.preferredChatProvider === 'gemini' && isGeminiAvailable;
-  const shouldUseLlama4Scout = settings.preferredChatProvider === 'llama4scout';
 
   const sendMessage = useCallback(async (message: string): Promise<string> => {
     if (shouldUseGemini) {
@@ -31,18 +30,13 @@ export const useChatService = (): ChatServiceResult => {
         }
         throw new Error('Neither Gemini nor Ollama is available');
       }
-    } else if (shouldUseLlama4Scout) {
-      if (ollama.status.isConnected) {
-        return await ollama.sendMessageToLlama4Scout(message);
-      }
-      throw new Error('Ollama is not connected for Llama 4 Scout');
     } else {
       if (ollama.status.isConnected) {
         return await ollama.sendMessage(message);
       }
       throw new Error('Ollama is not connected');
     }
-  }, [shouldUseGemini, shouldUseLlama4Scout, gemini, ollama]);
+  }, [shouldUseGemini, gemini, ollama]);
 
   const testConnection = useCallback(async (): Promise<{ success: boolean; message: string }> => {
     if (shouldUseGemini) {
@@ -59,25 +53,12 @@ export const useChatService = (): ChatServiceResult => {
           message: error instanceof Error ? error.message : 'Gemini connection failed'
         };
       }
-    } else if (shouldUseLlama4Scout) {
-      try {
-        if (ollama.status.isConnected) {
-          await ollama.sendMessageToLlama4Scout('Test message');
-          return { success: true, message: 'Llama 4 Scout connection successful' };
-        } else {
-          return { success: false, message: 'Ollama is not connected for Llama 4 Scout' };
-        }
-      } catch (error) {
-        return {
-          success: false,
-          message: error instanceof Error ? error.message : 'Llama 4 Scout connection failed'
-        };
-      }
     } else {
       try {
         if (ollama.status.isConnected) {
           await ollama.sendMessage('Test message');
-          return { success: true, message: 'Ollama connection successful' };
+          const modelName = ollama.status.currentModel || 'Default';
+          return { success: true, message: `Ollama (${modelName}) connection successful` };
         } else {
           return { success: false, message: 'Ollama is not connected' };
         }
@@ -88,18 +69,26 @@ export const useChatService = (): ChatServiceResult => {
         };
       }
     }
-  }, [shouldUseGemini, shouldUseLlama4Scout, gemini, ollama]);
+  }, [shouldUseGemini, gemini, ollama]);
+
+  // Determine provider name
+  const getProviderName = () => {
+    if (shouldUseGemini) {
+      return `Gemini ${gemini.status.currentModel || ''}`;
+    } else {
+      if (ollama.status.currentModel) {
+        return `Ollama (${ollama.status.currentModel})`;
+      } else {
+        return 'Ollama';
+      }
+    }
+  };
 
   return {
     isConnected: shouldUseGemini ? isGeminiAvailable : ollama.status.isConnected,
     isLoading: ollama.isLoading,
     sendMessage,
-    providerName: shouldUseGemini ? `Gemini ${gemini.status.currentModel}` : 
-                shouldUseLlama4Scout ? 
-                  (ollama.status.models.find(m => m.name === 'llama4scout') ? 'Llama 4 Scout' : 
-                   ollama.status.models.find(m => m.name === 'llama3.3:8b') ? 'Llama 3.3 8B' : 
-                   ollama.status.models.find(m => m.name === 'gemma3:4b') ? 'Gemma 3 4B' : 'Ollama') : 
-                'Ollama',
+    providerName: getProviderName(),
     testConnection,
   };
 }; 

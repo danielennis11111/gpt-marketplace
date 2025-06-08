@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSettings } from '../contexts/SettingsContext';
 
 interface OllamaModel {
   name: string;
@@ -17,11 +18,12 @@ interface OllamaStatus {
 }
 
 export const useOllama = () => {
+  const { settings, updateSettings } = useSettings();
   const [status, setStatus] = useState<OllamaStatus>({
     isRunning: false,
     isConnected: false,
     models: [],
-    currentModel: null,
+    currentModel: settings.ollamaModel || null,
     error: null,
   });
   const [isLoading, setIsLoading] = useState(true);
@@ -44,28 +46,40 @@ export const useOllama = () => {
         // Sort models by name for better display
         const sortedModels = [...(data.models || [])].sort((a, b) => a.name.localeCompare(b.name));
         
-        // Get the previously selected model from localStorage if it exists
-        const savedModel = localStorage.getItem('preferredOllamaModel');
-        const modelExists = sortedModels.some(model => model.name === savedModel);
+        // Special case for llama4scout - if user had it selected before but now it's missing
+        const wasUsingLlama4Scout = settings.ollamaModel === 'llama4scout';
+        const hasLlama4Scout = sortedModels.some(model => model.name === 'llama4scout');
         
-        // Use saved model if it exists, otherwise prefer newer models like llama3, gemma3, etc.
-        let defaultModel = null;
-        if (modelExists) {
-          defaultModel = savedModel;
-        } else {
+        if (wasUsingLlama4Scout && !hasLlama4Scout) {
+          console.log('llama4scout model was previously selected but is no longer available');
+        }
+        
+        // Use the model from settings if it exists and is available
+        let modelToUse = settings.ollamaModel;
+        const modelExists = sortedModels.some(model => model.name === modelToUse);
+        
+        if (!modelExists || !modelToUse) {
           // Try to find the best available model in order of preference
-          const preferredModels = ['llama4scout', 'llama3.3:8b', 'gemma3:4b', 'llama3', 'gemma3', 'mistral', 'llama2'];
+          const preferredModels = [
+            'llama4:16x17b', 'devstral:24b',  // High-performance models first
+            'llama3.3:8b', 'gemma3:4b', 'llama3', 'gemma3', 'mistral', 'llama2'
+          ];
           for (const modelName of preferredModels) {
             const found = sortedModels.find(model => model.name.includes(modelName));
             if (found) {
-              defaultModel = found.name;
+              modelToUse = found.name;
               break;
             }
           }
           
           // If no preferred model is found, use the first one
-          if (!defaultModel && sortedModels.length > 0) {
-            defaultModel = sortedModels[0].name;
+          if (!modelToUse && sortedModels.length > 0) {
+            modelToUse = sortedModels[0].name;
+          }
+          
+          // Update settings with the selected model
+          if (modelToUse) {
+            updateSettings({ ollamaModel: modelToUse });
           }
         }
         
@@ -73,7 +87,7 @@ export const useOllama = () => {
           isRunning: true,
           isConnected: true,
           models: sortedModels,
-          currentModel: defaultModel,
+          currentModel: modelToUse,
           error: null,
         });
       } else {
@@ -96,7 +110,7 @@ export const useOllama = () => {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [settings.ollamaModel, updateSettings]);
 
   // Start Ollama service
   const startOllama = useCallback(async () => {
@@ -128,7 +142,7 @@ export const useOllama = () => {
   // Set current model
   const setCurrentModel = useCallback((modelName: string) => {
     if (status.models.some(model => model.name === modelName)) {
-      localStorage.setItem('preferredOllamaModel', modelName);
+      updateSettings({ ollamaModel: modelName });
       setStatus(prev => ({
         ...prev,
         currentModel: modelName
@@ -136,7 +150,7 @@ export const useOllama = () => {
       return true;
     }
     return false;
-  }, [status.models]);
+  }, [status.models, updateSettings]);
 
   // Send message to Ollama
   const sendMessage = useCallback(async (message: string, model?: string) => {
@@ -179,7 +193,10 @@ export const useOllama = () => {
     }
 
     // Define the model names we can use (in order of preference)
-    const modelOptions = ['llama4scout', 'llama3.3:8b', 'gemma3:4b', 'llama3', 'gemma3', 'mistral', 'llama2'];
+    const modelOptions = [
+      'llama4:16x17b', 'devstral:24b',  // High-performance models first
+      'llama3.3:8b', 'gemma3:4b', 'llama3', 'gemma3', 'mistral', 'llama2'
+    ];
     
     // Check if any of our preferred models are available
     const availableModel = status.models.find(model => 
@@ -187,7 +204,7 @@ export const useOllama = () => {
     )?.name || status.currentModel; // Fallback to current model
     
     try {
-      console.log(`Using model: ${availableModel} for Llama 4 Scout request`);
+      console.log(`Using model: ${availableModel} for advanced request`);
       
       const response = await fetch('http://localhost:11434/api/generate', {
         method: 'POST',
@@ -213,10 +230,22 @@ export const useOllama = () => {
   }, [status.isConnected, status.models, status.currentModel]);
 
   // Pull/download a model
-  const pullModel = useCallback(async (modelName: string) => {
+  const pullModel = useCallback(async (modelName: string, onProgress?: (progress: number) => void) => {
     try {
       setIsLoading(true);
+      console.log(`Attempting to pull model: ${modelName}`);
       
+      // If we're in a browser environment, we have to guide the user
+      if (typeof window !== 'undefined') {
+        // Just return instructions without showing an error
+        return { 
+          success: false, 
+          needsManualPull: true,
+          message: `To install the ${modelName} model, please run this command in your terminal:\n\nollama pull ${modelName}` 
+        };
+      }
+      
+      // This would only execute in a Node.js environment
       const response = await fetch('http://localhost:11434/api/pull', {
         method: 'POST',
         headers: {
@@ -228,7 +257,9 @@ export const useOllama = () => {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to pull model: ${response.statusText}`);
+        console.error(`Failed to pull model: ${response.statusText}`);
+        // Don't store failed download information
+        return { success: false, message: `Failed to pull model. Please try again manually.` };
       }
 
       // Refresh models list after successful pull
@@ -236,11 +267,29 @@ export const useOllama = () => {
       
       return { success: true, message: `Model ${modelName} downloaded successfully` };
     } catch (error) {
-      return { success: false, message: `Failed to download model: ${error}` };
+      console.error(`Error pulling model: ${error}`);
+      // Don't store failed download information
+      return { success: false, message: `Failed to download model. Please try again manually.` };
     } finally {
       setIsLoading(false);
     }
   }, [checkOllamaStatus]);
+  
+  // Specialized function to pull llama4scout
+  const pullLlama4Scout = useCallback(async (onProgress?: (progress: number) => void) => {
+    return pullModel('llama4scout', onProgress);
+  }, [pullModel]);
+  
+  // Check if a specific model exists
+  const checkModelExists = useCallback((modelName: string) => {
+    return status.models.some(model => model.name === modelName);
+  }, [status.models]);
+  
+  // Helper function to suggest reinstalling llama4scout
+  const suggestReinstallLlama4Scout = useCallback(() => {
+    const hasLlama4Scout = checkModelExists('llama4scout');
+    return !hasLlama4Scout && settings.ollamaModel === 'llama4scout';
+  }, [checkModelExists, settings.ollamaModel]);
 
   // Initialize on mount
   useEffect(() => {
@@ -260,6 +309,9 @@ export const useOllama = () => {
     sendMessage,
     sendMessageToLlama4Scout,
     pullModel,
+    pullLlama4Scout,
     setCurrentModel,
+    checkModelExists,
+    suggestReinstallLlama4Scout
   };
 }; 

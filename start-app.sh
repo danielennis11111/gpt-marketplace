@@ -25,7 +25,18 @@ fi
 
 # List available models
 echo "Available Ollama models:"
-ollama list
+MODEL_COUNT=$(ollama list | grep -v "NAME" | wc -l)
+
+if [ "$MODEL_COUNT" -eq 0 ]; then
+    echo "No models found. To install a model, run one of the following commands:"
+    echo "  ollama pull llama3:8b    (recommended for general use)"
+    echo "  ollama pull gemma3:4b    (smaller but fast)"
+    echo "  ollama pull mistral      (good for coding)"
+    echo ""
+    echo "For more models, visit: https://ollama.com/library"
+else
+    ollama list
+fi
 
 # Start the web application
 echo "Starting Beta aiLand web application..."
