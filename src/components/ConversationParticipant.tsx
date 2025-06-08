@@ -85,7 +85,7 @@ export const ASU_PARTICIPANTS = [
     id: 'elizabeth-reilley',
     name: 'Elizabeth Reilley',
     role: 'Executive Director, AI Acceleration',
-    imgSrc: 'https://webapp4.asu.edu/photo-ws/directory_photo/ereille1?size=medium&break=1749176678&blankImage2=1',
+    imgSrc: 'https://ai.asu.edu/sites/default/files/styles/asu_isearch_profile/public/elizabeth_reilley.jpg',
     description: 'Explores innovation, technology, and emerging possibilities in AI and education.',
     background: `Leading AI acceleration at ASU, focused on how artificial intelligence can enhance human 
                  creativity and transform educational experiences through innovative technology integration.`,
@@ -97,8 +97,8 @@ export const ASU_PARTICIPANTS = [
   {
     id: 'zohair-zaidi',
     name: 'Zohair Zaidi',
-    role: 'Technology Innovation Expert',
-    imgSrc: 'https://webapp4.asu.edu/photo-ws/directory_photo/zazaidi?size=medium&break=1749176543&blankImage2=1',
+    role: 'Director, AI Technology',
+    imgSrc: 'https://ai.asu.edu/sites/default/files/styles/asu_isearch_profile/public/zohair_zaidi.jpg',
     description: 'Provides technical expertise in computer science, coding, and AI technologies.',
     background: `Technology leader passionate about making complex systems accessible and empowering people 
                  to build amazing things through clear thinking and systematic problem-solving. Expert in AI system 

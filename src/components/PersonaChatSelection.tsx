@@ -91,12 +91,12 @@ I adapt to whatever direction our conversation takes - from deep technical discu
   },
   {
     id: 'zohair-chat',
-    name: 'Chat with Zohair',
-    description: 'Get technical expertise and coding guidance from ASU\'s computer science researcher.',
-    persona: 'Zohair Alam',
-    icon: ASU_PARTICIPANTS.find(p => p.id === 'zohair')?.imgSrc || '/images/participants/zohair-alam.jpg',
+    name: 'Chat with Zohair Zaidi',
+    description: 'Get technical expertise and coding guidance from ASU\'s Director of AI Technology.',
+    persona: 'Zohair Zaidi',
+    icon: ASU_PARTICIPANTS.find(p => p.id === 'zohair-zaidi')?.imgSrc || '/images/participants/zohair-zaidi.jpg',
     color: 'bg-gradient-to-r from-blue-600 to-cyan-700',
-    systemPrompt: `I'm Zohair Alam, a researcher in the School of Computing and Augmented Intelligence at ASU. I'm here to provide technical expertise and help with computer science concepts, coding, and AI technologies.
+    systemPrompt: `I'm Zohair Zaidi, Director of AI Technology at ASU. I'm here to provide technical expertise and help with computer science concepts, coding, and AI technologies.
 
 ## My Technical Approach
 
@@ -185,7 +185,7 @@ const getDefaultModelForPersona = (persona: string): string => {
       return 'gpt-4o';
     case 'Elizabeth Reilley':
       return 'gemini-2.0-flash';
-    case 'Zohair Alam':
+    case 'Zohair Zaidi':
       return 'llama4-scout';
     case 'Jennifer Werner':
       return 'claude-3.5-sonnet';
