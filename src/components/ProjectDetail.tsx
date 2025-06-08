@@ -47,6 +47,37 @@ export const ProjectDetail: React.FC = () => {
     
     setCloningProject(true);
     
+    // Special handling for the ASU AI Chatbot Extension (ext-001)
+    if (project.id === 'ext-001') {
+      // Download the asu-chatbot.js file
+      const link = document.createElement('a');
+      link.href = '/examples/copy-paste-solution/asu-chatbot.js';
+      link.download = 'asu-chatbot.js';
+      link.click();
+      
+      // Increment the cloned count
+      const storedMarketplaceProjects = localStorage.getItem('marketplaceProjects');
+      if (storedMarketplaceProjects) {
+        const marketplaceProjects = JSON.parse(storedMarketplaceProjects);
+        const projectIndex = marketplaceProjects.findIndex((p: GPT) => p.id === project.id);
+        
+        if (projectIndex !== -1) {
+          marketplaceProjects[projectIndex] = {
+            ...marketplaceProjects[projectIndex],
+            clonedCount: marketplaceProjects[projectIndex].clonedCount + 1
+          };
+          localStorage.setItem('marketplaceProjects', JSON.stringify(marketplaceProjects));
+        }
+      }
+      
+      setTimeout(() => {
+        setCloningProject(false);
+      }, 1000);
+      
+      return;
+    }
+    
+    // Standard template cloning for other projects
     // Generate a new unique ID for the cloned project
     const newProjectId = `gpt-${Math.floor(Math.random() * 10000).toString().padStart(4, '0')}`;
     

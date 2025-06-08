@@ -8,6 +8,7 @@ import MyProjects from './pages/MyProjects';
 import ProjectEditor from './pages/ProjectEditor';
 import CreateProject from './pages/CreateProject';
 import CommunityIdeas from './pages/CommunityIdeas';
+import { RateLimiterWrapper } from './components/RateLimiterWrapper';
 import {
   HomeIcon,
   PlusCircleIcon,
@@ -131,6 +132,9 @@ const AppContent = () => {
             <NavItem to="/community-ideas" icon={LightBulbIcon}>
               Community Ideas
             </NavItem>
+            <NavItem to="/rate-limiter" icon={ChatBubbleLeftRightIcon}>
+              Beta Land @ ASU
+            </NavItem>
             <NavItem to="/learning" icon={AcademicCapIcon}>
               Learning
             </NavItem>
@@ -209,6 +213,7 @@ const AppContent = () => {
           <Route path="/edit-project/:id" element={<ProjectEditor />} />
           <Route path="/create-project" element={<CreateProject />} />
           <Route path="/community-ideas" element={<CommunityIdeas />} />
+          <Route path="/rate-limiter" element={<RateLimiterWrapper />} />
         </Routes>
       </div>
     </div>

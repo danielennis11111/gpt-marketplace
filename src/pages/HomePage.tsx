@@ -12,7 +12,8 @@ import {
   ChartBarIcon,
   PuzzlePieceIcon,
   LightBulbIcon,
-  MegaphoneIcon
+  MegaphoneIcon,
+  BookOpenIcon
 } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 
@@ -31,7 +32,7 @@ const PRODUCT_TYPES = [
     name: 'Extensions',
     icon: PuzzlePieceIcon,
     description: 'Embeddable chatbots and website integrations',
-    categories: [],
+    categories: ['Extension'],
     color: 'bg-green-100 text-green-800 border-green-200'
   },
   {
@@ -39,7 +40,7 @@ const PRODUCT_TYPES = [
     name: 'Repositories',
     icon: DocumentTextIcon,
     description: 'Code repositories and development resources',
-    categories: [],
+    categories: ['Repository'],
     color: 'bg-purple-100 text-purple-800 border-purple-200'
   },
   {
@@ -47,8 +48,16 @@ const PRODUCT_TYPES = [
     name: 'Local Models',
     icon: ChartBarIcon,
     description: 'Downloadable AI models for local deployment',
-    categories: [],
+    categories: ['Local Model'],
     color: 'bg-amber-100 text-amber-800 border-amber-200'
+  },
+  {
+    id: 'tutorials',
+    name: 'Tutorials',
+    icon: BookOpenIcon,
+    description: 'Step-by-step guides and educational resources',
+    categories: ['Tutorial'],
+    color: 'bg-indigo-100 text-indigo-800 border-indigo-200'
   }
 ];
 

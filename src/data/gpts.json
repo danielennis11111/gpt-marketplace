@@ -556,5 +556,352 @@
         "assistant": "I'll simulate Marie Curie's perspective on modern science. Would you like to focus on any particular field or discovery?"
       }
     ]
+  },
+  {
+    "id": "ext-001",
+    "name": "ASU AI Chatbot - Copy & Paste Extension",
+    "description": "A complete copy-paste chatbot solution with ASU branding. Features multiple chatbot profiles, dropdown selector, sidebar interface, and responsive design. Just copy the JavaScript code and paste it into your website - no configuration needed!",
+    "creator": {
+      "name": "ASU Enterprise Technology",
+      "avatar": "/asu-logo.png"
+    },
+    "category": "Extension",
+    "tags": ["chatbot", "embed", "website", "integration", "copy-paste", "asu-branded", "multi-profile"],
+    "instructionsSnippet": "SIMPLE COPY & PASTE CHATBOT INTEGRATION\n\nTwo easy ways to add the ASU AI Chatbot to your website:\n\nOption 1: Direct Script Embed\n<script src=\"asu-chatbot.js\"></script>\n\nOption 2: Inline Code\n<script>\n// Copy the entire JavaScript code from asu-chatbot.js\n// and paste it here\n</script>\n\nThat's it! The ASU chatbot button will appear bottom-right with full functionality.\n\nFEATURES INCLUDED:\n\n- Multiple Chatbot Profiles: ASU AI Assistant, Math Tutor, Writing Assistant, Research Helper\n- ASU Branded Design: Official ASU gradient colors (#8C1D40, #FFC425)\n- Responsive Interface: Works perfectly on desktop and mobile\n- Interactive Features: Dropdown profile selector, refresh option, new tab functionality\n- Zero Configuration: No API keys or setup required\n\nCUSTOMIZATION:\n\nTo add your own chatbots, edit the chatbotProfiles array in the JavaScript:\n\nconst chatbotProfiles = [\n    {\n        name: \"Your Custom Bot\",\n        description: \"Your description\", \n        url: \"https://your-chatbot-url.com\"\n    }\n];\n\nCurrent chatbot URLs point to: https://app-beta.aiml.asu.edu/2afee586704c45fda29aea2eff30b485\n\nSimply replace with your MyAI Builder chatbot URLs or any other chatbot service.\n\nPERFECT FOR:\n- Course websites and LMS integration\n- Department and faculty pages  \n- Student service portals\n- Research project sites\n- Any ASU-affiliated website\n\nClick 'Use Template' to download the asu-chatbot.js file and get started immediately!",
+    "clonedCount": 1247,
+    "rating": 4.9,
+    "reviewCount": 203,
+    "verified": true,
+          "previewDemoLink": "/examples/copy-paste-solution/demo.html",
+    "canBeCloned": true,
+    "feedbackWanted": true,
+    "asuriteSpecific": false,
+    "capabilities": ["Website Integration", "Multi-AI Switching", "Customizable UI"],
+    "actions": ["Embed", "Configure", "Switch AI"],
+    "version": "2.1.0",
+    "dateCreated": "2025-01-15",
+    "lastUpdated": "2025-01-20",
+    "reviews": [
+      {
+        "user": "Dr. Jennifer Martinez",
+        "rating": 5,
+        "comment": "Incredibly easy to implement! Had our chatbot running on our course website in under 5 minutes."
+      },
+      {
+        "user": "Tech Support Lead",
+        "rating": 5,
+        "comment": "The ability to switch between different AI assistants is a game-changer for our support workflow."
+      }
+    ],
+    "exampleConversations": [
+      {
+        "user": "How do I embed this on my WordPress site?",
+        "assistant": "Just copy the provided HTML code and paste it into any page or post. The chatbot will automatically load and be ready to use!"
+      },
+      {
+        "user": "Can I customize the appearance?",
+        "assistant": "Yes! You can customize colors, position, size, and even add your own CSS. Check the configuration options in the documentation."
+      }
+    ]
+  },
+  {
+    "id": "repo-001",
+    "name": "ASU Local Wrapper",
+    "description": "A rate-limiting wrapper for running AI models locally while maintaining enterprise-level security and usage controls. Perfect for organizations that need to deploy AI tools with proper governance and monitoring.",
+    "creator": {
+      "name": "ASU Enterprise Technology",
+      "avatar": "/asu-logo.png"
+    },
+    "category": "Repository",
+    "tags": ["local-deployment", "rate-limiting", "security", "enterprise", "wrapper", "governance"],
+    "instructionsSnippet": "git clone https://github.com/danielennis11111/rate-limiter\ncd rate-limiter\nnpm install\nnpm run setup",
+    "clonedCount": 892,
+    "rating": 4.7,
+    "reviewCount": 156,
+    "verified": true,
+    "previewDemoLink": "https://github.com/danielennis11111/rate-limiter",
+    "canBeCloned": true,
+    "feedbackWanted": true,
+    "asuriteSpecific": false,
+    "capabilities": ["Rate Limiting", "Security Controls", "Local Deployment"],
+    "actions": ["Clone", "Deploy", "Configure"],
+    "version": "1.3.2",
+    "dateCreated": "2024-11-10",
+    "lastUpdated": "2025-01-18",
+    "reviews": [
+      {
+        "user": "IT Security Manager",
+        "rating": 5,
+        "comment": "Exactly what we needed for enterprise AI deployment. The security controls are comprehensive."
+      },
+      {
+        "user": "DevOps Engineer",
+        "rating": 4,
+        "comment": "Easy to set up and configure. Documentation could be more detailed but the code is clean."
+      }
+    ],
+    "exampleConversations": [
+      {
+        "user": "How do I set rate limits for different user groups?",
+        "assistant": "Configure rate limits in the config.yml file. You can set different limits for admin, faculty, and student groups."
+      },
+      {
+        "user": "Can this work with cloud deployments?",
+        "assistant": "Yes! While designed for local deployment, it supports hybrid cloud setups with proper configuration."
+      }
+    ]
+  },
+  {
+    "id": "repo-002",
+    "name": "HuggingFace Spaces Collection",
+    "description": "Access to curated HuggingFace Spaces featuring the latest AI models and applications. Discover, test, and deploy cutting-edge AI tools from the community's largest model repository.",
+    "creator": {
+      "name": "HuggingFace Community",
+      "avatar": "https://ui-avatars.com/api/?name=HF&background=ff9900"
+    },
+    "category": "Repository",
+    "tags": ["huggingface", "spaces", "community", "models", "deployment", "ai-apps"],
+    "instructionsSnippet": "Visit https://huggingface.co/spaces to explore thousands of AI applications and models. Use the search and filters to find tools for your specific needs.",
+    "clonedCount": 2156,
+    "rating": 4.8,
+    "reviewCount": 487,
+    "verified": true,
+    "previewDemoLink": "https://huggingface.co/spaces",
+    "canBeCloned": true,
+    "feedbackWanted": true,
+    "asuriteSpecific": false,
+    "capabilities": ["Model Discovery", "Community Apps", "Direct Testing"],
+    "actions": ["Browse", "Test", "Fork"],
+    "version": "Community",
+    "dateCreated": "2023-06-01",
+    "lastUpdated": "2025-01-20",
+    "reviews": [
+      {
+        "user": "AI Researcher",
+        "rating": 5,
+        "comment": "Amazing resource for discovering new AI models and applications. The community is incredibly active."
+      },
+      {
+        "user": "Data Scientist",
+        "rating": 5,
+        "comment": "Perfect for rapid prototyping and testing different models without local setup."
+      }
+    ],
+    "exampleConversations": [
+      {
+        "user": "How do I find image generation models?",
+        "assistant": "Use the search filters on HuggingFace Spaces. Filter by 'Computer Vision' and 'Image Generation' to find the latest models."
+      },
+      {
+        "user": "Can I deploy these models locally?",
+        "assistant": "Many spaces provide the code and instructions for local deployment. Check the 'Files and versions' tab for implementation details."
+      }
+    ]
+  },
+  {
+    "id": "model-001",
+    "name": "Gemma 3 - Google's Multimodal LLM",
+    "description": "Google's latest open-weight LLM with multimodal capabilities. Available in 1B, 4B, 12B, and 27B parameters with support for images, text, and 140+ languages. Features 128k context window and state-of-the-art performance.",
+    "creator": {
+      "name": "Google DeepMind",
+      "avatar": "https://ui-avatars.com/api/?name=Google&background=4285f4"
+    },
+    "category": "Local Model",
+    "tags": ["gemma", "google", "multimodal", "local-model", "ollama", "huggingface"],
+    "instructionsSnippet": "# Install with Ollama\nollama pull gemma3:4b\n# Or download from HuggingFace\nhuggingface-cli download google/gemma-3-4b-it\n# Use with transformers\nfrom transformers import AutoModelForCausalLM, AutoTokenizer",
+    "clonedCount": 3421,
+    "rating": 4.9,
+    "reviewCount": 756,
+    "verified": true,
+    "previewDemoLink": "https://huggingface.co/blog/gemma3",
+    "canBeCloned": true,
+    "feedbackWanted": true,
+    "asuriteSpecific": false,
+    "capabilities": ["Multimodal Processing", "140+ Languages", "Long Context"],
+    "actions": ["Download", "Install", "Deploy"],
+    "version": "3.0",
+    "dateCreated": "2025-03-12",
+    "lastUpdated": "2025-03-12",
+    "reviews": [
+      {
+        "user": "ML Engineer",
+        "rating": 5,
+        "comment": "Exceptional performance for the size. The multimodal capabilities are impressive and the context window is huge!"
+      },
+      {
+        "user": "Research Scientist",
+        "rating": 5,
+        "comment": "Best open-weight model I've used. The multilingual support is outstanding."
+      }
+    ],
+    "exampleConversations": [
+      {
+        "user": "How do I run Gemma 3 locally?",
+        "assistant": "You can use Ollama for easy setup: 'ollama pull gemma3:4b' or download directly from HuggingFace and use with transformers."
+      },
+      {
+        "user": "What hardware do I need for the 27B model?",
+        "assistant": "For the 27B model, you'll need at least 32GB RAM and preferably a GPU with 24GB+ VRAM for optimal performance."
+      }
+    ]
+  },
+  {
+    "id": "model-002", 
+    "name": "Llama 3.3 - Meta's Open Foundation Model",
+    "description": "Meta's latest Llama model with improved reasoning, coding, and multilingual capabilities. Available for download with commercial license. Optimized for both research and production use with excellent performance across benchmarks.",
+    "creator": {
+      "name": "Meta AI",
+      "avatar": "https://ui-avatars.com/api/?name=Meta&background=1877f2"
+    },
+    "category": "Local Model", 
+    "tags": ["llama", "meta", "foundation-model", "commercial-license", "ollama", "local-deployment"],
+    "instructionsSnippet": "# Download from official source\nwget https://www.llama.com/llama-downloads/\n# Or use Ollama\nollama pull llama3.3:8b\n# With transformers\nfrom transformers import LlamaForCausalLM, LlamaTokenizer",
+    "clonedCount": 4892,
+    "rating": 4.8,
+    "reviewCount": 1023,
+    "verified": true,
+    "previewDemoLink": "https://www.llama.com/llama-downloads/",
+    "canBeCloned": true,
+    "feedbackWanted": true,
+    "asuriteSpecific": false,
+    "capabilities": ["Advanced Reasoning", "Code Generation", "Multilingual"],
+    "actions": ["Download", "License", "Deploy"],
+    "version": "3.3",
+    "dateCreated": "2024-12-15",
+    "lastUpdated": "2025-01-10",
+    "reviews": [
+      {
+        "user": "Senior Developer",
+        "rating": 5,
+        "comment": "Incredible coding capabilities. The commercial license makes it perfect for enterprise use."
+      },
+      {
+        "user": "AI Product Manager",
+        "rating": 4,
+        "comment": "Solid performance and the licensing terms are very reasonable for commercial applications."
+      }
+    ],
+    "exampleConversations": [
+      {
+        "user": "What's the licensing for commercial use?",
+        "assistant": "Llama 3.3 comes with a custom commercial license that allows commercial use. Check the official license terms on the download page."
+      },
+      {
+        "user": "How does this compare to Gemma 3?",
+        "assistant": "Both are excellent! Llama 3.3 excels in reasoning and coding, while Gemma 3 offers multimodal capabilities. Choose based on your specific needs."
+      }
+    ]
+  },
+  {
+    "id": "tutorial-001",
+    "name": "Complete Gemini API Setup Guide",
+    "description": "A comprehensive step-by-step tutorial for setting up Google's Gemini API with the ASU Local Wrapper. Learn how to get your API key, configure the wrapper, and deploy a fully functional local chatbot with rate limiting and security controls.",
+    "creator": {
+      "name": "ASU Enterprise Technology",
+      "avatar": "/asu-logo.png"
+    },
+    "category": "Tutorial",
+    "tags": ["gemini-api", "api-setup", "local-wrapper", "chatbot", "tutorial", "step-by-step"],
+    "instructionsSnippet": "## 📹 Video Tutorials\n\n**Essential Viewing for Setup Success:**\n\n### 🎯 [Google Gemini 2 API Crash Course In Python](https://www.youtube.com/watch?v=LzFdzcugeBU)\n*Complete walkthrough of Gemini API setup and integration - Everything you need to get started!*\n\n### 🚀 [How to Use the Gemini API with Python - Build a Customizable AI Chatbot](https://www.youtube.com/watch?v=CaxPa1FuHx4)\n*Step-by-step guide for building a customizable chatbot with Gemini API*\n\n### 💡 [Get Started Developing with Gemini API](https://www.youtube.com/watch?v=T1BTyo1A4Ww)\n*Official Google guide for Gemini API development*\n\n---\n\n## Step 1: Get Your Gemini API Key\n\n1. Visit https://ai.google.dev/ and sign in with your Google account\n2. Click 'Get API Key' and create a new project\n3. Enable the Gemini API for your project\n4. Generate your API key and keep it secure\n\n**💡 Pro Tip:** Watch the first video above for a visual walkthrough of the API key creation process!\n\n## Step 2: Clone the ASU Local Wrapper\n\n```bash\ngit clone https://github.com/danielennis11111/rate-limiter\ncd rate-limiter\nnpm install\n```\n\n## Step 3: Configure the Environment\n\n1. Copy the example environment file:\n```bash\ncp .env.example .env\n```\n\n2. Add your Gemini API key to the .env file:\n```env\nGEMINI_API_KEY=your_api_key_here\nRATE_LIMIT_PER_MINUTE=15\nPORT=3000\n```\n\n## Step 4: Update the Configuration\n\nEdit `src/config/models.js` to include Gemini:\n\n```javascript\nconst models = {\n  gemini: {\n    provider: 'google',\n    model: 'gemini-1.5-pro',\n    apiKey: process.env.GEMINI_API_KEY,\n    maxTokens: 8192,\n    temperature: 0.7\n  }\n};\n```\n\n## Step 5: Start Your Local Chatbot\n\n```bash\nnpm run dev\n```\n\nYour chatbot will be available at http://localhost:3000 with:\n- ✅ Rate limiting (15 requests/minute)\n- ✅ Secure API key management\n- ✅ Enterprise logging\n- ✅ Voice interaction support\n- ✅ File upload capabilities\n\n## Step 6: Test Your Setup\n\n1. Open your browser to http://localhost:3000\n2. Click 'General Assistant' template\n3. Send a test message: 'Hello, can you help me?'\n4. Verify the response comes from Gemini\n\n## Troubleshooting\n\n**API Key Issues:**\n- Ensure your API key is correctly set in .env\n- Check that Gemini API is enabled in Google Cloud Console\n- Verify billing is set up for your Google Cloud project\n\n**Rate Limiting:**\n- Default is 15 requests/minute, adjust in .env if needed\n- Monitor usage in the dashboard\n\n**Connection Issues:**\n- Check your internet connection\n- Verify firewall settings allow outbound HTTPS\n\n## Next Steps\n\n- Customize the UI in `src/components/`\n- Add custom conversation templates\n- Set up SSL certificates for production\n- Configure user authentication\n- Deploy to your server or cloud platform",
+    "clonedCount": 1245,
+    "rating": 4.9,
+    "reviewCount": 287,
+    "verified": true,
+    "previewDemoLink": "https://app-beta.aiml.asu.edu/tutorial-gemini-setup",
+    "canBeCloned": true,
+    "feedbackWanted": true,
+    "asuriteSpecific": false,
+    "capabilities": ["Step-by-Step Guide", "API Integration", "Local Deployment"],
+    "actions": ["Follow", "Configure", "Deploy"],
+    "version": "2.1.0",
+    "dateCreated": "2025-01-15",
+    "lastUpdated": "2025-01-20",
+    "reviews": [
+      {
+        "user": "Dr. Sarah Mitchell",
+        "rating": 5,
+        "comment": "Incredibly detailed tutorial! Got my chatbot running in under 30 minutes. The troubleshooting section saved me time."
+      },
+      {
+        "user": "IT Administrator",
+        "rating": 5,
+        "comment": "Perfect for enterprise deployment. Security considerations are well covered."
+      },
+      {
+        "user": "Graduate Student",
+        "rating": 4,
+        "comment": "Great guide, though some steps could use more explanation for beginners."
+      }
+    ],
+    "exampleConversations": [
+      {
+        "user": "How long does setup usually take?",
+        "assistant": "Most users complete the setup in 20-30 minutes. The API key setup takes 5 minutes, and the wrapper configuration takes 15-25 minutes depending on your experience level."
+      },
+      {
+        "user": "Do I need a paid Google Cloud account?",
+        "assistant": "Gemini API has a generous free tier that's perfect for getting started. You only need paid billing for high-volume usage."
+      },
+      {
+        "user": "Can I use this for production?",
+        "assistant": "Yes! The ASU Local Wrapper is designed for production use with enterprise security features. Just follow the production deployment steps in the guide."
+      }
+    ]
+  },
+  {
+    "id": "tutorial-002",
+    "name": "Multi-API Chatbot: Gemini, Anthropic & OpenAI Setup",
+    "description": "Advanced tutorial for creating a unified chatbot that supports multiple AI providers. Learn to configure Gemini, Claude (Anthropic), and ChatGPT (OpenAI) APIs in a single ASU Local Wrapper deployment with intelligent routing and failover.",
+    "creator": {
+      "name": "ASU Enterprise Technology", 
+      "avatar": "/asu-logo.png"
+    },
+    "category": "Tutorial",
+    "tags": ["multi-api", "gemini", "anthropic", "openai", "claude", "chatgpt", "advanced-setup"],
+    "instructionsSnippet": "## 📹 Essential Video Tutorials\n\n**Master Multi-API Integration with these comprehensive guides:**\n\n### 🎯 [How to build a Multi Model Chatbot w OpenAI Grok Llama 3.1](https://www.youtube.com/watch?v=TquB5ax-dDI)\n*Complete tutorial on building multi-model chatbots with different AI providers*\n\n### 🚀 [Openai Multi-Model Voice Chatbot - Langchain, Whisper, TTS, Grok, Llama 3.1, Claude Sonet 3.5 GPT 4o](https://www.youtube.com/watch?v=5oC_rXMEjHY)\n*Advanced multi-model setup with voice capabilities and multiple AI providers*\n\n### 💡 [The FASTEST Way to Build AI Chatbot in Next.js with OpenAI and Gemini](https://www.youtube.com/watch?v=3jaCoKHLEZ8)\n*Quick setup guide for integrating multiple AI APIs*\n\n### 🔧 [OpenAI vs Gemini vs Claude for AI Chatbots in 2024](https://www.youtube.com/watch?v=8-s0pDKg5Xo)\n*Comparison guide to help you choose the right AI provider for your needs*\n\n### 🎓 [A Beginner's Guide to Using the ChatGPT API in 2024](https://www.youtube.com/watch?v=E0ieEO8VQpk)\n*Essential guide for OpenAI API setup and usage*\n\n---\n\n## Overview: Multi-Provider AI Chatbot\n\nThis tutorial covers setting up a chatbot that can use multiple AI providers:\n- 🤖 **Google Gemini** - Excellent for reasoning and multimodal tasks\n- 🧠 **Anthropic Claude** - Superior for analysis and safety\n- 💬 **OpenAI GPT** - Great for conversation and creativity\n\n**🎬 Watch the videos above for visual walkthroughs of each setup process!**\n\n## Step 1: Gather All API Keys\n\n### Google Gemini API Key\n1. Visit https://ai.google.dev/\n2. Sign in and create a new project\n3. Enable Gemini API\n4. Generate API key\n\n### Anthropic Claude API Key\n1. Go to https://console.anthropic.com/\n2. Sign up/login to your account\n3. Navigate to API Keys section\n4. Create a new API key\n\n### OpenAI API Key\n1. Visit https://platform.openai.com/\n2. Sign in to your account\n3. Go to API Keys section\n4. Create a new secret key\n\n## Step 2: Clone and Setup ASU Local Wrapper\n\n```bash\ngit clone https://github.com/danielennis11111/rate-limiter\ncd rate-limiter\nnpm install\n```\n\n## Step 3: Configure Multiple Providers\n\nCreate your environment configuration:\n\n```bash\ncp .env.example .env.multi-provider\n```\n\nEdit `.env.multi-provider`:\n\n```env\n# API Keys\nGEMINI_API_KEY=your_gemini_key_here\nANTHROPIC_API_KEY=your_claude_key_here\nOPENAI_API_KEY=your_openai_key_here\n\n# Rate Limiting (per provider)\nRATE_LIMIT_GEMINI=15\nRATE_LIMIT_ANTHROPIC=10\nRATE_LIMIT_OPENAI=20\n\n# Default Provider\nDEFAULT_PROVIDER=gemini\n\n# Failover Configuration\nENABLE_FAILOVER=true\nFAILOVER_ORDER=gemini,anthropic,openai\n\n# Server Configuration\nPORT=3000\nENVIRONMENT=development\n```\n\n## Step 4: Update Model Configuration\n\nEdit `src/config/multi-models.js`:\n\n```javascript\nconst providers = {\n  gemini: {\n    name: 'Google Gemini',\n    provider: 'google',\n    models: {\n      'gemini-1.5-pro': {\n        apiKey: process.env.GEMINI_API_KEY,\n        maxTokens: 8192,\n        temperature: 0.7,\n        supportedFeatures: ['text', 'image', 'multimodal']\n      }\n    },\n    rateLimit: process.env.RATE_LIMIT_GEMINI || 15\n  },\n  \n  anthropic: {\n    name: 'Anthropic Claude',\n    provider: 'anthropic',\n    models: {\n      'claude-3-sonnet': {\n        apiKey: process.env.ANTHROPIC_API_KEY,\n        maxTokens: 4096,\n        temperature: 0.7,\n        supportedFeatures: ['text', 'analysis', 'reasoning']\n      }\n    },\n    rateLimit: process.env.RATE_LIMIT_ANTHROPIC || 10\n  },\n  \n  openai: {\n    name: 'OpenAI GPT',\n    provider: 'openai',\n    models: {\n      'gpt-4-turbo': {\n        apiKey: process.env.OPENAI_API_KEY,\n        maxTokens: 4096,\n        temperature: 0.8,\n        supportedFeatures: ['text', 'conversation', 'creativity']\n      }\n    },\n    rateLimit: process.env.RATE_LIMIT_OPENAI || 20\n  }\n};\n```\n\n## Step 5: Advanced Template Configuration\n\nCreate specialized templates for each provider in `src/data/multi-templates.js`:\n\n```javascript\nconst templates = [\n  {\n    id: 'analysis-claude',\n    name: 'Deep Analysis (Claude)',\n    provider: 'anthropic',\n    model: 'claude-3-sonnet',\n    description: 'Use Claude for detailed analysis and reasoning tasks',\n    systemPrompt: 'You are Claude, an AI assistant specialized in thorough analysis...'\n  },\n  {\n    id: 'creative-gpt',\n    name: 'Creative Writing (GPT)',\n    provider: 'openai', \n    model: 'gpt-4-turbo',\n    description: 'Use GPT-4 for creative and conversational tasks',\n    systemPrompt: 'You are a creative AI assistant specialized in storytelling...'\n  },\n  {\n    id: 'multimodal-gemini',\n    name: 'Multimodal Assistant (Gemini)',\n    provider: 'gemini',\n    model: 'gemini-1.5-pro',\n    description: 'Use Gemini for text, image, and multimodal tasks',\n    systemPrompt: 'You are Gemini, a multimodal AI assistant...'\n  },\n  {\n    id: 'intelligent-router',\n    name: 'Smart Router (All Providers)',\n    provider: 'auto',\n    description: 'Automatically choose the best AI for each task',\n    systemPrompt: 'Route queries to the most appropriate AI provider based on task type'\n  }\n];\n```\n\n## Step 6: Start Your Multi-Provider Chatbot\n\n```bash\nnpm run dev:multi-provider\n```\n\n## Step 7: Test Each Provider\n\n1. **Test Gemini**: \"Analyze this image and tell me what you see\"\n2. **Test Claude**: \"Provide a detailed analysis of climate change impacts\"\n3. **Test GPT**: \"Write a creative story about AI and humans\"\n4. **Test Auto-Router**: \"Help me plan a vacation\" (automatically routes to best provider)\n\n## Advanced Features\n\n### Intelligent Provider Routing\nThe system automatically chooses the best AI based on:\n- **Images/Files**: Routes to Gemini (multimodal)\n- **Analysis Tasks**: Routes to Claude (reasoning)\n- **Creative Tasks**: Routes to GPT (creativity)\n- **General Questions**: Uses default or load balances\n\n### Failover Protection\nIf one provider fails:\n1. System automatically tries next provider in failover order\n2. User receives seamless experience\n3. Errors are logged for monitoring\n\n### Usage Analytics\nMonitor usage across providers:\n```bash\nnpm run analytics:providers\n```\n\n### Cost Optimization\nConfigure cost-based routing:\n```javascript\nconst costOptimization = {\n  gemini: { costPerToken: 0.00001 },\n  anthropic: { costPerToken: 0.00003 },\n  openai: { costPerToken: 0.00002 }\n};\n```\n\n## Production Deployment\n\n1. **Environment Setup**:\n```bash\ncp .env.multi-provider .env.production\n# Update with production API keys\n```\n\n2. **Security Configuration**:\n- Use environment-specific API keys\n- Set up SSL certificates\n- Configure firewall rules\n- Enable request logging\n\n3. **Monitoring**:\n- Set up provider health checks\n- Configure alerting for failures\n- Monitor API usage and costs\n\n## Troubleshooting\n\n**Provider-Specific Issues:**\n- Verify each API key separately\n- Check rate limits for each provider\n- Test network connectivity to each service\n\n**Routing Issues:**\n- Check template configuration\n- Verify provider availability\n- Review failover logs\n\n**Performance Issues:**\n- Monitor response times per provider\n- Adjust rate limits as needed\n- Consider geographic API endpoints\n\n## Cost Management\n\n- **Free Tiers**: All providers offer generous free tiers\n- **Usage Monitoring**: Built-in usage tracking per provider\n- **Cost Alerts**: Set up billing alerts for each service\n- **Smart Routing**: Automatically route to most cost-effective provider\n\nWith this setup, you'll have a robust, multi-provider AI chatbot that leverages the strengths of each platform while providing seamless failover and intelligent routing!",
+    "clonedCount": 892,
+    "rating": 4.8,
+    "reviewCount": 156,
+    "verified": true,
+    "previewDemoLink": "https://app-beta.aiml.asu.edu/tutorial-multi-api-setup",
+    "canBeCloned": true,
+    "feedbackWanted": true,
+    "asuriteSpecific": false,
+    "capabilities": ["Multi-Provider Setup", "Intelligent Routing", "Failover Protection"],
+    "actions": ["Configure", "Deploy", "Monitor"],
+    "version": "1.5.0",
+    "dateCreated": "2025-01-18",
+    "lastUpdated": "2025-01-20",
+    "reviews": [
+      {
+        "user": "Enterprise Architect",
+        "rating": 5,
+        "comment": "Exactly what we needed for our multi-vendor AI strategy. The failover capabilities are excellent."
+      },
+      {
+        "user": "DevOps Engineer",
+        "rating": 5,
+        "comment": "Comprehensive guide with great production considerations. The cost optimization features are a bonus."
+      },
+      {
+        "user": "AI Research Lead",
+        "rating": 4,
+        "comment": "Solid tutorial, though the intelligent routing could use more examples. Overall very helpful."
+      }
+    ],
+    "exampleConversations": [
+      {
+        "user": "Which AI provider is best for code generation?",
+        "assistant": "For code generation, the tutorial covers using GPT-4 for creative coding solutions, Claude for code analysis and debugging, and Gemini for multimodal code tasks involving images or documents."
+      },
+      {
+        "user": "How much does running all three providers cost?",
+        "assistant": "All providers offer generous free tiers perfect for development. For production, costs typically range from $10-50/month for moderate usage. The tutorial includes cost monitoring and optimization strategies."
+      },
+      {
+        "user": "What happens if one API goes down?",
+        "assistant": "The failover system automatically routes requests to the next available provider. Users experience seamless service while you receive alerts about the outage. No conversations are lost."
+      }
+    ]
   }
 ] 

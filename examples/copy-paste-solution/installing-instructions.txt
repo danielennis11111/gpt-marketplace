@@ -1,0 +1,15 @@
+Here's a basic copy and paste solution to test using just js to embed a chatbot from MyAI Builder:
+
+1. Copy the JavaScript code in the js file 
+
+2. Paste it into your HTML either wrapped in script tags or referenced by name:
+
+<script>
+[PASTE THE JAVASCRIPT CODE ABOVE HERE]
+</script>
+
+OR save it as a file and include:
+Apply to asu-chatbot....
+<script src="asu-chatbot.js"></script>
+
+That's it! The ASU chatbot button will appear bottom-right with full functionality. You can add multiple chatbots and switch between them even (although they're all using the same embed chatbot from MyAI Builder at the moment. To use your own chatbots or anyone's just update the links and text descriptions for each of the available chatbots you want to make available in the embed.
