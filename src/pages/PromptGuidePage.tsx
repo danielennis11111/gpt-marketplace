@@ -55,8 +55,14 @@ export const PromptGuidePage: React.FC = () => {
   const generatePrompt = async () => {
     if (!userIdea.trim()) return;
 
+    console.log("Starting prompt generation with idea:", userIdea);
+    console.log("AI Connection Status:", isConnected);
+    console.log("Provider:", providerName);
+
     // First check for existing community ideas and redirect if found
     const existingCommunityIdeas = JSON.parse(localStorage.getItem('communityIdeas') || '[]');
+    console.log("Existing community ideas count:", existingCommunityIdeas.length);
+    
     const similarCommunityIdea = existingCommunityIdeas.find((idea: any) => 
       idea.title.toLowerCase().includes(userIdea.toLowerCase()) ||
       idea.description.toLowerCase().includes(userIdea.toLowerCase()) ||
@@ -68,12 +74,11 @@ export const PromptGuidePage: React.FC = () => {
     );
 
     if (similarCommunityIdea) {
+      console.log("Found similar idea:", similarCommunityIdea.title);
       // Navigate to the existing community idea's dedicated page
       navigate(`/community-ideas/${similarCommunityIdea.id}`);
       return;
     }
-
-
 
     setIsGenerating(true);
     
@@ -110,23 +115,32 @@ PROMPT: [Complete system instructions following the comprehensive guidelines pro
 
 The PROMPT section should be the complete, detailed system instructions that would work for MyAI Builder, incorporating all the elements from the comprehensive instructions including documentation integration, brainstorming facilitation, project planning, output generation capabilities, and access to ASU's AI resources and knowledge base.`;
 
-        promptResponse = await sendMessage(promptGeneration);
+        console.log("Attempting to use AI service for generation");
+        
+        if (isConnected) {
+          promptResponse = await sendMessage(promptGeneration);
+          console.log("AI Response received:", promptResponse.substring(0, 100) + "...");
+        } else {
+          console.log("AI service not connected, using fallback");
+          throw new Error("AI service not connected");
+        }
       } catch (error) {
         console.error('Error with AI generation:', error);
         
         // Enhanced fallback generation with comprehensive instructions
+        console.log("Using fallback generation");
         const ideaWords = userIdea.split(' ');
-                  // Format the title based on the user's request
-          let title = 'Music AI Life Assistant';
-          
-          if (userIdea.toLowerCase().includes('music') && userIdea.toLowerCase().includes('ai')) {
-            title = 'Music AI Life Enhancement';
-          } else if (userIdea.toLowerCase().includes('music')) {
-            title = 'AI Music Experience';
-          } else if (ideaWords.length > 3) {
-            title = ideaWords.slice(0, 3).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-          }
+        // Format the title based on the user's request
+        let title = 'Music AI Life Assistant';
         
+        if (userIdea.toLowerCase().includes('music') && userIdea.toLowerCase().includes('ai')) {
+          title = 'Music AI Life Enhancement';
+        } else if (userIdea.toLowerCase().includes('music')) {
+          title = 'AI Music Experience';
+        } else if (ideaWords.length > 3) {
+          title = ideaWords.slice(0, 3).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+        }
+      
         // Create a more specific description based on the user's idea
         const description = userIdea.includes('music') 
           ? 'AI assistant that helps improve life through personalized music recommendations and analysis'
@@ -167,9 +181,12 @@ For this specific music-related project, I'll analyze how AI can enhance music e
 I facilitate brainstorming, definition, planning, and initial setup of projects, ultimately producing comprehensive project proposals. I actively ask clarifying questions to understand the core goal, desired outcomes, target audience, and constraints. I guide users through feature definition, task breakdown, and project planning with dependencies and timelines, while leveraging ASU's principled innovation framework.
 
 If someone asks what's next, I provide a succinct but detailed plan and go through it step by step. My tone is neutral but encouraging if people get frustrated.`;
+        
+        console.log("Fallback prompt response created");
       }
 
       // Parse the response
+      console.log("Parsing prompt response");
       const lines = promptResponse.split('\n');
       // Create a unique title with timestamp to avoid duplicate detection issues
       const timestamp = new Date().toISOString().slice(11, 16).replace(':', '');
@@ -183,6 +200,8 @@ If someone asks what's next, I provide a succinct but detailed plan and go throu
         difficulty: lines.find(l => l.startsWith('DIFFICULTY:'))?.replace('DIFFICULTY:', '').trim() as 'beginner' | 'intermediate' | 'advanced' || 'intermediate',
         prompt: lines.find(l => l.startsWith('PROMPT:'))?.replace('PROMPT:', '').trim() || `You are a helpful AI assistant that specializes in: ${userIdea}`
       };
+      
+      console.log("Parsed response:", parsed);
 
       const newIdea: PromptIdea = {
         id: Date.now().toString(),
@@ -193,7 +212,8 @@ If someone asks what's next, I provide a succinct but detailed plan and go throu
         difficulty: parsed.difficulty,
         timestamp: new Date()
       };
-
+      
+      console.log("New idea created:", newIdea);
       setGeneratedPrompt(newIdea);
     } catch (error) {
       console.error('Error generating prompt:', error);
@@ -262,12 +282,15 @@ If someone asks what's next, I provide a succinct but detailed plan and go throu
       createdAt: formattedDate
     };
 
-    localStorage.setItem('communityIdeas', JSON.stringify([newIdea, ...existingIdeas]));
+    // Add to beginning of the array so it shows up first
+    const updatedIdeas = [newIdea, ...existingIdeas];
+    localStorage.setItem('communityIdeas', JSON.stringify(updatedIdeas));
+    
+    console.log('Added new idea to community ideas:', newIdea);
+    console.log('All community ideas:', updatedIdeas);
 
     // Navigate to the new idea's dedicated page with expanded chatbot
     navigate(`/community-ideas/${newIdea.id}`);
-    
-    console.log('Added new idea to community ideas:', newIdea);
   };
 
 
