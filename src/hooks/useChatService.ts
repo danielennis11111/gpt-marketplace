@@ -70,7 +70,7 @@ export const useChatService = (): ChatServiceResult => {
     isConnected: shouldUseGemini ? isGeminiAvailable : ollama.status.isConnected,
     isLoading: ollama.isLoading,
     sendMessage,
-    providerName: shouldUseGemini ? 'Gemini' : 'Ollama',
+    providerName: shouldUseGemini ? 'Gemini 2.0 Flash' : 'Ollama',
     testConnection,
   };
 }; 

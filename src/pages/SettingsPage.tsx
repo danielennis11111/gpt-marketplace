@@ -137,13 +137,13 @@ export const SettingsPage: React.FC = () => {
                 />
                 <div className="ml-3">
                   <div className={`font-medium ${isGeminiConfigured() ? 'text-gray-900' : 'text-gray-400'}`}>
-                    Google Gemini
-                  </div>
-                  <div className={`text-sm ${isGeminiConfigured() ? 'text-gray-500' : 'text-gray-400'}`}>
-                    {isGeminiConfigured() 
-                      ? 'Cloud-based AI with excellent performance. Requires API key.'
-                      : 'Configure your API key below to enable Gemini'
-                    }
+                                         Google Gemini 2.0 Flash
+                   </div>
+                   <div className={`text-sm ${isGeminiConfigured() ? 'text-gray-500' : 'text-gray-400'}`}>
+                     {isGeminiConfigured() 
+                       ? 'Latest Gemini model with enhanced speed and performance. Requires API key.'
+                       : 'Configure your API key below to enable Gemini 2.0 Flash'
+                     }
                   </div>
                 </div>
               </label>
@@ -169,10 +169,10 @@ export const SettingsPage: React.FC = () => {
               <h2 className="text-xl font-semibold text-gray-900">Gemini API Configuration</h2>
             </div>
             
-            <p className="text-gray-600 mb-4">
-              Enter your Google Gemini API key to enable cloud-based AI features. 
-              Your API key is stored securely in your browser's local storage.
-            </p>
+                         <p className="text-gray-600 mb-4">
+               Enter your Google Gemini API key to enable cloud-based AI features with the latest Gemini 2.0 Flash model. 
+               Your API key is stored securely in your browser's local storage.
+             </p>
 
             <div className="space-y-4">
               <div>

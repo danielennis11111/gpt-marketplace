@@ -31,7 +31,7 @@ const STEPS = [
 const AVAILABLE_MODELS = [
   { id: 'gpt-4', name: 'GPT-4', provider: 'OpenAI', description: 'Advanced reasoning, following complex instructions, and generating detailed content.' },
   { id: 'claude-3-opus', name: 'Claude 3 Opus', provider: 'Anthropic', description: 'Anthropic\'s most powerful model with superior reasoning, expertise, and language understanding.' },
-  { id: 'gemini-pro', name: 'Gemini Pro', provider: 'Google', description: 'Google\'s multimodal model that excels at reasoning, following instructions, and generating creative content.' },
+  { id: 'gemini-2.0-flash-exp', name: 'Gemini 2.0 Flash', provider: 'Google', description: 'Google\'s latest experimental model with enhanced speed and performance for reasoning, following instructions, and generating creative content.' },
   { id: 'llama-3', name: 'Llama 3', provider: 'Meta', description: 'Open model with strong capabilities for chat, reasoning, and content creation.' },
   { id: 'mixtral-8x7b', name: 'Mixtral 8x7B', provider: 'Mistral AI', description: 'Open mixture-of-experts model with efficient performance across many tasks.' },
   { id: 'claude-3-sonnet', name: 'Claude 3 Sonnet', provider: 'Anthropic', description: 'Balanced performance for most use cases with excellent reasoning and safety.' }

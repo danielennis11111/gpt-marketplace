@@ -162,7 +162,7 @@ The assistant would be configured to understand data visualization best practice
     aiConceptualization: `
 Based on your idea, I recommend creating an AI assistant that can assist with generating creative content and ideas.
 
-This project could be implemented using Gemini Pro with the following components:
+This project could be implemented using Gemini 2.0 Flash with the following components:
 
 1. Natural language understanding to interpret user requests
 2. Creative content generation with customizable parameters

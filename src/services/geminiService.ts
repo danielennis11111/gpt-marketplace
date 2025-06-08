@@ -16,7 +16,7 @@ export class GeminiService {
     this.apiKey = apiKey;
   }
 
-  async generateContent(prompt: string, model: string = 'gemini-pro'): Promise<string> {
+  async generateContent(prompt: string, model: string = 'gemini-2.0-flash-exp'): Promise<string> {
     if (!this.apiKey) {
       throw new Error('Gemini API key not configured');
     }
@@ -37,7 +37,7 @@ export class GeminiService {
             temperature: 0.7,
             topK: 40,
             topP: 0.95,
-            maxOutputTokens: 1024,
+            maxOutputTokens: 2048,
           },
           safetySettings: [
             {
@@ -83,10 +83,24 @@ export class GeminiService {
     }
   }
 
+  async listModels(): Promise<string[]> {
+    try {
+      const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${this.apiKey}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch models: ${response.status}`);
+      }
+      const data = await response.json();
+      return data.models?.map((model: any) => model.name.replace('models/', '')) || [];
+    } catch (error) {
+      console.error('Error fetching models:', error);
+      return ['gemini-2.0-flash-exp']; // fallback
+    }
+  }
+
   async testConnection(): Promise<{ success: boolean; message: string }> {
     try {
       await this.generateContent('Hello, this is a test message. Please respond with "Connection successful".');
-      return { success: true, message: 'Gemini API connection successful' };
+      return { success: true, message: 'Gemini 2.0 Flash connection successful' };
     } catch (error) {
       return { 
         success: false, 
