@@ -1,7 +1,7 @@
 import { useCallback } from 'react';
 import { useOllama } from './useOllama';
+import { useGemini } from './useGemini';
 import { useSettings } from '../contexts/SettingsContext';
-import { GeminiService } from '../services/geminiService';
 
 export interface ChatServiceResult {
   isConnected: boolean;
@@ -14,16 +14,16 @@ export interface ChatServiceResult {
 export const useChatService = (): ChatServiceResult => {
   const { settings } = useSettings();
   const ollama = useOllama();
+  const gemini = useGemini();
 
-  const isGeminiAvailable = settings.geminiApiKey.trim().length > 0;
+  const isGeminiAvailable = gemini.status.isConnected;
   const shouldUseGemini = settings.preferredChatProvider === 'gemini' && isGeminiAvailable;
   const shouldUseLlama4Scout = settings.preferredChatProvider === 'llama4scout';
 
   const sendMessage = useCallback(async (message: string): Promise<string> => {
     if (shouldUseGemini) {
       try {
-        const geminiService = new GeminiService(settings.geminiApiKey);
-        return await geminiService.generateContent(message);
+        return await gemini.sendMessage(message);
       } catch (error) {
         console.error('Gemini error, falling back to Ollama:', error);
         if (ollama.status.isConnected) {
@@ -42,13 +42,17 @@ export const useChatService = (): ChatServiceResult => {
       }
       throw new Error('Ollama is not connected');
     }
-  }, [shouldUseGemini, shouldUseLlama4Scout, settings.geminiApiKey, ollama]);
+  }, [shouldUseGemini, shouldUseLlama4Scout, gemini, ollama]);
 
   const testConnection = useCallback(async (): Promise<{ success: boolean; message: string }> => {
     if (shouldUseGemini) {
       try {
-        const geminiService = new GeminiService(settings.geminiApiKey);
-        return await geminiService.testConnection();
+        if (gemini.status.isConnected) {
+          await gemini.sendMessage('Test message');
+          return { success: true, message: `Gemini ${gemini.status.currentModel} connection successful` };
+        } else {
+          return { success: false, message: gemini.status.error || 'Gemini is not connected' };
+        }
       } catch (error) {
         return {
           success: false,
@@ -84,13 +88,13 @@ export const useChatService = (): ChatServiceResult => {
         };
       }
     }
-  }, [shouldUseGemini, shouldUseLlama4Scout, settings.geminiApiKey, ollama]);
+  }, [shouldUseGemini, shouldUseLlama4Scout, gemini, ollama]);
 
   return {
     isConnected: shouldUseGemini ? isGeminiAvailable : ollama.status.isConnected,
     isLoading: ollama.isLoading,
     sendMessage,
-    providerName: shouldUseGemini ? 'Gemini 2.0 Flash' : 
+    providerName: shouldUseGemini ? `Gemini ${gemini.status.currentModel}` : 
                 shouldUseLlama4Scout ? 
                   (ollama.status.models.find(m => m.name === 'llama4scout') ? 'Llama 4 Scout' : 
                    ollama.status.models.find(m => m.name === 'llama3.3:8b') ? 'Llama 3.3 8B' : 

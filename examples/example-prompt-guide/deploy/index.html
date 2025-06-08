@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>LaunchPad - Ideas to Start Building</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6Ta86w+fsb2TkcmfRyVX3pBnMFcV7oQPJkl9QevSCWr3W6A==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+</head>
+<body>
+  <div class="eyebrow-nav">
+    <div class="eyebrow-container">
+      <div class="mode-toggle-switch">
+        <input type="checkbox" id="modeToggleCheckbox" class="toggle-checkbox">
+        <label for="modeToggleCheckbox" class="toggle-label">
+          <span class="toggle-inner"></span>
+          <span class="toggle-switch"></span>
+        </label>
+        <span class="toggle-text">Dark Mode</span>
+      </div>
+    </div>
+  </div>
+  <header class="header">
+    <div class="header-left">
+      <h1><span class="emoji">💎</span> LaunchPad</h1>
+      <span class="header-subtitle">A prompt guide to turn ideas into real project starters for Cursor</span>
+    </div>
+    <div class="nav-links">
+      <a href="ideas.html" class="nav-link">Community Ideas</a>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="prompt-starters">
+      <h3>Try one of these ideas</h3>
+      <div class="example-grid">
+        <button class="example-btn" data-prompt="I want an app that makes me a grocery list and meal plans for the week in an optimized way. I want reminders every week added to go shopping, and to plan out what I want to eat for the week">
+          <span class="title">Grocery & Meal Planner</span>
+          <small>Weekly planning & reminders to optimize grocery shopping with meap prep.</small>
+          <span class="autofill-indicator">autofill <i class="fa-solid fa-arrow-right-long"></i></span>
+        </button>
+        <button class="example-btn" data-prompt="I want a system that checks a google sheet for updates in specific columns in a specific sheet, and when certain fields go below or above values, I get notified by email.">
+          <span class="title">Sheet Monitor</span>
+          <small>Email alerts on value changes</small>
+          <span class="autofill-indicator">autofill <i class="fa-solid fa-arrow-right-long"></i></span>
+        </button>
+        <button class="example-btn" data-prompt="I want a real time language translation page voice translator. it listens to your conversation and talks to you in your preferred language. Then I talk in English and you produce an audio file in another language in real time">
+          <span class="title">Real-time Translator</span>
+          <small>Voice-to-voice translation</small>
+          <span class="autofill-indicator">autofill <i class="fa-solid fa-arrow-right-long"></i></span>
+        </button>
+      </div>
+    </div>
+
+    <form id="promptForm" class="input-container">
+      <label for="prompt">Or brainstorm your own idea</label><br />
+      <textarea id="prompt" name="prompt" placeholder="Describe your project idea here..." required></textarea><br />
+      <button id="generateBtn">Generate Plan</button>
+      <div id="loadingMessage" class="message hidden">Generating... please wait.</div>
+      <div id="errorMessage" class="message error hidden"></div>
+    </form>
+  </div>
+
+  <script>
+    const backendUrl = 'https://prompt-guide-289372425801.us-central1.run.app'; // User specified URL
+    const promptForm = document.getElementById('promptForm');
+    const promptTextarea = document.getElementById('prompt');
+    const generateBtn = document.getElementById('generateBtn');
+    const loadingMessage = document.getElementById('loadingMessage');
+    const errorMessage = document.getElementById('errorMessage');
+    const exampleButtons = document.querySelectorAll('.example-btn');
+
+    // Dark mode toggle logic
+    const modeToggleCheckbox = document.getElementById('modeToggleCheckbox');
+    const currentMode = localStorage.getItem('theme');
+
+    // Apply saved mode on load
+    if (currentMode === 'dark') {
+      document.body.classList.add('dark-mode');
+      modeToggleCheckbox.checked = true; // Set checkbox state
+    } else {
+      modeToggleCheckbox.checked = false; // Set checkbox state
+    }
+
+    // Toggle mode on button click
+    modeToggleCheckbox.addEventListener('change', () => {
+      document.body.classList.toggle('dark-mode');
+      if (document.body.classList.contains('dark-mode')) {
+        localStorage.setItem('theme', 'dark');
+      } else {
+        localStorage.setItem('theme', 'light');
+      }
+    });
+
+    // Handle example button clicks
+    exampleButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        promptTextarea.value = button.getAttribute('data-prompt');
+        promptTextarea.focus(); // Focus textarea after populating
+      });
+    });
+
+    // Extract the core submission logic into a function
+    async function submitPromptForm(e) {
+      e.preventDefault(); // Prevent default form submission
+
+      const userPrompt = promptTextarea.value.trim();
+      errorMessage.classList.add('hidden'); // Hide previous errors
+      loadingMessage.classList.add('hidden');
+
+      if (!userPrompt) {
+        errorMessage.textContent = 'Please enter a project idea.';
+        errorMessage.classList.remove('hidden');
+        return;
+      }
+
+      generateBtn.disabled = true;
+      loadingMessage.classList.remove('hidden');
+
+      try {
+        const response = await fetch(`${backendUrl}/generate`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ prompt: userPrompt })
+        });
+
+        if (!response.ok) {
+          let errorMsg = 'An error occurred while generating the plan.';
+          try {
+            const errorData = await response.json();
+            errorMsg = errorData.error || errorMsg;
+          } catch (jsonError) {
+            // Handle cases where the error response is not JSON
+            errorMsg = `Server error: ${response.status} ${response.statusText}`;
+          }
+          throw new Error(errorMsg);
+        }
+
+        const data = await response.json();
+        // Redirect to the idea page, regardless of whether it existed or was new
+        window.location.href = `idea.html?id=${data.id}`;
+
+      } catch (error) {
+        console.error("Fetch error:", error);
+        errorMessage.textContent = `Error: ${error.message}`;
+        errorMessage.classList.remove('hidden');
+      } finally {
+        generateBtn.disabled = false;
+        loadingMessage.classList.add('hidden');
+      }
+    }
+
+    // Modify the keydown listener to call the new function on Enter
+    promptTextarea.addEventListener('keydown', function(event) {
+      // Check if Enter key was pressed and Shift key was NOT pressed
+      if (event.key === 'Enter' && !event.shiftKey) {
+        event.preventDefault(); // Prevent the default newline action
+        submitPromptForm(event); // Call the submission function
+      }
+    });
+
+    // Add a click listener to the button to trigger submission
+    generateBtn.addEventListener('click', submitPromptForm);
+  </script>
+</body>
+</html>

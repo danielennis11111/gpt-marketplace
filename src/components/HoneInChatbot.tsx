@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { XMarkIcon, PaperAirplaneIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 import { useChatService } from '../hooks/useChatService';
+import { generateHoneInPrompt } from '../utils/promptTemplates';
 
 interface Message {
   id: string;
@@ -44,32 +45,12 @@ export const HoneInChatbot: React.FC<HoneInChatbotProps> = ({
       const welcomeMessage: Message = {
         id: 'welcome',
         type: 'assistant',
-        content: `I'm here to help you hone in on your idea: "${initialIdea.title}"\n\nLet's dive deeper and refine this concept together. What specific aspect would you like to explore first?`,
+        content: `I'm here to help you refine your idea: "${initialIdea.title}"\n\nLet's explore this concept in more detail and develop it into something implementable. What specific aspect would you like to focus on first?`,
         timestamp: new Date()
       };
       setMessages([welcomeMessage]);
     }
   }, [isOpen, initialIdea.title, messages.length]);
-
-  const generateHoneInPrompt = (userMessage: string): string => {
-    return `You are a specialized AI assistant focused on helping users refine and develop their project ideas. 
-
-Original Idea: "${initialIdea.title}"
-Description: "${initialIdea.description}"
-${initialIdea.aiConceptualization ? `AI Analysis: "${initialIdea.aiConceptualization}"` : ''}
-
-User's question/request: "${userMessage}"
-
-Your role is to:
-1. Help the user dive deeper into specific aspects of their idea
-2. Ask probing questions to uncover details and requirements
-3. Suggest improvements, features, or approaches
-4. Help break down the idea into actionable steps
-5. Identify potential challenges and solutions
-6. Provide technical guidance when relevant
-
-Keep responses focused, practical, and conversational (2-4 sentences). Always ask a follow-up question to keep the refinement process moving forward.`;
-  };
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
@@ -89,10 +70,18 @@ Keep responses focused, practical, and conversational (2-4 sentences). Always as
       let response: string;
       
       try {
-        const prompt = generateHoneInPrompt(inputMessage);
+        // Use our specialized prompt template to generate a high-quality response
+        const prompt = generateHoneInPrompt(
+          initialIdea.title,
+          initialIdea.description,
+          initialIdea.aiConceptualization,
+          inputMessage
+        );
+        
         response = await sendMessage(prompt);
       } catch (error) {
-        // Fallback responses when Ollama is not connected
+        console.error('Error generating response:', error);
+        // Fallback responses when AI provider is not connected
         response = generateFallbackResponse(inputMessage);
       }
 
@@ -118,6 +107,7 @@ Keep responses focused, practical, and conversational (2-4 sentences). Always as
     }
   };
 
+  // Only used as a fallback when AI provider is not connected
   const generateFallbackResponse = (userMessage: string): string => {
     const message = userMessage.toLowerCase();
     

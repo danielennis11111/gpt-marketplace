@@ -6,6 +6,8 @@
   "homepage": "https://danielennis11111.github.io/gpt-marketplace",
   "scripts": {
     "dev": "vite",
+    "start": "./start-app.sh",
+    "start-ollama": "./start-ollama.sh",
     "build": "vite build",
     "type-check": "tsc",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",

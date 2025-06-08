@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>LaunchPad - All Ideas</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="eyebrow-nav">
+        <div class="eyebrow-container">
+            <div class="mode-toggle-switch">
+                <input type="checkbox" id="modeToggleCheckbox" class="toggle-checkbox">
+                <label for="modeToggleCheckbox" class="toggle-label">
+                    <span class="toggle-inner"></span>
+                    <span class="toggle-switch"></span>
+                </label>
+                <span class="toggle-text">Dark Mode</span>
+            </div>
+        </div>
+    </div>
+    <div class="header">
+        <div class="header-left">
+            <a href="index.html" class="header-link"><h1><span class="emoji">💎</span> LaunchPad</h1></a>
+            <span class="header-subtitle">Browse Project Ideas</span>
+        </div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link">Create New Idea</a>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>All Generated Ideas</h2>
+        <div id="ideas-list" class="ideas-list-container">
+            <p>Loading ideas...</p>
+            </div>
+        <div id="errorMessage" class="message error hidden"></div>
+    </div>
+
+    <script>
+        const backendUrl = 'https://prompt-guide-289372425801.us-central1.run.app'; // User specified URL
+        const ideasList = document.getElementById('ideas-list');
+        const errorMessage = document.getElementById('errorMessage');
+
+        // Dark mode toggle logic
+        const modeToggleCheckbox = document.getElementById('modeToggleCheckbox');
+        const currentMode = localStorage.getItem('theme');
+
+        // Apply saved mode on load
+        if (currentMode === 'dark') {
+            document.body.classList.add('dark-mode');
+            modeToggleCheckbox.checked = true; // Set checkbox state
+        } else {
+            modeToggleCheckbox.checked = false; // Set checkbox state
+        }
+
+        // Toggle mode on button click
+        modeToggleCheckbox.addEventListener('change', () => {
+            document.body.classList.toggle('dark-mode');
+            if (document.body.classList.contains('dark-mode')) {
+                localStorage.setItem('theme', 'dark');
+            } else {
+                localStorage.setItem('theme', 'light');
+            }
+        });
+
+        // Helper to truncate long prompts for teaser
+        function truncate(text, maxLength = 120) {
+            if (!text) return '';
+            return text.length > maxLength ? text.slice(0, maxLength) + '…' : text;
+        }
+
+        async function fetchIdeas() {
+            errorMessage.classList.add('hidden');
+            ideasList.innerHTML = '<p>Loading ideas...</p>';
+            try {
+                const response = await fetch(`${backendUrl}/ideas`);
+                if (!response.ok) {
+                    throw new Error('Failed to fetch ideas.');
+                }
+                const ideas = await response.json();
+                if (!Array.isArray(ideas) || ideas.length === 0) {
+                    ideasList.innerHTML = '<p>No ideas found yet.</p>';
+                    return;
+                }
+                // Render list
+                const ul = document.createElement('ul');
+                ideas.forEach(idea => {
+                    const li = document.createElement('li');
+                    const date = idea.timestamp ? new Date(idea.timestamp).toLocaleString() : '';
+                    li.innerHTML = `
+                        <a href="idea.html?id=${idea.id}">
+                            <strong>${idea.prompt}</strong>
+                            <span class="timestamp">${date}</span>
+                        </a>
+                    `;
+                    ul.appendChild(li);
+                });
+                ideasList.innerHTML = '';
+                ideasList.appendChild(ul);
+            } catch (error) {
+                console.error('Fetch ideas error:', error);
+                errorMessage.textContent = `Error: ${error.message}`;
+                errorMessage.classList.remove('hidden');
+                ideasList.innerHTML = '<p>Could not load ideas.</p>';
+            }
+        }
+
+        fetchIdeas();
+    </script>
+    
+    
+    
+</body>
+</html> 

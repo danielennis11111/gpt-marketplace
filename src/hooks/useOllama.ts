@@ -120,45 +120,7 @@ export const useOllama = () => {
     const modelToUse = model || status.currentModel || 'llama3.3:8b';
 
     try {
-      // For demo/test environment, provide a mock response based on the message
-      if (status.error === null && status.models.length > 0 && !status.models[0].name.includes('real-')) {
-        console.log("Using mock response for:", message.substring(0, 30) + "...");
-        
-        // Extract user idea from the message
-        const userIdeaMatch = message.match(/For the user's idea: "([^"]+)"/);
-        const userIdea = userIdeaMatch ? userIdeaMatch[1] : "AI assistant";
-        
-        // Generate a title based on the user idea
-        let title = userIdea.split(' ').slice(0, 3).map(word => 
-          word.charAt(0).toUpperCase() + word.slice(1)
-        ).join(' ');
-        
-        if (title.length < 3) title = "AI Assistant";
-        
-        return `TITLE: ${title} Assistant
-DESCRIPTION: An AI assistant that helps with ${userIdea}
-CATEGORY: Development
-DIFFICULTY: intermediate
-PROMPT: System Instructions for Idea-to-Project Setup App in MyAI Builder. You help non-coding users connect with powerful apps securely. You also help people write prompts and generate instructions based on their idea.
-
-As a specialized AI assistant focused on ${userIdea}, I will:
-1. Use chain of thought processes in first person, present continuous tense
-2. Respond with my thought process when relevant
-3. Help users understand how to implement ${userIdea} effectively
-4. Integrate knowledge from ASU AI documentation
-5. Guide through feature definition and project planning
-
-I have access to comprehensive knowledge from MyAI Builder Navigation Guide, CreateAI's Available LLM Models, and ASU AI Platform Resources.
-
-For this specific project about ${userIdea}, I'll consider:
-- Which AI models from CreateAI Platform would be most suitable
-- How to structure implementation steps
-- Integration with existing systems
-- User experience considerations
-- Documentation requirements
-
-I'll facilitate brainstorming, definition, planning, and setup, producing comprehensive project proposals.`;
-      }
+      console.log(`Sending message to Ollama using model: ${modelToUse}`);
       
       const response = await fetch('http://localhost:11434/api/generate', {
         method: 'POST',
@@ -181,7 +143,7 @@ I'll facilitate brainstorming, definition, planning, and setup, producing compre
     } catch (error) {
       throw new Error(`Failed to send message to Ollama: ${error}`);
     }
-  }, [status.isConnected, status.currentModel, status.error, status.models]);
+  }, [status.isConnected, status.currentModel]);
 
   // Send message specifically to Llama 4 Scout
   const sendMessageToLlama4Scout = useCallback(async (message: string) => {
@@ -198,43 +160,6 @@ I'll facilitate brainstorming, definition, planning, and setup, producing compre
     )?.name || 'llama2'; // Fallback to llama2
     
     try {
-      // For demo/test environment, provide a mock response based on the message
-      if (status.error === null && status.models.length > 0 && !status.models[0].name.includes('real-')) {
-        console.log("Using Llama4Scout mock response for:", message.substring(0, 30) + "...");
-        
-        // Extract user idea from the message
-        const userIdeaMatch = message.match(/For the user's idea: "([^"]+)"/);
-        const userIdea = userIdeaMatch ? userIdeaMatch[1] : "AI assistant";
-        
-        // Generate a title based on the user idea
-        let title = userIdea.split(' ').slice(0, 3).map(word => 
-          word.charAt(0).toUpperCase() + word.slice(1)
-        ).join(' ');
-        
-        if (title.length < 3) title = "AI Assistant";
-        
-        return `TITLE: ${title} Project
-DESCRIPTION: An advanced AI system that helps with ${userIdea} using state-of-the-art machine learning techniques
-CATEGORY: Technology
-DIFFICULTY: intermediate
-PROMPT: System Instructions for Advanced ${title} Project in MyAI Builder. You are a specialized AI assistant with expertise in ${userIdea}.
-
-I analyze user requests related to ${userIdea} and provide comprehensive guidance using:
-1. Chain-of-thought reasoning in first person present continuous tense
-2. Integration with ASU AI platform resources
-3. Implementation of best practices from current research
-4. Structured project planning and development steps
-
-For this specific ${userIdea} project, I consider:
-- The most suitable AI models from ASU's CreateAI Platform (40+ LLMs)
-- Technical implementation requirements and infrastructure
-- User experience and interface design
-- Integration with existing systems and data sources
-- Ethical considerations and principled innovation
-
-I guide users through brainstorming, definition, planning, and setup of their ${userIdea} project. I provide detailed task breakdowns, implementation roadmaps, and technical specifications tailored to their specific needs.`;
-      }
-      
       console.log(`Using model: ${availableModel} for Llama 4 Scout request`);
       
       const response = await fetch('http://localhost:11434/api/generate', {

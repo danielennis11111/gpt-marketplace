@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSettings } from '../contexts/SettingsContext';
 import { useChatService } from '../hooks/useChatService';
 import {
@@ -10,7 +10,8 @@ import {
   EyeIcon,
   EyeSlashIcon,
   TrashIcon,
-  ArrowPathIcon
+  ArrowPathIcon,
+  CheckIcon
 } from '@heroicons/react/24/outline';
 
 export const SettingsPage: React.FC = () => {
@@ -21,6 +22,10 @@ export const SettingsPage: React.FC = () => {
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionResult, setConnectionResult] = useState<{ success: boolean; message: string } | null>(null);
   const [unsavedChanges, setUnsavedChanges] = useState(false);
+  const [currentModel, setCurrentModel] = useState<string>('');
+  const [availableModels, setAvailableModels] = useState<string[]>([]);
+  const [isConnected, setIsConnected] = useState<boolean>(false);
+  const [savedMessage, setSavedMessage] = useState<string>('');
 
   const handleApiKeyChange = (value: string) => {
     setTempApiKey(value);
@@ -81,6 +86,47 @@ export const SettingsPage: React.FC = () => {
       return;
     }
     updateSettings({ preferredChatProvider: provider });
+  };
+
+  // Reset community ideas
+  const resetCommunityIdeas = () => {
+    if (confirm('Are you sure you want to reset all community ideas? This cannot be undone.')) {
+      localStorage.removeItem('communityIdeas');
+      
+      // Also clear user activity related to community ideas
+      const userActivity = JSON.parse(localStorage.getItem('userActivity') || '{}');
+      
+      // Reset viewed, liked, and saved arrays, but keep other data
+      userActivity.viewed = [];
+      userActivity.liked = [];
+      userActivity.saved = [];
+      
+      localStorage.setItem('userActivity', JSON.stringify(userActivity));
+      
+      alert('All community ideas have been reset.');
+    }
+  };
+
+  // Load settings from localStorage
+  useEffect(() => {
+    const settings = JSON.parse(localStorage.getItem('settings') || '{}');
+    setCurrentModel(settings.currentModel || 'llama3');
+    
+    // Simulate available models
+    setAvailableModels(['llama3', 'gemma', 'llama2', 'mistral']);
+    setIsConnected(true);
+  }, []);
+  
+  // Save settings to localStorage
+  const saveSettings = () => {
+    localStorage.setItem('settings', JSON.stringify({
+      currentModel
+    }));
+    
+    setSavedMessage('Settings saved!');
+    setTimeout(() => {
+      setSavedMessage('');
+    }, 3000);
   };
 
   return (

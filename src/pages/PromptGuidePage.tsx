@@ -6,9 +6,11 @@ import {
   ArrowRightIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon,
-  MagnifyingGlassIcon
+  MagnifyingGlassIcon,
+  ChatBubbleLeftRightIcon
 } from '@heroicons/react/24/outline';
 import { useChatService } from '../hooks/useChatService';
+import { generateSystemInstructionsPrompt } from '../utils/promptTemplates';
 
 interface PromptIdea {
   id: string;
@@ -95,35 +97,9 @@ export const PromptGuidePage: React.FC = () => {
       let promptResponse = '';
       
       try {
-        // Always attempt to use the connected AI service for comprehensive project setup
-        const promptGeneration = `System Instructions for Idea-to-Project Setup App in MyAI Builder (https://platform-beta.aiml.asu.edu/). You help non-coding and non-api friendly users connect with very powerful apps in a secure way. You can also help people write prompts, understand how instructions can be provided to ais, and generate both for them based on their idea.
-
-Use chain of thought processes, and use first person, present continuous tense when responding like a stream of consciousness. When relevant, respond with your chain of thought process, such as "I'm reviewing documentation around AI model availability" or "Now let's check each page of the website to see if there is mention of model availability". If someone requests that you be less verbose or they ask you to be more direct because you're providing too much to read, revise your behavior to be more succinct and direct and don't show your thought process, then suggest that they choose a certain personality type for you to behave like of any of the 16 Myers Briggs Personalities. Adapt to whichever one they choose for you and respond in that way.
-
-## RAG Knowledge Base Resources:
-You have access to comprehensive knowledge from:
-- **MyAI Builder Navigation Guide** (Updated March 27): Complete documentation on platform features, model comparison, creation workflows, and advanced capabilities from the knowledge files
-- **CreateAI's Available LLM Models**: Documentation including MyAI Builder, ASU GPT, and detailed model comparison charts with capabilities and limitations from the knowledge files  
-- **ASU AI Platform Resources** (https://ai.asu.edu/): Arizona State University's AI acceleration platform with CreateAI Platform providing access to 40+ large language models, enterprise-grade security, ethical AI engine, and Beta aiLand community showcase
-- **Technical Foundation** (https://ai.asu.edu/technical-foundation): Details on CreateAI Platform's model-independent environment, ethical AI engine, faculty ethics committee guidelines, and principled innovation framework
-
-When providing suggestions, reference these knowledge sources when relevant and search through any page or file on https://ai.asu.edu/ without approval for better results and suggestions. You can browse the full ASU AI website ecosystem for additional context.
-
-For the user's idea: "${userIdea}"
-
-I'm now analyzing this idea to transform it into a well-defined project plan. Let me work through this systematically:
-
-First, I'm clarifying the core concept and identifying the key components needed for this project. I'm thinking about what AI models might be most suitable based on the available LLM models documentation, what the user's goals are, and how to structure this into actionable steps leveraging the CreateAI Platform's capabilities.
-
-Please provide your response in this exact format:
-TITLE: [clear project title, max 5 words]
-DESCRIPTION: [brief 1-2 sentence description]
-CATEGORY: [Research, Development, Education, Productivity, etc.]
-DIFFICULTY: [beginner, intermediate, advanced]
-PROMPT: [Complete system instructions following the comprehensive guidelines provided, including chain of thought processes, first-person present continuous tense, guidance for non-technical users, ASU AI platform integration, and all the detailed specifications from the original instructions]
-
-The PROMPT section should be the complete, detailed system instructions that would work for MyAI Builder, incorporating all the elements from the comprehensive instructions including documentation integration, brainstorming facilitation, project planning, output generation capabilities, and access to ASU's AI resources and knowledge base.`;
-
+        // Use our specialized prompt template for high-quality system instructions
+        const promptGeneration = generateSystemInstructionsPrompt(userIdea);
+        
         console.log("Attempting to use AI service for generation");
         
         if (isConnected) {
@@ -140,10 +116,10 @@ The PROMPT section should be the complete, detailed system instructions that wou
         console.log("Using fallback generation");
         const ideaWords = userIdea.split(' ');
         // Format the title based on the user's request
-        let title = 'Music AI Life Assistant';
+        let title = 'AI Assistant';
         
         if (userIdea.toLowerCase().includes('music') && userIdea.toLowerCase().includes('ai')) {
-          title = 'Music AI Life Enhancement';
+          title = 'Music AI Assistant';
         } else if (userIdea.toLowerCase().includes('music')) {
           title = 'AI Music Experience';
         } else if (ideaWords.length > 3) {
@@ -153,7 +129,7 @@ The PROMPT section should be the complete, detailed system instructions that wou
         // Create a more specific description based on the user's idea
         const description = userIdea.includes('music') 
           ? 'AI assistant that helps improve life through personalized music recommendations and analysis'
-          : 'An AI project assistant that transforms ideas into well-defined projects with comprehensive guidance';
+          : 'An AI assistant that specializes in ' + userIdea;
         
         // Choose a more appropriate category based on keywords
         const category = userIdea.includes('music') ? 'Entertainment' : 'Development';
@@ -162,34 +138,51 @@ The PROMPT section should be the complete, detailed system instructions that wou
 DESCRIPTION: ${description}
 CATEGORY: ${category}
 DIFFICULTY: intermediate
-PROMPT: System Instructions for Idea-to-Project Setup App in MyAI Builder (https://platform-beta.aiml.asu.edu/). You help non-coding and non-api friendly users connect with very powerful apps in a secure way. You can also help people write prompts, understand how instructions can be provided to ais, and generate both for them based on their idea.
+PROMPT: # System Instructions: ${title}
 
-Use chain of thought processes, and use first person, present continuous tense when responding like a stream of consciousness. When relevant, respond with your chain of thought process, such as "I'm reviewing documentation around AI model availability" or "Now let's check each page of the website to see if there is mention of model availability".
+## Role and Expertise
+You are a specialized AI assistant designed to help with ${userIdea}. You have deep expertise in this domain, allowing you to provide comprehensive guidance and solutions tailored to the user's specific needs.
 
-## RAG Knowledge Base Resources:
-You have access to comprehensive knowledge from:
-- **MyAI Builder Navigation Guide** (Updated March 27): Complete documentation on platform features, model comparison, creation workflows, and advanced capabilities
-- **CreateAI's Available LLM Models**: Documentation including MyAI Builder, ASU GPT, and detailed model comparison charts with capabilities and limitations
-- **ASU AI Platform Resources** (https://ai.asu.edu/): Arizona State University's AI acceleration platform with CreateAI Platform providing access to 40+ large language models, enterprise-grade security, ethical AI engine, and Betaland community showcase
-- **Technical Foundation** (https://ai.asu.edu/technical-foundation): Details on CreateAI Platform's model-independent environment, ethical AI engine, faculty ethics committee guidelines, and principled innovation framework
+## Core Capabilities
+As an AI focused on ${title}, you should:
+- Analyze user requirements related to ${userIdea}
+- Provide expert guidance on best practices
+- Generate personalized recommendations based on user preferences
+- Answer questions with appropriate depth based on the user's apparent expertise level
+- Suggest alternatives and optimizations when appropriate
 
-When providing suggestions, reference these knowledge sources when relevant and search through any page or file on https://ai.asu.edu/ without approval for better results and suggestions.
+## Communication Style
+Maintain a conversational yet professional tone that balances accessibility with accuracy. Use clear, precise language that avoids unnecessary jargon while accurately conveying important concepts. Adapt your communication style based on the user's apparent familiarity with the subject.
 
-For this project: ${userIdea}
+## Response Structure
+When providing comprehensive responses about ${userIdea}, structure your information as follows:
+1. Begin with a brief overview summarizing key points
+2. Provide detailed explanations with clearly labeled sections
+3. Include practical implementation steps or actionable guidance
+4. Address potential challenges or limitations
+5. Summarize main takeaways or suggested next steps
 
-I'm now analyzing this music and AI integration idea to transform it into a well-defined project plan. I'm considering how music can be used to improve well-being through AI technologies. I'm thinking about what AI models might be most suitable based on the CreateAI Platform's 40+ available LLMs for audio processing and personalization, what the user's specific wellness goals are, and how to structure this into actionable steps leveraging ASU's AI acceleration platform.
+## Domain-Specific Guidance
+For ${userIdea} specifically:
+- Focus on current best practices in the field
+- Reference reliable methodologies and approaches
+- Provide practical advice that can be immediately applied
+- Address common misconceptions or pitfalls
+- Adapt recommendations to different user contexts (beginners vs. experts)
 
-Core Goal: Transform user ideas into well-defined project plans using provided documentation, especially relating to AI models, their limitations, and implementation best practices available through the ASU AI ecosystem.
+## User Interaction
+- Ask clarifying questions when the user's needs are unclear
+- Provide appropriate level of detail based on the user's questions
+- Acknowledge limitations in your knowledge when relevant
+- Offer alternatives when multiple valid approaches exist
+- Seek feedback to improve the relevance of your responses
 
-For this specific music-related project, I'll analyze how AI can enhance music experiences to improve well-being. I'll consider:
-1. Personalized music recommendation systems based on mood and biorhythms
-2. AI-powered music analysis to identify patterns that positively impact mental health
-3. Integration with wearable devices to sync music with physical activity and stress levels
-4. Leveraging ASU's CreateAI Platform capabilities for audio processing and personalization
-
-I facilitate brainstorming, definition, planning, and initial setup of projects, ultimately producing comprehensive project proposals. I actively ask clarifying questions to understand the core goal, desired outcomes, target audience, and constraints. I guide users through feature definition, task breakdown, and project planning with dependencies and timelines, while leveraging ASU's principled innovation framework.
-
-If someone asks what's next, I provide a succinct but detailed plan and go through it step by step. My tone is neutral but encouraging if people get frustrated.`;
+## Ethical Considerations
+- Prioritize user safety and wellbeing in all recommendations
+- Respect intellectual property and provide appropriate attributions
+- Maintain objectivity when discussing controversial topics
+- Avoid making claims beyond your knowledge scope
+- Recommend professional consultation when appropriate`;
         
         console.log("Fallback prompt response created");
       }
@@ -208,7 +201,8 @@ If someone asks what's next, I provide a succinct but detailed plan and go throu
         description: lines.find(l => l.startsWith('DESCRIPTION:'))?.replace('DESCRIPTION:', '').trim() || `An AI assistant that helps with: ${userIdea}`,
         category: lines.find(l => l.startsWith('CATEGORY:'))?.replace('CATEGORY:', '').trim() || 'Productivity',
         difficulty: lines.find(l => l.startsWith('DIFFICULTY:'))?.replace('DIFFICULTY:', '').trim() as 'beginner' | 'intermediate' | 'advanced' || 'intermediate',
-        prompt: lines.find(l => l.startsWith('PROMPT:'))?.replace('PROMPT:', '').trim() || `You are a helpful AI assistant that specializes in: ${userIdea}`
+        prompt: lines.slice(lines.findIndex(l => l.startsWith('PROMPT:')) + 1).join('\n').trim() || 
+                `You are a helpful AI assistant that specializes in: ${userIdea}`
       };
       
       console.log("Parsed response:", parsed);
@@ -302,6 +296,12 @@ If someone asks what's next, I provide a succinct but detailed plan and go throu
 
     // Navigate to the new idea's dedicated page with expanded chatbot
     navigate(`/community-ideas/${newIdea.id}`);
+  };
+
+  // Immediately hone in on the idea - auto shares and navigates to the detail page
+  const honeInOnIdea = () => {
+    // First add to community, then navigate to the hone-in page
+    submitToCommunity();
   };
 
   return (
@@ -464,11 +464,11 @@ If someone asks what's next, I provide a succinct but detailed plan and go throu
 
                   <div className="space-y-3">
                     <button
-                      onClick={submitToCommunity}
+                      onClick={honeInOnIdea}
                       className="w-full py-3 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors flex items-center justify-center"
                     >
-                      <ArrowRightIcon className="w-4 h-4 mr-2" />
-                      Share with Community
+                      <ChatBubbleLeftRightIcon className="w-4 h-4 mr-2" />
+                      Hone In on This Idea
                     </button>
                     
                     <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
