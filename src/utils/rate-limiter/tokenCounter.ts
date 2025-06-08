@@ -39,7 +39,7 @@ export const MODEL_LIMITS: Record<string, ModelTokenLimits> = {
   
   // Google Gemini Models
   'gemini-2.0-flash': {
-    contextWindow: 1000000, // 1M tokens
+    contextWindow: 1000000, // 1M tokens - Verified from documentation
     maxOutput: 8192,
     pricing: { input: 0.0005, output: 0.0015 }
   },
@@ -49,20 +49,47 @@ export const MODEL_LIMITS: Record<string, ModelTokenLimits> = {
     pricing: { input: 0.00125, output: 0.005 }
   },
   
+  // Claude Models
+  'claude-3.7-sonnet': {
+    contextWindow: 200000, // 200K tokens - Verified from documentation
+    maxOutput: 64000, // Updated based on documentation
+    pricing: { input: 0.003, output: 0.015 }
+  },
+  'claude-3.5-sonnet': {
+    contextWindow: 200000, // 200K tokens
+    maxOutput: 8192,
+    pricing: { input: 0.003, output: 0.015 }
+  },
+  'claude-3.5-haiku': {
+    contextWindow: 200000, // 200K tokens
+    maxOutput: 8192, 
+    pricing: { input: 0.00025, output: 0.00125 }
+  },
+  
   // Llama Models (local)
   'llama4-scout': {
-    contextWindow: 10485760, // Official: 10M tokens - Enhanced reasoning model
+    contextWindow: 128000, // 128K tokens - Local model
     maxOutput: 8192, // Higher output for complex reasoning
     pricing: { input: 0, output: 0 } // Local = free
   },
   'llama3.2:3b': {
-    contextWindow: 131072, // 128K tokens  
+    contextWindow: 8192, // 8K tokens - Small model size has smaller context  
     maxOutput: 4096,
     pricing: { input: 0, output: 0 } // Local = free
   },
   'llama3.1:8b': {
-    contextWindow: 131072, // 128K tokens
+    contextWindow: 8192, // 8K tokens - Small model size has smaller context
     maxOutput: 4096,
+    pricing: { input: 0, output: 0 } // Local = free
+  },
+  'mistral-7b': {
+    contextWindow: 8192, // 8K tokens
+    maxOutput: 4096,
+    pricing: { input: 0, output: 0 } // Local = free
+  },
+  'phi-3': {
+    contextWindow: 4096, // 4K tokens - Smaller model
+    maxOutput: 2048,
     pricing: { input: 0, output: 0 } // Local = free
   }
 };

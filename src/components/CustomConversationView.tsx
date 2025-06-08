@@ -9,6 +9,16 @@ import TokenUsagePreview from './TokenUsagePreview';
 import ContextLimitWarning from './ContextLimitWarning';
 import { estimateTokenCount, MODEL_LIMITS } from '../utils/rate-limiter/tokenCounter';
 import { CompressionEngine } from '../utils/rate-limiter/compressionEngine';
+import type { CompressionStrategy } from '../utils/rate-limiter/compressionEngine';
+import { processDocumentForRAG } from '../utils/rate-limiter/tokenCounter';
+import type { DocumentContext } from '../utils/rate-limiter/tokenCounter';
+import RateLimitIndicator from './RateLimitIndicator';
+import ContextOptimizationPanel from './ContextOptimizationPanel';
+import FileUploadArea from './FileUploadArea';
+import AudioInputButton from './AudioInputButton';
+import ModelSwitcher from './ModelSwitcher';
+import { ParticipantGrid, ASU_PARTICIPANTS } from './ConversationParticipant';
+import CollapsiblePanel from './CollapsiblePanel';
 
 // Create a wrapper component for markdown content
 const MarkdownContent: React.FC<{ content: string }> = ({ content }) => {
@@ -47,6 +57,12 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
     percentage: 0,
     maxTokens: 0
   });
+  
+  // Add state for RAG documents
+  const [ragDocuments, setRagDocuments] = useState<DocumentContext[]>([]);
+  const [isFileLoading, setIsFileLoading] = useState(false);
+  const [selectedModel, setSelectedModel] = useState(settings.preferredChatProvider === 'gemini' ? 'gemini-2.0-flash' : (ollama.status.currentModel || 'llama3.1:8b'));
+  const [activeParticipant, setActiveParticipant] = useState<string | undefined>(undefined);
   
   // Auto-scroll to bottom of messages
   useEffect(() => {
@@ -314,131 +330,216 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
     }
   };
   
+  // Handle file processing from FileUploadArea
+  const handleFilesProcessed = (newDocuments: DocumentContext[]) => {
+    setRagDocuments(prevDocuments => [...prevDocuments, ...newDocuments]);
+  };
+  
+  // Handle audio transcription
+  const handleTranscription = (text: string) => {
+    setInput(prevInput => prevInput + ' ' + text);
+  };
+  
+  // Handle model change
+  const handleModelChange = (modelId: string) => {
+    setSelectedModel(modelId);
+    // Additional logic to notify parent component if needed
+  };
+  
+  // Handle participant selection
+  const handleSelectParticipant = (participantId: string) => {
+    setActiveParticipant(participantId === activeParticipant ? undefined : participantId);
+    
+    // If a participant is selected, update the system prompt or conversation context
+    if (participantId !== activeParticipant) {
+      const participant = ASU_PARTICIPANTS.find(p => p.id === participantId);
+      if (participant) {
+        // Add participant context to conversation (simplified for example)
+        console.log(`Selected participant: ${participant.name}`);
+      }
+    }
+  };
+  
+  // Remove a RAG document
+  const removeRagDocument = (index: number) => {
+    const updatedDocuments = [...ragDocuments];
+    updatedDocuments.splice(index, 1);
+    setRagDocuments(updatedDocuments);
+  };
+  
   return (
-    <div className="flex flex-col h-full">
-      {/* Messages */}
-      <div className="flex-1 overflow-auto p-4 space-y-4 bg-gray-50">
-        {/* Context Limit Warning */}
-        {tokenUsage.percentage >= 60 && (
-          <ContextLimitWarning
-            usagePercentage={tokenUsage.percentage}
-            totalTokens={tokenUsage.total}
-            maxTokens={tokenUsage.maxTokens}
-            remainingTokens={tokenUsage.remaining}
-            onCompressHistory={handleCompressHistory}
-            onCreateNewConversation={() => {
-              conversationManager.createConversation();
-              onConversationUpdate();
-            }}
+    <div className="flex flex-col h-full bg-gray-50">
+      {/* Header with model selection */}
+      <div className="p-4 border-b border-gray-200 bg-white">
+        <div className="flex flex-wrap items-center gap-2 justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">
+              {conversation.title || 'New Conversation'}
+            </h2>
+            <p className="text-sm text-gray-500">
+              {getProviderInfo()}
+            </p>
+          </div>
+          
+          <ModelSwitcher 
+            currentModel={selectedModel} 
+            onModelChange={handleModelChange}
           />
-        )}
-
-        {visibleMessages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-gray-500">
-            <p className="text-lg">Send a message to start a conversation</p>
-            <div className="mt-4 grid grid-cols-1 gap-2 md:grid-cols-2 max-w-3xl">
-              {template.suggestedQuestions.map((question, index) => (
-                <button
-                  key={index}
-                  className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-left hover:bg-gray-100 transition-colors"
-                  onClick={() => {
-                    setInput(question);
-                  }}
-                >
-                  {question}
-                </button>
-              ))}
-            </div>
-          </div>
-        ) : (
-          visibleMessages.map((message, index) => (
-            <div
-              key={index}
-              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-3xl rounded-lg p-4 ${
-                  message.role === 'user'
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-white border border-gray-200 text-gray-800'
-                }`}
-              >
-                <MarkdownContent content={message.content} />
-              </div>
-            </div>
-          ))
-        )}
-        
-        {/* Loading indicator */}
-        {isLoading && (
-          <div className="flex justify-start">
-            <div className="max-w-3xl rounded-lg p-4 bg-white border border-gray-200">
-              <div className="flex space-x-2">
-                <div className="w-2 h-2 rounded-full bg-gray-500 animate-bounce"></div>
-                <div className="w-2 h-2 rounded-full bg-gray-500 animate-bounce delay-100"></div>
-                <div className="w-2 h-2 rounded-full bg-gray-500 animate-bounce delay-200"></div>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* Scroll anchor */}
-        <div ref={messagesEndRef} />
+        </div>
       </div>
       
-      {/* Message Input */}
+      {/* Main chat area */}
+      <div className="flex-1 flex flex-col md:flex-row">
+        {/* Messages section */}
+        <div className="flex-1 overflow-auto p-4">
+          {/* Participant selection (if implemented) */}
+          <CollapsiblePanel 
+            title="Conversation Partners" 
+            initiallyExpanded={false}
+            className="mb-4"
+          >
+            <ParticipantGrid 
+              participants={ASU_PARTICIPANTS} 
+              activeParticipant={activeParticipant}
+              onSelectParticipant={handleSelectParticipant}
+            />
+          </CollapsiblePanel>
+          
+          {/* Messages */}
+          <div className="space-y-4 mb-4">
+            {visibleMessages.map((message, index) => (
+              <div 
+                key={message.id || index} 
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
+              >
+                <div 
+                  className={`max-w-3xl rounded-lg p-3 ${
+                    message.role === 'user' 
+                      ? 'bg-blue-500 text-white' 
+                      : 'bg-white border border-gray-200 text-gray-900'
+                  }`}
+                >
+                  {message.role === 'assistant' ? (
+                    <MarkdownContent content={message.content} />
+                  ) : (
+                    <div className="whitespace-pre-wrap">{message.content}</div>
+                  )}
+                </div>
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+        </div>
+        
+        {/* Right sidebar with collapsible panels for context management */}
+        <div className="md:w-80 p-4 border-t md:border-t-0 md:border-l border-gray-200 bg-white">
+          {/* Context management tools */}
+          <CollapsiblePanel 
+            title="Context Window" 
+            initiallyExpanded={true}
+            className="mb-4"
+          >
+            <div className="space-y-4">
+              <RateLimitIndicator percentage={tokenUsage.percentage} />
+              <TokenUsagePreview 
+                total={tokenUsage.total} 
+                remaining={tokenUsage.remaining} 
+                max={tokenUsage.maxTokens} 
+              />
+              
+              {/* Only show warning if approaching limit */}
+              {tokenUsage.percentage > 75 && (
+                <ContextLimitWarning 
+                  percentage={tokenUsage.percentage} 
+                  onCompress={handleCompressHistory}
+                />
+              )}
+            </div>
+          </CollapsiblePanel>
+          
+          {/* File upload for RAG */}
+          <CollapsiblePanel 
+            title="Document Context" 
+            initiallyExpanded={false}
+            className="mb-4"
+          >
+            <div className="space-y-4">
+              <FileUploadArea 
+                onFilesProcessed={handleFilesProcessed}
+                isLoading={isFileLoading}
+                setIsLoading={setIsFileLoading}
+                processDocumentForRAG={processDocumentForRAG}
+              />
+              
+              {/* Display RAG documents */}
+              {ragDocuments.length > 0 && (
+                <div className="mt-2">
+                  <h4 className="font-medium text-sm text-gray-700 mb-2">Loaded Documents:</h4>
+                  <ul className="space-y-1">
+                    {ragDocuments.map((doc, index) => (
+                      <li key={index} className="flex items-center justify-between text-sm">
+                        <span className="truncate flex-1">{doc.title}</span>
+                        <span className="text-xs text-gray-500 ml-2">{doc.tokenCount} tokens</span>
+                        <button 
+                          onClick={() => removeRagDocument(index)}
+                          className="ml-2 text-red-600 hover:text-red-800"
+                        >
+                          &times;
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+          </CollapsiblePanel>
+          
+          {/* Compression settings */}
+          <CollapsiblePanel 
+            title="Context Optimization" 
+            initiallyExpanded={false}
+            className="mb-4"
+          >
+            <ContextOptimizationPanel 
+              onApplyCompression={handleCompressHistory}
+              compressionStrategies={Object.values(CompressionStrategy)}
+            />
+          </CollapsiblePanel>
+        </div>
+      </div>
+      
+      {/* Input area */}
       <div className="p-4 border-t border-gray-200 bg-white">
-        <form onSubmit={handleSubmit} className="flex space-x-2">
-          <div className="flex-1 relative">
+        <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
+          <div className="flex space-x-2">
             <textarea
-              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none min-h-[60px]"
-              placeholder="Type your message here..."
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSubmit(e);
-                }
-              }}
-              rows={1}
+              placeholder="Type a message..."
+              className="flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              rows={3}
               disabled={isLoading}
             />
           </div>
-          <button
-            type="submit"
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            disabled={isLoading || !input.trim()}
-          >
-            Send
-          </button>
-        </form>
-        
-        {/* Provider Status */}
-        <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
-          <div className="flex items-center space-x-1">
-            <div
-              className={`w-2 h-2 rounded-full ${
-                providerInfo.isConnected ? 'bg-green-500' : 'bg-red-500'
-              }`}
+          
+          <div className="flex items-center space-x-2">
+            <AudioInputButton 
+              onTranscription={handleTranscription}
+              disabled={isLoading}
+              asugold={true}
             />
-            <span>
-              {providerInfo.name}: {providerInfo.status}
-            </span>
+            
+            <button
+              type="submit"
+              disabled={!input.trim() || isLoading}
+              className="px-4 py-2 bg-yellow-500 text-black font-medium rounded-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed flex-1"
+              style={{ backgroundColor: '#FFC627' }}
+            >
+              {isLoading ? 'Thinking...' : 'Send'}
+            </button>
           </div>
-        </div>
-        
-        {/* Token Usage Preview */}
-        <div className="mt-3">
-          <TokenUsagePreview
-            conversation={conversation}
-            template={template}
-            currentInput={input}
-            currentModelId={settings.preferredChatProvider === 'gemini' ? 'gemini-2.0-flash' : (ollama.status.currentModel || undefined)}
-          />
-        </div>
+        </form>
       </div>
-      <div ref={messagesEndRef} />
     </div>
   );
 };
