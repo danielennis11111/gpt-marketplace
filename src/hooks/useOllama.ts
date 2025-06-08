@@ -41,43 +41,57 @@ export const useOllama = () => {
 
       if (response.ok) {
         const data = await response.json();
-        setStatus({
-          isRunning: true,
-          isConnected: true,
-          models: data.models || [],
-          currentModel: data.models?.[0]?.name || null,
-          error: null,
-        });
-      } else {
-        // Use a fallback set of models for testing
-        console.log("Ollama not connected - using fallback for demo");
-        const fallbackModels = [
-          { name: 'llama3.3:8b', size: '4.1GB', parameter_size: '8B', quantization_level: 'Q4_0', modified_at: new Date().toISOString() },
-          { name: 'gemma3:4b', size: '2.7GB', parameter_size: '4B', quantization_level: 'Q4_0', modified_at: new Date().toISOString() }
-        ];
+        // Sort models by name for better display
+        const sortedModels = [...(data.models || [])].sort((a, b) => a.name.localeCompare(b.name));
+        
+        // Get the previously selected model from localStorage if it exists
+        const savedModel = localStorage.getItem('preferredOllamaModel');
+        const modelExists = sortedModels.some(model => model.name === savedModel);
+        
+        // Use saved model if it exists, otherwise prefer newer models like llama3, gemma3, etc.
+        let defaultModel = null;
+        if (modelExists) {
+          defaultModel = savedModel;
+        } else {
+          // Try to find the best available model in order of preference
+          const preferredModels = ['llama4scout', 'llama3.3:8b', 'gemma3:4b', 'llama3', 'gemma3', 'mistral', 'llama2'];
+          for (const modelName of preferredModels) {
+            const found = sortedModels.find(model => model.name.includes(modelName));
+            if (found) {
+              defaultModel = found.name;
+              break;
+            }
+          }
+          
+          // If no preferred model is found, use the first one
+          if (!defaultModel && sortedModels.length > 0) {
+            defaultModel = sortedModels[0].name;
+          }
+        }
         
         setStatus({
           isRunning: true,
-          isConnected: true, // Setting to true for demo/testing
-          models: fallbackModels,
-          currentModel: 'llama3.3:8b',
+          isConnected: true,
+          models: sortedModels,
+          currentModel: defaultModel,
           error: null,
+        });
+      } else {
+        setStatus({
+          isRunning: false,
+          isConnected: false,
+          models: [],
+          currentModel: null,
+          error: 'Ollama server is not responding. Please start it with "ollama serve"',
         });
       }
     } catch (error) {
-      console.log("Error connecting to Ollama - using fallback for demo");
-      // Use a fallback set of models for testing
-      const fallbackModels = [
-        { name: 'llama3.3:8b', size: '4.1GB', parameter_size: '8B', quantization_level: 'Q4_0', modified_at: new Date().toISOString() },
-        { name: 'gemma3:4b', size: '2.7GB', parameter_size: '4B', quantization_level: 'Q4_0', modified_at: new Date().toISOString() }
-      ];
-      
       setStatus({
-        isRunning: true,
-        isConnected: true, // Setting to true for demo/testing
-        models: fallbackModels,
-        currentModel: 'llama3.3:8b',
-        error: null,
+        isRunning: false,
+        isConnected: false,
+        models: [],
+        currentModel: null,
+        error: error instanceof Error ? error.message : 'Unknown error connecting to Ollama',
       });
     } finally {
       setIsLoading(false);
@@ -110,6 +124,19 @@ export const useOllama = () => {
       };
     }
   }, [checkOllamaStatus]);
+
+  // Set current model
+  const setCurrentModel = useCallback((modelName: string) => {
+    if (status.models.some(model => model.name === modelName)) {
+      localStorage.setItem('preferredOllamaModel', modelName);
+      setStatus(prev => ({
+        ...prev,
+        currentModel: modelName
+      }));
+      return true;
+    }
+    return false;
+  }, [status.models]);
 
   // Send message to Ollama
   const sendMessage = useCallback(async (message: string, model?: string) => {
@@ -152,12 +179,12 @@ export const useOllama = () => {
     }
 
     // Define the model names we can use (in order of preference)
-    const modelOptions = ['llama4scout', 'llama3.3:8b', 'gemma3:4b', 'llama2'];
+    const modelOptions = ['llama4scout', 'llama3.3:8b', 'gemma3:4b', 'llama3', 'gemma3', 'mistral', 'llama2'];
     
     // Check if any of our preferred models are available
     const availableModel = status.models.find(model => 
-      modelOptions.includes(model.name)
-    )?.name || 'llama2'; // Fallback to llama2
+      modelOptions.some(option => model.name.includes(option))
+    )?.name || status.currentModel; // Fallback to current model
     
     try {
       console.log(`Using model: ${availableModel} for Llama 4 Scout request`);
@@ -183,7 +210,7 @@ export const useOllama = () => {
     } catch (error) {
       throw new Error(`Failed to send message using available model: ${error}`);
     }
-  }, [status.isConnected, status.models]);
+  }, [status.isConnected, status.models, status.currentModel]);
 
   // Pull/download a model
   const pullModel = useCallback(async (modelName: string) => {
@@ -233,5 +260,6 @@ export const useOllama = () => {
     sendMessage,
     sendMessageToLlama4Scout,
     pullModel,
+    setCurrentModel,
   };
 }; 

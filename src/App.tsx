@@ -151,20 +151,17 @@ const AppContent = () => {
             <NavItem to="/" icon={HomeIcon} collapsed={sidebarCollapsed}>
               Dashboard
             </NavItem>
-            <NavItem to="/prompt-guide" icon={DocumentTextIcon} collapsed={sidebarCollapsed}>
-              Prompt Guide
-            </NavItem>
             <NavItem to="/marketplace" icon={RocketLaunchIcon} collapsed={sidebarCollapsed}>
               Marketplace
+            </NavItem>
+            <NavItem to="/prompt-guide" icon={DocumentTextIcon} collapsed={sidebarCollapsed}>
+              Prompt Guide
             </NavItem>
             <NavItem to="/community-ideas" icon={LightBulbIcon} collapsed={sidebarCollapsed}>
               Community Ideas
             </NavItem>
             <NavItem to="/myprojects" icon={FolderIcon} collapsed={sidebarCollapsed}>
               My Contributions
-            </NavItem>
-            <NavItem to="/contribute" icon={PlusCircleIcon} collapsed={sidebarCollapsed}>
-              Add to Marketplace
             </NavItem>
           </div>
 
@@ -205,9 +202,6 @@ const AppContent = () => {
           <div className="space-y-2">
             <NavItem to="#" icon={ExclamationTriangleIcon} collapsed={sidebarCollapsed}>
               Report A Problem
-            </NavItem>
-            <NavItem to="#" icon={ChatBubbleOvalLeftEllipsisIcon} collapsed={sidebarCollapsed}>
-              Give Feedback
             </NavItem>
           </div>
         </nav>

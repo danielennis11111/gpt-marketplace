@@ -93,45 +93,64 @@ const MyContributions: React.FC = () => {
     
     // Add user's community ideas to contributions
     const communityIdeas = JSON.parse(localStorage.getItem('communityIdeas') || '[]');
-    const userCommunityIdeas = communityIdeas
-      .filter((idea: any) => !idea.creator || idea.creator.name === currentUser || idea.isFromPromptGuide)
-      .map((idea: any) => ({
+    console.log('Found community ideas:', communityIdeas.length);
+    
+    // Process community ideas into contributions format
+    const userCommunityIdeas = communityIdeas.map((idea: any) => {
+      // Convert tags string to array if needed
+      const ideaTags = idea.tags 
+        ? (typeof idea.tags === 'string' ? idea.tags.split(',').map((t: string) => t.trim()) : idea.tags) 
+        : [idea.category || 'Development', idea.difficulty || 'intermediate'];
+      
+      return {
         id: idea.id,
         type: 'ai-project',
-        name: idea.title,
-        description: idea.description || idea.prompt,
+        name: idea.title || 'Untitled Idea',
+        description: idea.description || (idea.prompt ? idea.prompt.substring(0, 150) + '...' : 'No description'),
         link: `/community-ideas/${idea.id}`,
         category: idea.category || 'Development',
-        tags: idea.tags || [idea.category, idea.difficulty],
-        createdAt: idea.timestamp || new Date().toISOString(),
+        tags: ideaTags,
+        createdAt: idea.createdAt || idea.timestamp || new Date().toISOString(),
         lastUpdated: idea.lastSuggested || idea.timestamp || new Date().toISOString(),
         status: 'published',
         stats: { 
-          views: 0, 
-          uses: idea.popularity || 0, 
-          rating: 0, 
+          views: idea.views || 0, 
+          uses: idea.popularity || idea.likes || 0, 
+          rating: idea.likes ? (idea.likes > 0 ? 4.5 : 0) : 0, 
           reviews: 0 
         }
-      }));
+      };
+    });
+    
+    console.log('Processed community ideas:', userCommunityIdeas.length);
       
     // Add user's viewed items from contribution history
-    const userContributions = JSON.parse(localStorage.getItem('userContributions') || '[]');
-    const userViewedItems = userContributions
-      .filter((contribution: any) => contribution.type === 'viewed')
-      .map((contribution: any) => ({
-        id: contribution.id,
-        type: 'viewed',
-        name: contribution.title,
-        description: 'You viewed this item recently',
-        link: `/community-ideas/${contribution.id}`,
-        category: 'history',
-        tags: ['viewed', 'history'],
-        createdAt: contribution.timestamp,
-        lastUpdated: contribution.timestamp,
-        status: 'published',
-        stats: { views: 1, uses: 0, rating: 0, reviews: 0 }
-      }));
+    const userActivity = JSON.parse(localStorage.getItem('userActivity') || '{}');
+    const viewedIds = userActivity.viewed || [];
     
+    // Create an array of viewed items based on community ideas
+    const userViewedItems = viewedIds
+      .map((id: string) => {
+        const viewedIdea = communityIdeas.find((idea: any) => idea.id === id);
+        if (!viewedIdea) return null;
+        
+        return {
+          id: viewedIdea.id,
+          type: 'viewed',
+          name: viewedIdea.title || 'Viewed Item',
+          description: viewedIdea.description || 'You viewed this item recently',
+          link: `/community-ideas/${viewedIdea.id}`,
+          category: viewedIdea.category || 'history',
+          tags: ['viewed', 'history'],
+          createdAt: viewedIdea.timestamp || new Date().toISOString(),
+          lastUpdated: viewedIdea.timestamp || new Date().toISOString(),
+          status: 'published',
+          stats: { views: 1, uses: 0, rating: 0, reviews: 0 }
+        };
+      })
+      .filter(Boolean); // Remove nulls
+    
+    // Combine all contributions
     setContributions([...userCommunityIdeas, ...mockContributions, ...userViewedItems]);
   }, []);
 

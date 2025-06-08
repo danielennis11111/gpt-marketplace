@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSettings } from '../contexts/SettingsContext';
 import { useChatService } from '../hooks/useChatService';
+import { useOllama } from '../hooks/useOllama';
 import {
   CogIcon,
   KeyIcon,
@@ -11,21 +12,22 @@ import {
   EyeSlashIcon,
   TrashIcon,
   ArrowPathIcon,
-  CheckIcon
+  CheckIcon,
+  ServerIcon,
+  ArrowTopRightOnSquareIcon
 } from '@heroicons/react/24/outline';
 
 export const SettingsPage: React.FC = () => {
   const { settings, updateSettings, resetSettings, isGeminiConfigured } = useSettings();
   const chatService = useChatService();
+  const ollama = useOllama();
   const [showApiKey, setShowApiKey] = useState(false);
   const [tempApiKey, setTempApiKey] = useState(settings.geminiApiKey);
   const [testingConnection, setTestingConnection] = useState(false);
   const [connectionResult, setConnectionResult] = useState<{ success: boolean; message: string } | null>(null);
   const [unsavedChanges, setUnsavedChanges] = useState(false);
-  const [currentModel, setCurrentModel] = useState<string>('');
-  const [availableModels, setAvailableModels] = useState<string[]>([]);
-  const [isConnected, setIsConnected] = useState<boolean>(false);
   const [savedMessage, setSavedMessage] = useState<string>('');
+  const [refreshingModels, setRefreshingModels] = useState(false);
 
   const handleApiKeyChange = (value: string) => {
     setTempApiKey(value);
@@ -88,6 +90,16 @@ export const SettingsPage: React.FC = () => {
     updateSettings({ preferredChatProvider: provider });
   };
 
+  const handleModelChange = (modelName: string) => {
+    ollama.setCurrentModel(modelName);
+  };
+
+  const refreshOllamaModels = async () => {
+    setRefreshingModels(true);
+    await ollama.checkOllamaStatus();
+    setRefreshingModels(false);
+  };
+
   // Reset community ideas
   const resetCommunityIdeas = () => {
     if (confirm('Are you sure you want to reset all community ideas? This cannot be undone.')) {
@@ -105,28 +117,6 @@ export const SettingsPage: React.FC = () => {
       
       alert('All community ideas have been reset.');
     }
-  };
-
-  // Load settings from localStorage
-  useEffect(() => {
-    const settings = JSON.parse(localStorage.getItem('settings') || '{}');
-    setCurrentModel(settings.currentModel || 'llama3');
-    
-    // Simulate available models
-    setAvailableModels(['llama3', 'gemma', 'llama2', 'mistral']);
-    setIsConnected(true);
-  }, []);
-  
-  // Save settings to localStorage
-  const saveSettings = () => {
-    localStorage.setItem('settings', JSON.stringify({
-      currentModel
-    }));
-    
-    setSavedMessage('Settings saved!');
-    setTimeout(() => {
-      setSavedMessage('');
-    }, 3000);
   };
 
   return (
@@ -223,6 +213,103 @@ export const SettingsPage: React.FC = () => {
                 </span>
               </div>
             </div>
+          </div>
+
+          {/* Ollama Models */}
+          <div className="bg-white rounded-xl shadow-lg p-6 border border-gray-200">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center">
+                <ServerIcon className="w-6 h-6 text-red-600 mr-3" />
+                <h2 className="text-xl font-semibold text-gray-900">Ollama Models</h2>
+              </div>
+              <button 
+                onClick={refreshOllamaModels} 
+                disabled={refreshingModels}
+                className="inline-flex items-center text-sm text-blue-600 hover:text-blue-800"
+              >
+                <ArrowPathIcon className={`w-4 h-4 mr-1 ${refreshingModels ? 'animate-spin' : ''}`} />
+                {refreshingModels ? 'Refreshing...' : 'Refresh Models'}
+              </button>
+            </div>
+            
+            <p className="text-gray-600 mb-4">
+              Manage your local Ollama AI models. Select your preferred model for generation.
+            </p>
+
+            {ollama.status.isConnected ? (
+              <>
+                {ollama.status.models.length > 0 ? (
+                  <div className="space-y-3 max-h-60 overflow-y-auto">
+                    {ollama.status.models.map((model) => (
+                      <label 
+                        key={model.name}
+                        className="flex items-center justify-between p-3 border border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex items-center">
+                          <input
+                            type="radio"
+                            name="ollamaModel"
+                            value={model.name}
+                            checked={ollama.status.currentModel === model.name}
+                            onChange={() => handleModelChange(model.name)}
+                            className="text-red-600 focus:ring-red-500"
+                          />
+                          <div className="ml-3">
+                            <div className="font-medium text-gray-900">{model.name}</div>
+                            <div className="text-xs text-gray-500">
+                              {model.parameter_size ? `${model.parameter_size} parameters` : ''}
+                              {model.parameter_size && model.size ? ' • ' : ''}
+                              {model.size ? `${model.size}` : ''}
+                            </div>
+                          </div>
+                        </div>
+                        
+                        {ollama.status.currentModel === model.name && (
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <CheckIcon className="w-3 h-3 mr-1" />
+                            Active
+                          </span>
+                        )}
+                      </label>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="p-4 bg-gray-50 rounded-lg text-center">
+                    <p className="text-gray-700 mb-2">No Ollama models found</p>
+                    <a 
+                      href="https://ollama.com/library" 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className="inline-flex items-center text-blue-600 hover:text-blue-800"
+                    >
+                      Browse Ollama Model Library
+                      <ArrowTopRightOnSquareIcon className="w-4 h-4 ml-1" />
+                    </a>
+                  </div>
+                )}
+                
+                <div className="mt-4 text-sm">
+                  <p className="text-gray-600">
+                    To add models, run <code className="bg-gray-100 px-2 py-1 rounded">ollama pull model_name</code> in your terminal.
+                  </p>
+                </div>
+              </>
+            ) : (
+              <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-start">
+                  <XCircleIcon className="w-5 h-5 text-yellow-600 mt-0.5 mr-2 flex-shrink-0" />
+                  <div>
+                    <p className="text-yellow-800 font-medium">Ollama is not running</p>
+                    <p className="text-yellow-700 text-sm mt-1">
+                      Start Ollama to see your available models. Run <code className="bg-yellow-100 px-2 py-0.5 rounded">ollama serve</code> in your terminal.
+                    </p>
+                    <p className="text-yellow-700 text-sm mt-2">
+                      Or use the start script: <code className="bg-yellow-100 px-2 py-0.5 rounded">./start-ollama.sh</code>
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Gemini API Configuration */}
