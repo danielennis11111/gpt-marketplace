@@ -9,6 +9,7 @@ import ProjectEditor from './pages/ProjectEditor';
 import CommunityIdeas from './pages/CommunityIdeas';
 import { ContributePage } from './pages/ContributePage';
 import { PromptGuidePage } from './pages/PromptGuidePage';
+import { AsuGptPage } from './pages/AsuGptPage';
 import { FloatingChatButton } from './components/FloatingChatButton';
 import { ProjectsProvider } from './contexts/ProjectsContext';
 import { SettingsProvider } from './contexts/SettingsContext';
@@ -183,7 +184,7 @@ const AppContent = () => {
             <NavItem to="https://compare-beta.aiml.asu.edu/" icon={ScaleIcon} external={true} collapsed={sidebarCollapsed}>
               Model Comparison
             </NavItem>
-            <NavItem to="https://asugpt-beta.aiml.asu.edu/" icon={ChatBubbleLeftRightIcon} external={true} collapsed={sidebarCollapsed}>
+            <NavItem to="/asugpt" icon={ChatBubbleLeftRightIcon} collapsed={sidebarCollapsed}>
               ASU GPT
             </NavItem>
           </div>
@@ -244,6 +245,7 @@ const AppContent = () => {
           <Route path="/prompt-guide" element={<PromptGuidePage />} />
           <Route path="/community-ideas" element={<CommunityIdeas />} />
           <Route path="/community-ideas/:id" element={<CommunityIdeaDetail />} />
+          <Route path="/asugpt" element={<AsuGptPage />} />
           <Route path="/settings" element={<SettingsPage />} />
         </Routes>
       </div>
