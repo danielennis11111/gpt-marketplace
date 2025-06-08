@@ -19,6 +19,9 @@ import AudioInputButton from './AudioInputButton';
 import ModelSwitcher from './ModelSwitcher';
 import { ParticipantGrid, ASU_PARTICIPANTS } from './ConversationParticipant';
 import CollapsiblePanel from './CollapsiblePanel';
+import ProgressiveThinkingIndicator from './ProgressiveThinkingIndicator';
+import CompressionStatisticsPanel from './CompressionStatisticsPanel';
+import { Upload } from 'lucide-react';
 
 // Create a wrapper component for markdown content
 const MarkdownContent: React.FC<{ content: string }> = ({ content }) => {
@@ -399,177 +402,195 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
           <ModelSwitcher 
             currentModel={selectedModel} 
             onModelChange={handleModelChange}
+            compact={true}
           />
         </div>
       </div>
       
-      {/* Main chat area */}
-      <div className="flex-1 flex flex-col md:flex-row">
-        {/* Messages section */}
-        <div className="flex-1 overflow-auto p-4">
-          {/* Participant selection (if implemented) */}
-          <CollapsiblePanel 
-            title="Conversation Partners" 
-            initiallyExpanded={false}
-            className="mb-4"
-          >
-            <ParticipantGrid 
-              participants={ASU_PARTICIPANTS} 
-              activeParticipant={activeParticipant}
-              onSelectParticipant={handleSelectParticipant}
-            />
-          </CollapsiblePanel>
-          
-          {/* Messages */}
-          <div className="space-y-4 mb-4">
-            {visibleMessages.map((message, index) => (
-              <div 
-                key={message.id || index} 
-                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-fadeIn`}
-              >
-                <div 
-                  className={`max-w-3xl rounded-lg p-3 transition-all duration-300 ${
-                    message.role === 'user' 
-                      ? 'bg-blue-500 text-white' 
-                      : 'bg-white border border-gray-200 text-gray-900'
-                  }`}
-                >
-                  {message.role === 'assistant' ? (
-                    <MarkdownContent content={message.content} />
-                  ) : (
-                    <div className="whitespace-pre-wrap">{message.content}</div>
-                  )}
-                </div>
-              </div>
-            ))}
-            {isLoading && (
-              <div className="flex justify-start animate-pulse">
-                <div className="max-w-3xl rounded-lg p-3 bg-white border border-gray-200 text-gray-400">
-                  <div className="flex items-center space-x-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-gray-400"></div>
-                    <span>AI is thinking...</span>
-                  </div>
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} className={`h-4 ${isScrolling ? 'animate-bounce' : ''}`} />
-          </div>
-        </div>
+      {/* Main chat area - now full width */}
+      <div className="flex-1 overflow-auto p-4">
+        {/* Participant selection (if implemented) */}
+        <CollapsiblePanel 
+          title="Conversation Partners" 
+          initiallyExpanded={false}
+          className="mb-4"
+        >
+          <ParticipantGrid 
+            participants={ASU_PARTICIPANTS} 
+            activeParticipant={activeParticipant}
+            onSelectParticipant={handleSelectParticipant}
+          />
+        </CollapsiblePanel>
         
-        {/* Right sidebar with collapsible panels for context management */}
-        <div className="md:w-80 p-4 border-t md:border-t-0 md:border-l border-gray-200 bg-white">
-          {/* Context management tools */}
-          <CollapsiblePanel 
-            title="Context Window" 
-            initiallyExpanded={true}
-            className="mb-4"
-          >
-            <div className="space-y-4">
-              <RateLimitIndicator percentage={tokenUsage.percentage} />
-              <TokenUsagePreview 
-                total={tokenUsage.total} 
-                remaining={tokenUsage.remaining} 
-                max={tokenUsage.maxTokens}
-                isLoading={isTokenCalculating}
-              />
-              
-              {/* Only show warning if approaching limit */}
-              {tokenUsage.percentage > 75 && (
-                <ContextLimitWarning 
-                  percentage={tokenUsage.percentage} 
-                  onCompress={handleCompressHistory}
-                />
-              )}
+        {/* Messages */}
+        <div className="space-y-4 mb-4">
+          {visibleMessages.map((message, index) => (
+            <div 
+              key={message.id || index} 
+              className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} animate-fadeIn`}
+            >
+              <div 
+                className={`max-w-3xl rounded-lg p-3 transition-all duration-300 ${
+                  message.role === 'user' 
+                    ? 'bg-blue-500 text-white' 
+                    : 'bg-white border border-gray-200 text-gray-900'
+                }`}
+              >
+                {message.role === 'assistant' ? (
+                  <MarkdownContent content={message.content} />
+                ) : (
+                  <div className="whitespace-pre-wrap">{message.content}</div>
+                )}
+              </div>
             </div>
-          </CollapsiblePanel>
-          
-          {/* File upload for RAG */}
-          <CollapsiblePanel 
-            title="Document Context" 
-            initiallyExpanded={false}
-            className="mb-4"
-          >
-            <div className="space-y-4">
-              <FileUploadArea 
-                onFilesProcessed={handleFilesProcessed}
-                isLoading={isFileLoading}
-                setIsLoading={setIsFileLoading}
-                processDocumentForRAG={processDocumentForRAG}
+          ))}
+          {isLoading && (
+            <>
+              <ProgressiveThinkingIndicator 
+                isThinking={isLoading} 
+                modelName={providerInfo.name}
+                canStream={false} 
               />
-              
-              {/* Display RAG documents */}
-              {ragDocuments.length > 0 && (
-                <div className="mt-2">
-                  <h4 className="font-medium text-sm text-gray-700 mb-2">Loaded Documents:</h4>
-                  <ul className="space-y-1">
-                    {ragDocuments.map((doc, index) => (
-                      <li key={index} className="flex items-center justify-between text-sm">
-                        <span className="truncate flex-1">{doc.name || 'Document'}</span>
-                        <span className="text-xs text-gray-500 ml-2">{doc.tokenCount} tokens</span>
-                        <button 
-                          onClick={() => removeRagDocument(index)}
-                          className="ml-2 text-red-600 hover:text-red-800"
-                        >
-                          &times;
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          </CollapsiblePanel>
-          
-          {/* Compression settings */}
-          <CollapsiblePanel 
-            title="Context Optimization" 
-            initiallyExpanded={false}
-            className="mb-4"
-          >
-            <ContextOptimizationPanel 
-              onApplyCompression={handleCompressHistory}
-              compressionStrategies={[
-                { type: 'lossless', id: 'lossless', name: 'Lossless Compression' },
-                { type: 'semantic', id: 'semantic', name: 'Semantic Compression' },
-                { type: 'summary', id: 'summary', name: 'Summary Compression' },
-                { type: 'hybrid', id: 'hybrid', name: 'Hybrid Compression' }
-              ]}
-            />
-          </CollapsiblePanel>
+            </>
+          )}
+          <div ref={messagesEndRef} className={`h-4 ${isScrolling ? 'animate-bounce' : ''}`} />
         </div>
       </div>
       
-      {/* Input area */}
-      <div className="p-4 border-t border-gray-200 bg-white">
-        <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
-          <div className="flex space-x-2">
-            <textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Type a message..."
-              className="flex-1 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              rows={3}
-              disabled={isLoading}
+      {/* Input area with RAG controls */}
+      <div className="flex-shrink-0 p-4 border-t border-gray-200 bg-white">
+        <form onSubmit={handleSubmit} className="flex space-x-2">
+          {/* Voice Input Button */}
+          <AudioInputButton 
+            onTranscription={handleTranscription}
+            disabled={isLoading}
+            asugold={true}
+          />
+          
+          {/* RAG File Upload Button */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => document.getElementById('file-upload')?.click()}
+              disabled={isLoading || isFileLoading}
+              className={`p-3 rounded-lg transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-50`}
+              title="Upload document for context"
+            >
+              <Upload className="w-5 h-5" />
+              {isFileLoading && (
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-yellow-500 rounded-full animate-pulse"></div>
+              )}
+            </button>
+            <input
+              id="file-upload"
+              type="file"
+              accept=".pdf,.txt,.md,.doc,.docx"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  setIsFileLoading(true);
+                  
+                  // Read the file content
+                  const reader = new FileReader();
+                  reader.onload = (event) => {
+                    const content = event.target?.result as string;
+                    // Now process the document with both file and content
+                    const docContext = processDocumentForRAG(file, content);
+                    handleFilesProcessed([docContext]);
+                    setIsFileLoading(false);
+                  };
+                  
+                  reader.onerror = () => {
+                    console.error("Error reading file");
+                    setIsFileLoading(false);
+                  };
+                  
+                  // Start reading the file as text
+                  reader.readAsText(file);
+                  
+                  // Clear the input so the same file can be uploaded again if needed
+                  e.target.value = '';
+                }
+              }}
+              className="hidden"
             />
           </div>
           
-          <div className="flex items-center space-x-2">
-            <AudioInputButton 
-              onTranscription={handleTranscription}
-              disabled={isLoading}
-              asugold={true}
-            />
-            
-            <button
-              type="submit"
-              disabled={!input.trim() || isLoading}
-              className="px-4 py-2 bg-yellow-500 text-black font-medium rounded-md hover:bg-yellow-600 focus:outline-none focus:ring-2 focus:ring-yellow-500 disabled:opacity-50 disabled:cursor-not-allowed flex-1"
-              style={{ backgroundColor: '#FFC627' }}
-            >
-              {isLoading ? 'Thinking...' : 'Send'}
-            </button>
-          </div>
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={isLoading ? "Thinking..." : "Type your message..."}
+            disabled={isLoading}
+            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FFC627] focus:border-transparent disabled:opacity-50"
+          />
+          
+          <button
+            type="submit"
+            disabled={!input.trim() || isLoading}
+            className="px-6 py-3 bg-[#FFC627] text-[#191919] rounded-lg hover:bg-yellow-400 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {isLoading ? 'Sending...' : 'Send'}
+          </button>
         </form>
+      </div>
+      
+      {/* Document context display */}
+      {ragDocuments.length > 0 && (
+        <div className="flex-shrink-0 px-4 py-2 border-t border-gray-200 bg-white">
+          <div className="flex items-center flex-wrap gap-2">
+            <span className="text-xs font-medium text-gray-700">Using context from:</span>
+            {ragDocuments.map((doc, index) => (
+              <div key={index} className="flex items-center bg-gray-100 rounded-full px-3 py-1 text-xs">
+                <span className="truncate max-w-[150px]">{doc.name || 'Document'}</span>
+                <span className="ml-1 text-gray-500">({doc.tokenCount} tokens)</span>
+                <button 
+                  onClick={() => removeRagDocument(index)}
+                  className="ml-2 text-red-600 hover:text-red-800"
+                >
+                  &times;
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+      
+      {/* Token Usage Preview - moved below chat input */}
+      <div className="flex-shrink-0 px-4 py-3 border-t border-gray-200 bg-white">
+        <TokenUsagePreview 
+          total={tokenUsage.total} 
+          remaining={tokenUsage.remaining} 
+          max={tokenUsage.maxTokens}
+          isLoading={isTokenCalculating}
+        />
+        
+        {/* Only show warning if approaching limit */}
+        {tokenUsage.percentage > 75 && (
+          <div className="mt-2">
+            <ContextLimitWarning 
+              percentage={tokenUsage.percentage} 
+              onCompress={handleCompressHistory}
+            />
+          </div>
+        )}
+        
+        {/* Compression Statistics Panel */}
+        <div className="mt-2">
+          <CompressionStatisticsPanel 
+            compressionEngine={compressionEngine}
+            refreshInterval={10000}
+          />
+        </div>
+      </div>
+      
+      {/* AI Disclaimer */}
+      <div className="flex-shrink-0 p-3 border-t border-gray-200 bg-white">
+        <div className="text-center">
+          <p className="text-xs text-gray-500">
+            You are speaking with an AI assistant. Responses are generated with artificial intelligence.
+          </p>
+        </div>
       </div>
     </div>
   );
