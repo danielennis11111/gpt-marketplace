@@ -43,31 +43,31 @@ interface ChatbotWidgetProps {
 const SAMPLE_RESPONSES = [
   {
     trigger: ['help', 'assist', 'support'],
-    response: "I'm here to help you find the perfect AI tools and resources! You can ask me about specific project types, search for tools by functionality, or get recommendations based on your needs."
+    response: "I'm here to help you find the perfect AI tools and resources! You can browse AI Projects, Extensions, Repositories, or Local Models. What are you looking for?"
   },
   {
-    trigger: ['ai assistant', 'productivity', 'automation'],
-    response: "Looking for AI assistants? I recommend checking out our AI Assistants section which includes productivity tools, development helpers, and analytics assistants. Popular ones include 'Plan with AI' and 'C-3PO Coding Helper'."
+    trigger: ['ai project', 'ai assistant', 'productivity', 'automation'],
+    response: "Looking for AI Projects? These are custom AI assistants and intelligent tools for various tasks. Popular ones include 'Plan with AI' for project planning and 'C-3PO Coding Helper' for development assistance."
+  },
+  {
+    trigger: ['extension', 'embed', 'chatbot', 'website', 'integration'],
+    response: "Extensions are embeddable chatbots and website integrations! These allow you to add AI functionality directly to your websites. Perfect for customer support or interactive assistance."
+  },
+  {
+    trigger: ['repository', 'repo', 'code', 'github', 'development'],
+    response: "Repositories contain code and development resources! You can find links to GitHub repos, development tools, and other coding resources to help with your projects."
+  },
+  {
+    trigger: ['local model', 'download', 'offline', 'llama', 'ollama'],
+    response: "Local Models are downloadable AI models for local deployment! These include links to models like Llama, Gemma, and other models you can run on your own hardware with tools like Ollama."
   },
   {
     trigger: ['learning', 'education', 'study', 'teach'],
-    response: "For educational tools, explore our Learning Tools section! We have interactive games like 'Adventure: ASU Edition', poetry analysis tools, and various educational resources designed to enhance learning experiences."
-  },
-  {
-    trigger: ['content', 'writing', 'creative', 'music'],
-    response: "Creative professionals love our Content Creators section! You'll find tools for writing assistance, music generation, poetry analysis, and other creative applications."
+    response: "For educational tools, check out our AI Projects section! We have interactive games like 'Adventure: ASU Edition', poetry analysis tools, and various educational resources."
   },
   {
     trigger: ['data', 'analytics', 'research', 'business'],
-    response: "For data analysis and business intelligence, check out our Data & Analytics section. The 'Data Chatbot - ASU Analytics' is particularly popular for understanding analytics platforms."
-  },
-  {
-    trigger: ['project management', 'planning', 'organize'],
-    response: "Project management made easy! Our Project Tools section includes planning assistants and organizational tools. 'Plan with AI' is excellent for transforming ideas into structured project plans."
-  },
-  {
-    trigger: ['game', 'interactive', 'simulation'],
-    response: "Interested in interactive experiences? Our Interactive & Games section features educational games and simulations like 'Adventure: ASU Edition' that combine learning with engagement."
+    response: "For data analysis tools, explore our AI Projects section! The 'Data Chatbot - ASU Analytics' is particularly popular for understanding analytics platforms."
   }
 ];
 
@@ -129,10 +129,10 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
 
     // Default responses
     const defaultResponses = [
-      "That's a great question! You can browse our projects by category using the filters above, or try searching for specific keywords in the search bar.",
-      "I'd recommend exploring our different product types - we have AI Assistants, Learning Tools, Content Creators, Data & Analytics tools, Project Management tools, and Interactive Games.",
+      "That's a great question! You can browse our marketplace by product type using the buttons above, or try searching for specific keywords in the search bar.",
+      "I'd recommend exploring our different product types - we have AI Projects, Extensions for websites, Repositories with code resources, and Local Models for download.",
       "You can use the filter options to narrow down projects by category, capabilities, or verification status. Is there a specific type of tool you're looking for?",
-      "Feel free to browse our verified projects for quality-assured tools, or check out the newest additions to see what's trending!"
+      "Feel free to browse our verified AI projects for quality-assured tools, or check out the newest additions to see what's trending!"
     ];
 
     return defaultResponses[Math.floor(Math.random() * defaultResponses.length)];
@@ -174,10 +174,10 @@ export const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
   };
 
   const quickActions = [
-    { text: "Show me AI assistants", icon: SparklesIcon },
-    { text: "Find learning tools", icon: LightBulbIcon },
-    { text: "Browse data analytics", icon: MagnifyingGlassIcon },
-    { text: "Help me get started", icon: ChatBubbleLeftRightIcon }
+    { text: "Show me AI Projects", icon: SparklesIcon },
+    { text: "Find Extensions", icon: LightBulbIcon },
+    { text: "Browse Repositories", icon: MagnifyingGlassIcon },
+    { text: "Local Models available", icon: ChatBubbleLeftRightIcon }
   ];
 
   return (

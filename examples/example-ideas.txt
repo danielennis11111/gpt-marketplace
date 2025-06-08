@@ -1,0 +1,9 @@
+simple copy and paste embed of a chatbot like this one that uses up to 4 MyAI Builder projects to chat with and switch between and embed to any website: https://github.com/danielennis11111/plato-lms/tree/chatbot-integration-package
+
+ASU Local Wrapper: https://github.com/danielennis11111/rate-limiter
+
+Repositories: https://huggingface.co/spaces
+
+Links to external downlods of approved local models like https://www.llama.com/llama-downloads/
+
+or Ollama links to gemma 3 to download and use with the asu local wrapper 

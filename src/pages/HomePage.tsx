@@ -9,11 +9,9 @@ import {
   ListBulletIcon,
   CpuChipIcon,
   DocumentTextIcon,
-  AcademicCapIcon,
   ChartBarIcon,
   PuzzlePieceIcon,
   LightBulbIcon,
-  WrenchScrewdriverIcon,
   MegaphoneIcon
 } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
@@ -21,52 +19,36 @@ import { useNavigate } from 'react-router-dom';
 // Define product types with their categories and icons
 const PRODUCT_TYPES = [
   {
-    id: 'ai-assistants',
-    name: 'AI Assistants',
+    id: 'ai-projects',
+    name: 'AI Projects',
     icon: CpuChipIcon,
-    description: 'Intelligent assistants for various tasks',
-    categories: ['Productivity', 'Development', 'Analytics'],
+    description: 'Custom AI assistants and intelligent tools',
+    categories: ['Productivity', 'Development', 'Analytics', 'Education', 'Research', 'Project Management', 'Music', 'Literature', 'Wellness', 'History'],
     color: 'bg-blue-100 text-blue-800 border-blue-200'
   },
   {
-    id: 'learning-tools',
-    name: 'Learning Tools',
-    icon: AcademicCapIcon,
-    description: 'Educational resources and study aids',
-    categories: ['Education'],
+    id: 'extensions',
+    name: 'Extensions',
+    icon: PuzzlePieceIcon,
+    description: 'Embeddable chatbots and website integrations',
+    categories: [],
     color: 'bg-green-100 text-green-800 border-green-200'
   },
   {
-    id: 'content-creators',
-    name: 'Content Creators',
+    id: 'repositories',
+    name: 'Repositories',
     icon: DocumentTextIcon,
-    description: 'Tools for writing, music, and creative work',
-    categories: ['Music', 'Literature', 'Wellness'],
+    description: 'Code repositories and development resources',
+    categories: [],
     color: 'bg-purple-100 text-purple-800 border-purple-200'
   },
   {
-    id: 'data-tools',
-    name: 'Data & Analytics',
+    id: 'local-models',
+    name: 'Local Models',
     icon: ChartBarIcon,
-    description: 'Business intelligence and data analysis',
-    categories: ['Analytics', 'Research'],
+    description: 'Downloadable AI models for local deployment',
+    categories: [],
     color: 'bg-amber-100 text-amber-800 border-amber-200'
-  },
-  {
-    id: 'project-management',
-    name: 'Project Tools',
-    icon: WrenchScrewdriverIcon,
-    description: 'Planning and project management',
-    categories: ['Project Management'],
-    color: 'bg-red-100 text-red-800 border-red-200'
-  },
-  {
-    id: 'interactive',
-    name: 'Interactive & Games',
-    icon: PuzzlePieceIcon,
-    description: 'Games, simulations, and interactive experiences',
-    categories: ['History'],
-    color: 'bg-indigo-100 text-indigo-800 border-indigo-200'
   }
 ];
 
@@ -229,7 +211,7 @@ const HomePage: React.FC = () => {
             </button>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {PRODUCT_TYPES.map((type) => {
               const IconComponent = type.icon;
               const isActive = productTypeFilter === type.id;
