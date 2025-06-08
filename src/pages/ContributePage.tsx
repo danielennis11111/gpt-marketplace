@@ -11,7 +11,7 @@ import {
   TagIcon
 } from '@heroicons/react/24/outline';
 
-type ContributionType = 'extension' | 'local-model' | 'tutorial';
+type ContributionType = 'ai-project' | 'extension' | 'local-model' | 'tutorial';
 
 export const ContributePage: React.FC = () => {
   const navigate = useNavigate();
@@ -27,6 +27,14 @@ export const ContributePage: React.FC = () => {
   });
 
   const contributionTypes = [
+    {
+      id: 'ai-project' as ContributionType,
+      name: 'AI Project',
+      description: 'Custom AI assistants built with MyAI Builder',
+      icon: PlusCircleIcon,
+      color: 'from-red-600 to-yellow-500',
+      examples: ['Research assistant', 'Code helper', 'Data analyzer']
+    },
     {
       id: 'extension' as ContributionType,
       name: 'Extension',
@@ -218,7 +226,8 @@ export const ContributePage: React.FC = () => {
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               <LinkIcon className="w-4 h-4 inline mr-1" />
-              {selectedType === 'extension' ? 'Demo/GitHub Link' : 
+              {selectedType === 'ai-project' ? 'MyAI Builder Link' :
+               selectedType === 'extension' ? 'Demo/GitHub Link' : 
                selectedType === 'local-model' ? 'Download/Repository Link' : 
                'Tutorial Link/Document'}
             </label>
@@ -226,7 +235,7 @@ export const ContributePage: React.FC = () => {
               type="url"
               value={formData.link}
               onChange={(e) => setFormData({ ...formData, link: e.target.value })}
-              placeholder="https://..."
+              placeholder={selectedType === 'ai-project' ? 'https://myai.example.com/project/...' : 'https://...'}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500"
             />
           </div>

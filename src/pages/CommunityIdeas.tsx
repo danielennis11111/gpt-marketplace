@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { HoneInChatbot } from '../components/HoneInChatbot';
 import { 
   ArrowPathIcon, 
   LightBulbIcon, 
@@ -180,6 +181,10 @@ const CommunityIdeas: React.FC = () => {
   const [sortBy, setSortBy] = useState('popular');
   const [expandedIdeas, setExpandedIdeas] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
+  const [honeInChatbot, setHoneInChatbot] = useState<{
+    isOpen: boolean;
+    idea: any | null;
+  }>({ isOpen: false, idea: null });
 
   // Load ideas from Prompt Guide
   useEffect(() => {
@@ -288,6 +293,17 @@ const CommunityIdeas: React.FC = () => {
   const handleCloneIdea = (ideaId: string) => {
     console.log(`Cloning idea ${ideaId}`);
     // In a real app, this would navigate to the create project page with the idea pre-filled
+  };
+
+  const handleHoneIn = (idea: any) => {
+    setHoneInChatbot({
+      isOpen: true,
+      idea: {
+        title: idea.title,
+        description: idea.idea,
+        aiConceptualization: idea.aiConceptualization
+      }
+    });
   };
 
   return (
@@ -489,11 +505,11 @@ const CommunityIdeas: React.FC = () => {
                       
                       <div className="mt-4 flex justify-end">
                         <button
-                          onClick={() => handleCloneIdea(idea.id)}
-                          className="inline-flex items-center px-4 py-2 bg-amber-400 text-black rounded-full hover:bg-amber-500 transition-colors"
+                          onClick={() => handleHoneIn(idea)}
+                          className="inline-flex items-center px-4 py-2 bg-gradient-to-r from-red-600 to-yellow-500 text-white rounded-lg hover:from-red-700 hover:to-yellow-600 transition-all transform hover:scale-105 shadow-lg"
                         >
                           <DocumentDuplicateIcon className="w-5 h-5 mr-2" />
-                          Use This Idea
+                          Hone In
                         </button>
                       </div>
                     </>
@@ -504,6 +520,15 @@ const CommunityIdeas: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Hone In Chatbot */}
+      {honeInChatbot.idea && (
+        <HoneInChatbot
+          isOpen={honeInChatbot.isOpen}
+          onClose={() => setHoneInChatbot({ isOpen: false, idea: null })}
+          initialIdea={honeInChatbot.idea}
+        />
+      )}
     </div>
   );
 };

@@ -125,7 +125,7 @@ const AppContent = () => {
               Contribute
             </NavItem>
             <NavItem to="/myprojects" icon={FolderIcon}>
-              MyAI Projects
+              My Contributions
             </NavItem>
             <NavItem to="/marketplace" icon={RocketLaunchIcon}>
               Beta Land Marketplace
