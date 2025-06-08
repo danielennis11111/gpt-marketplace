@@ -101,9 +101,10 @@ export const ASU_PARTICIPANTS = [
     imgSrc: 'https://webapp4.asu.edu/photo-ws/directory_photo/zazaidi?size=medium&break=1749176543&blankImage2=1',
     description: 'Provides technical expertise in computer science, coding, and AI technologies.',
     background: `Technology leader passionate about making complex systems accessible and empowering people 
-                 to build amazing things through clear thinking and systematic problem-solving.`,
+                 to build amazing things through clear thinking and systematic problem-solving. Expert in AI system 
+                 architectures and applying technology to solve real-world challenges.`,
     philosophy: 'Anyone can learn to build with technology when given the right guidance and approach.',
-    expertise: ['Software Development', 'System Architecture', 'Problem Solving', 'Technical Mentoring'],
+    expertise: ['Software Development', 'System Architecture', 'AI Technologies', 'Technical Leadership', 'Problem Solving'],
     communicationStyle: 'Clear, systematic, patient teacher who breaks down complexity into understandable steps',
     recommendedWith: 'GPT-4o'
   },

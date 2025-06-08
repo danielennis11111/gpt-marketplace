@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { PlusIcon, ChevronDownIcon } from '@heroicons/react/24/outline';
+import { PlusIcon, ChevronDownIcon, SparklesIcon } from '@heroicons/react/24/outline';
 import { MODEL_LIMITS } from '../utils/rate-limiter/tokenCounter';
+import CommunityIdeaSelector from './CommunityIdeaSelector';
 
 // Import participant data from ConversationParticipant
 import { ASU_PARTICIPANTS } from './ConversationParticipant';
@@ -15,7 +16,22 @@ export type PersonaChatTemplate = {
   systemPrompt: string;
   icon: string;
   color: string;
+  enhancedWithIdea?: {
+    id: string;
+    title: string;
+    systemInstructions?: string;
+  };
 };
+
+// Interface for Community Idea
+interface CommunityIdea {
+  id: string;
+  title: string;
+  description: string;
+  prompt?: string;
+  category: string;
+  aiSystemInstructions?: string;
+}
 
 // Create persona-based chat templates
 export const PERSONA_CHAT_TEMPLATES: Omit<PersonaChatTemplate, 'modelId'>[] = [
@@ -206,6 +222,11 @@ const PersonaChatSelection: React.FC<PersonaChatSelectionProps> = ({
   const [selectedModels, setSelectedModels] = useState<Record<string, string>>({});
   // Track which model dropdowns are open
   const [openDropdowns, setOpenDropdowns] = useState<Record<string, boolean>>({});
+  // Track enhanced prompts with community ideas
+  const [enhancedPrompts, setEnhancedPrompts] = useState<Record<string, { id: string; title: string; systemInstructions?: string }>>({});
+  // Community idea selector modal
+  const [isIdeaSelectorOpen, setIsIdeaSelectorOpen] = useState(false);
+  const [activeTemplateId, setActiveTemplateId] = useState<string | null>(null);
 
   // Set default models for each persona
   React.useEffect(() => {
@@ -238,108 +259,166 @@ const PersonaChatSelection: React.FC<PersonaChatSelectionProps> = ({
     }));
   };
 
-  // Handle selecting a chat with the chosen model
+  // Open community idea selector for a specific persona
+  const openIdeaSelector = (templateId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setActiveTemplateId(templateId);
+    setIsIdeaSelectorOpen(true);
+  };
+
+  // Handle selecting a community idea for a persona
+  const handleSelectIdea = (idea: CommunityIdea) => {
+    if (!activeTemplateId) return;
+    
+    setEnhancedPrompts(prev => ({
+      ...prev,
+      [activeTemplateId]: {
+        id: idea.id,
+        title: idea.title,
+        systemInstructions: idea.aiSystemInstructions || idea.prompt
+      }
+    }));
+    
+    setIsIdeaSelectorOpen(false);
+  };
+
+  // Remove enhancement from a persona
+  const removeEnhancement = (templateId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEnhancedPrompts(prev => {
+      const newEnhancements = { ...prev };
+      delete newEnhancements[templateId];
+      return newEnhancements;
+    });
+  };
+
+  // Handle selecting a chat with the chosen model and enhancements
   const handleSelectChat = (template: Omit<PersonaChatTemplate, 'modelId'>, e: React.MouseEvent) => {
     e.stopPropagation();
     const modelId = selectedModels[template.id] || getDefaultModelForPersona(template.persona) || 'gpt-4o-mini';
+    
+    // Get enhancement if available
+    const enhancement = enhancedPrompts[template.id];
+    
+    // Create enhanced system prompt if needed
+    let finalSystemPrompt = template.systemPrompt;
+    if (enhancement && enhancement.systemInstructions) {
+      finalSystemPrompt = `${template.systemPrompt}\n\n# SPECIALIZED KNOWLEDGE AND CAPABILITIES\n\nI have specialized knowledge and capabilities related to "${enhancement.title}" that allows me to provide expert assistance in this area. This includes:\n\n${enhancement.systemInstructions}`;
+    }
+    
     onSelectChat({
       ...template,
-      modelId
+      modelId,
+      systemPrompt: finalSystemPrompt,
+      enhancedWithIdea: enhancement
     });
   };
 
   return (
-    <div className={`${className} px-4 py-6`}>
-      <div className="max-w-6xl mx-auto">
-        <h2 className="text-2xl font-bold text-gray-900 mb-6">Choose a Conversation Partner</h2>
-        <p className="text-lg text-gray-700 mb-8">
-          Select an ASU expert to start a conversation tailored to their expertise and perspective.
-        </p>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {PERSONA_CHAT_TEMPLATES.map(template => (
-            <div
+    <div className={`space-y-6 ${className}`}>
+      <h2 className="text-2xl font-bold text-gray-900">Choose an AI Experience</h2>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {PERSONA_CHAT_TEMPLATES.map((template) => {
+          const selectedModelId = selectedModels[template.id] || getDefaultModelForPersona(template.persona);
+          const selectedModelName = getModelName(selectedModelId);
+          const isDropdownOpen = openDropdowns[template.id] || false;
+          const enhancement = enhancedPrompts[template.id];
+          
+          return (
+            <div 
               key={template.id}
-              className="bg-white rounded-xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 cursor-pointer border border-gray-200"
+              className={`${template.color} rounded-xl shadow-md overflow-hidden cursor-pointer transition-transform hover:scale-[1.02] hover:shadow-lg`}
               onClick={(e) => handleSelectChat(template, e)}
             >
-              <div className={`h-3 ${template.color}`}></div>
-              <div className="p-6">
-                <div className="flex items-center mb-4">
-                  <div className="w-16 h-16 rounded-full overflow-hidden mr-4 border-2 border-gray-200">
-                    <img
-                      src={template.icon}
-                      alt={template.name}
-                      className="w-full h-full object-cover"
+              <div className="p-6 text-white">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center">
+                    <img 
+                      src={template.icon} 
+                      alt={template.persona}
+                      className="w-12 h-12 rounded-full object-cover border-2 border-white"
                       onError={(e) => {
-                        // Fallback for missing images
                         (e.target as HTMLImageElement).src = 'https://via.placeholder.com/150?text=ASU';
                       }}
                     />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-semibold text-gray-900">{template.name}</h3>
-                    <p className="text-sm text-gray-500">{template.persona}</p>
+                    <div className="ml-3">
+                      <h3 className="text-lg font-medium">{template.name}</h3>
+                      <p className="text-sm text-white/80">{template.description}</p>
+                    </div>
                   </div>
                 </div>
                 
-                <p className="text-gray-600 mb-4">
-                  {template.description}
-                </p>
-                
-                <div className="flex justify-between items-center">
-                  {/* Model selector dropdown */}
+                <div className="mt-4 flex items-center justify-between">
                   <div className="relative">
                     <button
+                      className="flex items-center text-sm bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-full"
                       onClick={(e) => toggleDropdown(template.id, e)}
-                      className="flex items-center text-xs text-gray-500 border border-gray-300 rounded px-2 py-1 hover:bg-gray-50"
                     >
-                      <span>Model: {getModelName(selectedModels[template.id] || getDefaultModelForPersona(template.persona))}</span>
-                      <ChevronDownIcon className="h-3 w-3 ml-1" />
+                      <span>Model: {selectedModelName}</span>
+                      <ChevronDownIcon className={`w-4 h-4 ml-1.5 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
                     </button>
                     
-                    {openDropdowns[template.id] && (
-                      <div className="absolute z-10 mt-1 bg-white rounded-lg shadow-lg border border-gray-200 max-h-60 overflow-auto w-48 left-0">
-                        {Object.entries(AVAILABLE_MODELS).map(([provider, models]) => (
-                          <div key={provider} className="px-1 py-1">
-                            <div className="px-2 py-1 text-xs font-semibold text-gray-500">
-                              {provider}
+                    {isDropdownOpen && (
+                      <div className="absolute top-full left-0 mt-1 w-48 bg-white rounded-md shadow-lg z-20">
+                        <div className="py-1 max-h-64 overflow-y-auto">
+                          {Object.entries(AVAILABLE_MODELS).map(([provider, models]) => (
+                            <div key={provider}>
+                              <div className="px-3 py-1 text-xs font-semibold text-gray-500 bg-gray-50">
+                                {provider}
+                              </div>
+                              <div>
+                                {models.map((model) => (
+                                  <button
+                                    key={model.id}
+                                    className={`block w-full text-left px-4 py-2 text-sm ${
+                                      selectedModelId === model.id
+                                        ? 'bg-indigo-100 text-indigo-900'
+                                        : 'text-gray-700 hover:bg-gray-100'
+                                    }`}
+                                    onClick={(e) => selectModel(template.id, model.id, e)}
+                                  >
+                                    {model.name}
+                                  </button>
+                                ))}
+                              </div>
                             </div>
-                            
-                            {models.map(model => (
-                              <button
-                                key={model.id}
-                                onClick={(e) => selectModel(template.id, model.id, e)}
-                                className={`flex items-center w-full px-3 py-1 text-xs rounded-md ${
-                                  selectedModels[template.id] === model.id
-                                    ? 'bg-yellow-100 text-black'
-                                    : 'text-gray-700 hover:bg-gray-100'
-                                }`}
-                              >
-                                {model.name}
-                              </button>
-                            ))}
-                          </div>
-                        ))}
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
                   
-                  {/* Start Chat button */}
-                  <button 
-                    className="flex items-center justify-center px-4 py-2 bg-yellow-500 text-black rounded-lg hover:bg-yellow-600 transition-colors"
-                    style={{ backgroundColor: '#FFC627' }}
-                    onClick={(e) => handleSelectChat(template, e)}
+                  <button
+                    className={`flex items-center text-sm ${
+                      enhancement 
+                        ? 'bg-yellow-300 text-yellow-800 hover:bg-yellow-400' 
+                        : 'bg-white/20 hover:bg-white/30 text-white'
+                    } px-3 py-1.5 rounded-full`}
+                    onClick={(e) => enhancement ? removeEnhancement(template.id, e) : openIdeaSelector(template.id, e)}
                   >
-                    <PlusIcon className="h-4 w-4 mr-1" />
-                    Start Chat
+                    <SparklesIcon className="w-4 h-4 mr-1.5" />
+                    <span>{enhancement ? 'Enhanced' : 'Enhance'}</span>
                   </button>
                 </div>
+                
+                {enhancement && (
+                  <div className="mt-2 bg-yellow-100 text-yellow-800 px-3 py-2 rounded-md text-xs">
+                    Enhanced with: {enhancement.title}
+                  </div>
+                )}
               </div>
             </div>
-          ))}
-        </div>
+          );
+        })}
       </div>
+      
+      {/* Community Idea Selector Modal */}
+      <CommunityIdeaSelector
+        isOpen={isIdeaSelectorOpen}
+        onClose={() => setIsIdeaSelectorOpen(false)}
+        onSelectIdea={handleSelectIdea}
+      />
     </div>
   );
 };

@@ -195,9 +195,16 @@ export const AsuGptPage: React.FC = () => {
       console.log(`Setting model to: ${modelId} for conversation ${conversation.id}`);
       
       // Add a message indicating which model is being used
+      let welcomeMessage = `This conversation is using the ${modelId} model with the ${template.persona} persona.`;
+      
+      // Add enhancement information if available
+      if (template.enhancedWithIdea) {
+        welcomeMessage += `\n\nThis persona has been enhanced with specialized knowledge from the community idea: **${template.enhancedWithIdea.title}**`;
+      }
+      
       conversationManager.addMessage(conversation.id, {
         role: 'assistant',
-        content: `This conversation is using the ${modelId} model with the ${template.persona} persona.`,
+        content: welcomeMessage,
         isVisible: true
       });
       
