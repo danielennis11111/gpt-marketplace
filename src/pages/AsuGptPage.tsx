@@ -34,8 +34,9 @@ export const AsuGptPage: React.FC = () => {
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   const [templates, setTemplates] = useState<ConversationTemplate[]>([]);
   const [showWelcome, setShowWelcome] = useState(true);
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Initialize model manager with settings
@@ -73,15 +74,15 @@ export const AsuGptPage: React.FC = () => {
       }
       
       // Check if mobile
-      const checkMobile = () => {
+      const handleResize = () => {
         setIsMobile(window.innerWidth < 768);
       };
       
-      checkMobile();
-      window.addEventListener('resize', checkMobile);
+      handleResize();
+      window.addEventListener('resize', handleResize);
       
       return () => {
-        window.removeEventListener('resize', checkMobile);
+        window.removeEventListener('resize', handleResize);
       };
     } catch (error) {
       console.error('Error initializing conversations:', error);
@@ -171,6 +172,12 @@ export const AsuGptPage: React.FC = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
+  // Toggle sidebar collapsed/expanded
+  const toggleSidebarCollapse = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSidebarCollapsed(!isSidebarCollapsed);
+  };
+
   // Handle selecting a persona chat
   const handleSelectPersonaChat = (template: PersonaChatTemplate) => {
     try {
@@ -258,11 +265,34 @@ export const AsuGptPage: React.FC = () => {
           ${isMobile && !isSidebarOpen ? '-translate-x-full' : 'translate-x-0'}
           transition-transform duration-300 ease-in-out
           ${isMobile ? 'z-50' : 'z-10'}
-          w-64 bg-white border-r border-gray-200 flex flex-col
+          ${isSidebarCollapsed ? 'w-20' : 'w-64'} bg-white border-r border-gray-200 flex flex-col
         `}>
           {/* Sidebar Header */}
-          <div className="p-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-800">Conversations</h2>
+          <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+            {!isSidebarCollapsed ? (
+              <h2 className="text-lg font-semibold text-gray-800">Conversations</h2>
+            ) : (
+              <h2 className="text-sm font-semibold text-gray-800">Chats</h2>
+            )}
+            
+            {/* Collapse Button (only shown on desktop) */}
+            {!isMobile && (
+              <button 
+                onClick={toggleSidebarCollapse}
+                className="text-gray-500 hover:text-gray-700 p-1 rounded-md hover:bg-gray-100"
+                title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              >
+                {isSidebarCollapsed ? (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                  </svg>
+                ) : (
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                  </svg>
+                )}
+              </button>
+            )}
           </div>
           
           {/* Conversation List */}
@@ -271,36 +301,50 @@ export const AsuGptPage: React.FC = () => {
               <div 
                 key={conv.id}
                 className={`p-2 mb-1 rounded-md cursor-pointer hover:bg-gray-100 ${
-                  activeConversation?.id === conv.id ? 'bg-gray-100' : ''
+                  activeConversation?.id === conv.id ? 'bg-gray-100 border-l-4 border-asu-gold' : ''
                 }`}
                 onClick={() => handleSelectConversation(conv.id)}
               >
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium truncate">{conv.title}</span>
-                  <button
-                    className="text-gray-500 hover:text-red-500"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteConversation(conv.id);
-                    }}
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                  </button>
+                  {!isSidebarCollapsed ? (
+                    <>
+                      <span className="text-sm font-medium truncate">{conv.title}</span>
+                      <button
+                        className="text-gray-500 hover:text-red-500"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteConversation(conv.id);
+                        }}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </>
+                  ) : (
+                    <div className="w-full flex justify-center">
+                      <span className="text-lg font-medium">{conv.title.charAt(0).toUpperCase()}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
           </div>
           
           {/* Create New Button */}
-          <div className="p-4 border-t border-gray-200">
+          <div className={`p-4 border-t border-gray-200 ${isSidebarCollapsed ? 'flex justify-center' : ''}`}>
             <button
-              className="w-full px-4 py-2 bg-[#FFC627] text-black font-medium rounded-md hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-300 transition-colors"
-              onClick={() => setShowWelcome(true)}
-              style={{ backgroundColor: '#FFC627' }}
+              className={`${isSidebarCollapsed ? 'w-12 h-12 rounded-full flex items-center justify-center' : 'w-full px-4 py-2 rounded-md'} bg-[#FFC627] text-black font-medium hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-300 transition-colors`}
+              onClick={() => handleCreateConversation(templates[0]?.id)}
+              title={isSidebarCollapsed ? "New Conversation" : undefined}
             >
-              New Conversation
+              {isSidebarCollapsed ? (
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+              ) : (
+                "New Conversation"
+              )}
             </button>
           </div>
         </div>
@@ -362,11 +406,34 @@ export const AsuGptPage: React.FC = () => {
         ${isMobile && !isSidebarOpen ? '-translate-x-full' : 'translate-x-0'}
         transition-transform duration-300 ease-in-out
         ${isMobile ? 'z-50' : 'z-10'}
-        w-64 bg-white border-r border-gray-200 flex flex-col
+        ${isSidebarCollapsed ? 'w-20' : 'w-64'} bg-white border-r border-gray-200 flex flex-col
       `}>
         {/* Sidebar Header */}
-        <div className="p-4 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-800">Conversations</h2>
+        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
+          {!isSidebarCollapsed ? (
+            <h2 className="text-lg font-semibold text-gray-800">Conversations</h2>
+          ) : (
+            <h2 className="text-sm font-semibold text-gray-800">Chats</h2>
+          )}
+          
+          {/* Collapse Button (only shown on desktop) */}
+          {!isMobile && (
+            <button 
+              onClick={toggleSidebarCollapse}
+              className="text-gray-500 hover:text-gray-700 p-1 rounded-md hover:bg-gray-100"
+              title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {isSidebarCollapsed ? (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                </svg>
+              )}
+            </button>
+          )}
         </div>
         
         {/* Conversation List */}
@@ -375,36 +442,50 @@ export const AsuGptPage: React.FC = () => {
             <div 
               key={conv.id}
               className={`p-2 mb-1 rounded-md cursor-pointer hover:bg-gray-100 ${
-                activeConversation?.id === conv.id ? 'bg-gray-100' : ''
+                activeConversation?.id === conv.id ? 'bg-gray-100 border-l-4 border-asu-gold' : ''
               }`}
               onClick={() => handleSelectConversation(conv.id)}
             >
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium truncate">{conv.title}</span>
-                <button
-                  className="text-gray-500 hover:text-red-500"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteConversation(conv.id);
-                  }}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
+                {!isSidebarCollapsed ? (
+                  <>
+                    <span className="text-sm font-medium truncate">{conv.title}</span>
+                    <button
+                      className="text-gray-500 hover:text-red-500"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteConversation(conv.id);
+                      }}
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </>
+                ) : (
+                  <div className="w-full flex justify-center">
+                    <span className="text-lg font-medium">{conv.title.charAt(0).toUpperCase()}</span>
+                  </div>
+                )}
               </div>
             </div>
           ))}
         </div>
         
         {/* Create New Button */}
-        <div className="p-4 border-t border-gray-200">
+        <div className={`p-4 border-t border-gray-200 ${isSidebarCollapsed ? 'flex justify-center' : ''}`}>
           <button
-            className="w-full px-4 py-2 bg-[#FFC627] text-black font-medium rounded-md hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-300 transition-colors"
+            className={`${isSidebarCollapsed ? 'w-12 h-12 rounded-full flex items-center justify-center' : 'w-full px-4 py-2 rounded-md'} bg-[#FFC627] text-black font-medium hover:bg-yellow-500 focus:outline-none focus:ring-2 focus:ring-yellow-300 transition-colors`}
             onClick={() => handleCreateConversation(templates[0]?.id)}
-            style={{ backgroundColor: '#FFC627' }}
+            title={isSidebarCollapsed ? "New Conversation" : undefined}
           >
-            New Conversation
+            {isSidebarCollapsed ? (
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+              </svg>
+            ) : (
+              "New Conversation"
+            )}
           </button>
         </div>
       </div>

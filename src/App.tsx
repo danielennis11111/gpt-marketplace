@@ -50,17 +50,17 @@ interface NavItemProps {
 const NavItem: React.FC<NavItemProps> = ({ to, icon, children, external = false, collapsed = false }) => {
   const location = useLocation();
   const isActive = location.pathname === to;
-  const activeClass = isActive ? "text-maroon-700 font-medium" : "text-gray-700";
+  const activeClass = isActive ? "text-asu-maroon font-medium" : "text-gray-700";
   const IconComponent = icon;
   
   const content = (
     <>
-      <IconComponent className={`w-5 h-5 ${collapsed ? 'mx-auto' : 'mr-2'} ${isActive ? "text-maroon-700" : "text-gray-500"}`} />
+      <IconComponent className={`w-5 h-5 ${collapsed ? 'mx-auto' : 'mr-2'} ${isActive ? "text-asu-maroon" : "text-gray-500"}`} />
       {!collapsed && children}
     </>
   );
   
-  const baseClasses = `flex items-center ${collapsed ? 'justify-center px-2' : 'px-4'} py-2 ${activeClass} hover:bg-gray-100 rounded-md ${collapsed ? 'mx-2' : ''}`;
+  const baseClasses = `flex items-center ${collapsed ? 'justify-center px-2' : 'px-4'} py-2 ${activeClass} hover:bg-gray-100 rounded-md ${collapsed ? 'mx-2' : ''} ${isActive ? 'border-l-4 border-asu-gold' : ''}`;
   
   if (external) {
     return (
@@ -136,9 +136,9 @@ const AppContent = () => {
           {!sidebarCollapsed && (
             <>
               <div className="inline-flex items-center bg-amber-400 px-2 py-1 text-xs font-bold text-black rounded-md ml-2">
-                BETA 
+                META 
               </div>
-              <h1 className="text-base font-bold text-gray-800"> &nbsp;META aiLand</h1>
+              <h1 className="text-base font-bold text-gray-800"> &nbsp; aiLand</h1>
               
             </>
           )}
