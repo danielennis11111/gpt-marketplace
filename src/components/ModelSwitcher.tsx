@@ -6,6 +6,7 @@ interface ModelSwitcherProps {
   currentModel?: string;
   onModelChange: (modelId: string) => void;
   compact?: boolean;
+  provider?: 'openai' | 'gemini' | 'ollama' | 'anthropic';
 }
 
 interface ModelDescription {
@@ -25,12 +26,13 @@ interface ModelDescription {
 const ModelSwitcher: React.FC<ModelSwitcherProps> = ({ 
   currentModel = 'gpt-4o-mini',
   onModelChange,
-  compact = false
+  compact = false,
+  provider = 'openai'
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   // Group models by provider
-  const modelGroups = {
+  const allModelGroups = {
     'OpenAI': [
       { id: 'gpt-4o', name: 'GPT-4o', status: 'online' },
       { id: 'gpt-4o-mini', name: 'GPT-4o Mini', status: 'online' },
@@ -53,6 +55,28 @@ const ModelSwitcher: React.FC<ModelSwitcherProps> = ({
       { id: 'phi-3', name: 'Phi-3', status: 'limited' },
     ]
   };
+
+  // Filter model groups based on the current provider
+  const getFilteredModelGroups = () => {
+    const groups: Record<string, typeof allModelGroups['OpenAI']> = {};
+    
+    if (provider === 'openai') {
+      groups['OpenAI'] = allModelGroups['OpenAI'];
+    } else if (provider === 'gemini') {
+      groups['Google'] = allModelGroups['Google'];
+    } else if (provider === 'anthropic') {
+      groups['Anthropic'] = allModelGroups['Anthropic'];
+    } else if (provider === 'ollama') {
+      groups['Local Models'] = allModelGroups['Local Models'];
+    } else {
+      // If no provider specified or unknown, show all
+      return allModelGroups;
+    }
+    
+    return groups;
+  };
+  
+  const modelGroups = getFilteredModelGroups();
 
   // Enhanced model descriptions with practical information
   const getModelDescription = (modelId: string): ModelDescription => {
@@ -210,7 +234,45 @@ const ModelSwitcher: React.FC<ModelSwitcherProps> = ({
       const model = modelGroups[group as keyof typeof modelGroups].find(m => m.id === currentModel);
       if (model) return model;
     }
+    
+    // If current model is not in the filtered list, show a special "not available" entry
+    if (provider && currentModel) {
+      // Check if it's an Ollama model that's not in our predefined list
+      if (provider === 'ollama' && currentModel.includes('llama') || 
+          currentModel.includes('mistral') || currentModel.includes('phi')) {
+        return { 
+          id: currentModel, 
+          name: currentModel, 
+          status: 'online',
+          isCustom: true
+        };
+      }
+      
+      return { 
+        id: currentModel, 
+        name: currentModel, 
+        status: provider === 'ollama' ? 'online' : 'unknown',
+        isCustom: true  
+      };
+    }
+    
     return { id: currentModel, name: currentModel, status: 'unknown' };
+  };
+
+  // Get connection status display for the header
+  const getConnectionStatus = () => {
+    switch (provider) {
+      case 'openai':
+        return { connected: true, name: 'OpenAI' };
+      case 'gemini': 
+        return { connected: true, name: 'Gemini' };
+      case 'anthropic':
+        return { connected: true, name: 'Claude' };
+      case 'ollama':
+        return { connected: true, name: 'Ollama' };
+      default:
+        return { connected: false, name: 'AI Model' };
+    }
   };
 
   // Get service logo icon component (no emojis)
@@ -249,34 +311,62 @@ const ModelSwitcher: React.FC<ModelSwitcherProps> = ({
     
     if (aHasCurrent && !bHasCurrent) return -1;
     if (!aHasCurrent && bHasCurrent) return 1;
-    return 0;
+    return a[0].localeCompare(b[0]);
   });
 
-  if (compact) {
-    return (
-      <div className="relative">
+  return (
+    <div className="relative inline-block text-left">
+      <div>
         <button
+          type="button"
+          className={`inline-flex items-center justify-center ${
+            compact 
+              ? 'px-2 py-1 text-sm' 
+              : 'px-4 py-2 text-base'
+          } font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
           onClick={() => setIsOpen(!isOpen)}
-          className="flex items-center space-x-2 px-3 py-1 bg-gray-100 hover:bg-gray-200 rounded-lg text-sm transition-colors"
+          aria-expanded={isOpen}
         >
-          <div className="text-xs">{getStatusIcon(currentModelInfo?.status || 'loading')}</div>
-          <span className="font-medium">{currentModelInfo?.name || 'Loading...'}</span>
-          <ChevronDown className="w-3 h-3" />
+          {getServiceLogo(currentModel)}
+          <div className="ml-2 text-left">
+            <div className="font-medium truncate">
+              {currentModelInfo.name}
+            </div>
+            {!compact && (
+              <div className="text-xs text-gray-500 flex items-center">
+                <div className={`w-2 h-2 rounded-full mr-1 ${getConnectionStatus().connected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                {getConnectionStatus().name}
+              </div>
+            )}
+          </div>
+          <ChevronDown className={`ml-2 h-4 w-4 ${compact ? '' : 'mt-0.5'}`} />
         </button>
+      </div>
 
-        {isOpen && (
-          <>
-            <div
-              className="fixed inset-0 z-10"
-              onClick={() => setIsOpen(false)}
-            />
-            <div className="absolute top-full right-0 mt-1 w-[320px] bg-white border border-gray-200 rounded-lg shadow-xl z-20 max-h-96 overflow-y-auto">
-              {sortedModelGroups.map(([groupName, models]) => (
-                <div key={groupName} className="px-1 py-1">
-                  <div className="px-3 py-1 text-xs font-semibold text-gray-500">
-                    {groupName}
-                  </div>
-                  
+      {isOpen && (
+        <div className="absolute right-0 mt-2 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10" style={{ width: compact ? '300px' : '350px' }}>
+          <div className="py-2 px-3 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-medium text-gray-900">Select Model</div>
+              <div className="flex items-center text-xs text-gray-600">
+                <div className={`w-2 h-2 rounded-full mr-1 ${getConnectionStatus().connected ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                {getConnectionStatus().name}: {getConnectionStatus().connected ? 'Connected' : 'Not Connected'}
+              </div>
+            </div>
+          </div>
+          <div className="py-2 px-3 border-b border-gray-200">
+            <div className="flex items-center justify-between">
+              <div className="text-sm font-medium text-gray-900">Available Models</div>
+              <div className="text-xs text-gray-600">
+                {sortedModelGroups.map(([groupName, models]) => models.length).reduce((a, b) => a + b, 0)} models
+              </div>
+            </div>
+          </div>
+          <div className="py-2 px-3">
+            {sortedModelGroups.map(([groupName, models]) => (
+              <div key={groupName} className="mb-4 last:mb-0">
+                <h5 className="text-xs font-semibold text-gray-500 mb-2">{groupName}</h5>
+                <div className="space-y-2">
                   {models.map(model => {
                     const description = getModelDescription(model.id);
                     return (
@@ -287,213 +377,56 @@ const ModelSwitcher: React.FC<ModelSwitcherProps> = ({
                           setIsOpen(false);
                         }}
                         disabled={model?.status === 'offline' || model?.status === 'loading'}
-                        className={`w-full p-4 text-left hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg disabled:opacity-50 disabled:cursor-not-allowed border-b border-gray-100 last:border-b-0 ${
-                          model.id === currentModel ? 'bg-[#FFC627] bg-opacity-20 border-l-4 border-l-[#FFC627]' : ''
+                        className={`w-full p-3 text-left border rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
+                          model.id === currentModel
+                            ? 'border-[#FFC627] border-opacity-40 bg-[#FFC627] bg-opacity-10 shadow-sm'
+                            : model?.status === 'online' || model?.status === 'limited'
+                              ? 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+                              : 'border-gray-100 bg-gray-50'
                         }`}
                       >
                         <div className="flex items-start space-x-3">
-                          <div className="flex-shrink-0 mt-1">
+                          <div className="flex items-center justify-center flex-shrink-0 mt-0.5">
                             {getServiceLogo(model.id)}
                           </div>
+                          
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center space-x-2 mb-1">
-                              <span className="text-sm font-semibold text-gray-900 truncate">{model.name}</span>
-                              {model.id === currentModel && (
-                                <Check className="w-4 h-4 text-[#FFC627] flex-shrink-0" />
-                              )}
-                              <div className={`flex items-center space-x-1 text-xs ${getStatusColor(model?.status)} flex-shrink-0`}>
-                                <div>{getStatusIcon(model?.status)}</div>
-                                <span className="font-medium">{getStatusText(model?.status)}</span>
+                            {/* Header */}
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-2">
+                                <span className="font-medium text-gray-900">{model.name}</span>
+                                {model.id === currentModel && (
+                                  <Check className="w-4 h-4 text-[#FFC627]" />
+                                )}
+                              </div>
+                              <div className={`text-xs ${getStatusColor(model?.status)} flex items-center space-x-1`}>
+                                {getStatusIcon(model?.status)}
+                                <span>{getStatusText(model?.status)}</span>
                               </div>
                             </div>
                             
-                            <p className="text-xs text-gray-600 mb-2">{description.purpose}</p>
+                            {/* Purpose */}
+                            <p className="text-xs text-gray-600 mt-1">{description.purpose}</p>
                             
-                            <div className="grid grid-cols-1 gap-1 text-xs">
-                              <div className="flex items-center space-x-1 text-gray-500">
-                                <Gauge className="w-3 h-3" />
-                                <span>{description.rateLimiting}</span>
+                            {/* Strengths */}
+                            {!compact && (
+                              <div className="flex flex-wrap gap-1 mt-2">
+                                {description.strengths.slice(0, 2).map((strength, index) => (
+                                  <span
+                                    key={index}
+                                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700"
+                                  >
+                                    {strength}
+                                  </span>
+                                ))}
                               </div>
-                              <div className="flex items-center space-x-1 text-gray-500">
-                                <DollarSign className="w-3 h-3" />
-                                <span>{description.cost}</span>
-                              </div>
-                            </div>
-                            
-                            <div className="flex flex-wrap gap-1 mt-2">
-                              {description.strengths.slice(0, 2).map((strength, index) => (
-                                <span
-                                  key={index}
-                                  className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
-                                >
-                                  {strength}
-                                </span>
-                              ))}
-                            </div>
+                            )}
                           </div>
                         </div>
                       </button>
                     );
                   })}
                 </div>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4 max-w-4xl">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-gray-900 flex items-center">
-          <Cpu className="w-4 h-4 mr-2" />
-          AI Model
-        </h3>
-        <button
-          onClick={() => setIsOpen(!isOpen)}
-          className="text-sm text-[#FFC627] hover:text-yellow-600 flex items-center"
-        >
-          Switch Model <ChevronDown className={`w-3 h-3 ml-1 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
-        </button>
-      </div>
-
-      {/* Current Model Display */}
-      <div className="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
-        <div className="flex items-center justify-center">
-          {getServiceLogo(currentModel)}
-        </div>
-        <div className="flex-1">
-          <div className="flex items-center space-x-2 mb-1">
-            <span className="font-medium text-gray-900">{currentModelInfo?.name || 'Loading...'}</span>
-            <div className={`flex items-center space-x-1 text-xs ${getStatusColor(currentModelInfo?.status || 'loading')}`}>
-              <div>{getStatusIcon(currentModelInfo?.status || 'loading')}</div>
-              <span className="font-medium">{getStatusText(currentModelInfo?.status || 'loading')}</span>
-            </div>
-          </div>
-          <p className="text-sm text-gray-600 mb-2">{getModelDescription(currentModel).purpose}</p>
-          <div className="flex items-center space-x-4 text-xs text-gray-500">
-            <span className="flex items-center space-x-1">
-              <Gauge className="w-3 h-3" />
-              <span>{getModelDescription(currentModel).rateLimiting}</span>
-            </span>
-            <span className="flex items-center space-x-1">
-              <DollarSign className="w-3 h-3" />
-              <span>{getModelDescription(currentModel).cost}</span>
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Model List (when expanded) */}
-      {isOpen && (
-        <div className="mt-4 space-y-3 border-t border-gray-200 pt-4">
-          <h4 className="text-xs font-medium text-gray-700 uppercase tracking-wide">Available Models</h4>
-          <div className="grid grid-cols-1 gap-3">
-            {sortedModelGroups.map(([groupName, models]) => (
-              <div key={groupName} className="space-y-3">
-                <h5 className="text-xs font-semibold text-gray-500">{groupName}</h5>
-                {models.map(model => {
-                  const description = getModelDescription(model.id);
-                  return (
-                    <button
-                      key={model.id}
-                      onClick={() => {
-                        onModelChange(model.id);
-                        setIsOpen(false);
-                      }}
-                      disabled={model?.status === 'offline' || model?.status === 'loading'}
-                      className={`w-full p-4 text-left border rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
-                        model.id === currentModel
-                          ? 'border-[#FFC627] border-opacity-40 bg-[#FFC627] bg-opacity-20 shadow-sm'
-                          : model?.status === 'online' || model?.status === 'limited'
-                            ? 'border-gray-200 hover:border-gray-300 hover:bg-gray-50 hover:shadow-sm'
-                            : 'border-gray-100 bg-gray-50'
-                      }`}
-                    >
-                      <div className="flex items-start space-x-4">
-                        <div className="flex items-center justify-center flex-shrink-0 mt-1">
-                          {getServiceLogo(model.id)}
-                        </div>
-                        
-                        <div className="flex-1 min-w-0">
-                          {/* Header */}
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                              <span className="font-semibold text-gray-900">{model.name}</span>
-                              {model.id === currentModel && (
-                                <Check className="w-4 h-4 text-[#FFC627]" />
-                              )}
-                            </div>
-                            <div className={`text-xs font-medium ${getStatusColor(model?.status)} flex items-center space-x-1`}>
-                              <span>{getStatusIcon(model?.status)}</span>
-                              <span>{getStatusText(model?.status)}</span>
-                            </div>
-                          </div>
-
-                          {/* Purpose */}
-                          <p className="text-sm text-gray-700 mb-3 font-medium">{description.purpose}</p>
-
-                          {/* Key Details Grid */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
-                            <div className="space-y-2">
-                              <div className="flex items-start space-x-2">
-                                <Gauge className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
-                                <div>
-                                  <span className="text-xs font-medium text-gray-700 block">Rate Limiting</span>
-                                  <span className="text-xs text-gray-600">{description.rateLimiting}</span>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            <div className="space-y-2">
-                              <div className="flex items-start space-x-2">
-                                <DollarSign className="w-4 h-4 text-green-500 mt-0.5 flex-shrink-0" />
-                                <div>
-                                  <span className="text-xs font-medium text-gray-700 block">Cost</span>
-                                  <span className="text-xs text-gray-600">{description.cost}</span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-
-                          {/* Strengths & Ideal For */}
-                          <div className="space-y-2">
-                            <div>
-                              <span className="text-xs font-medium text-gray-700 block mb-1">Strengths</span>
-                              <div className="flex flex-wrap gap-1">
-                                {description.strengths.map((strength, index) => (
-                                  <span
-                                    key={index}
-                                    className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200"
-                                  >
-                                    {strength}
-                                  </span>
-                                ))}
-                              </div>
-                            </div>
-                            
-                            <div className="pt-2 border-t border-gray-100">
-                              <span className="text-xs font-medium text-gray-700 block mb-1">Ideal For</span>
-                              <span className="text-xs text-gray-600 italic">{description.idealFor}</span>
-                            </div>
-                          </div>
-
-                          {/* Context Window Info */}
-                          {MODEL_LIMITS[model.id]?.contextWindow && (
-                            <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
-                              <span className="text-xs text-gray-500">Context Window</span>
-                              <span className="text-xs font-mono text-gray-700">
-                                {(MODEL_LIMITS[model.id]?.contextWindow / 1000).toLocaleString()}K tokens
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    </button>
-                  );
-                })}
               </div>
             ))}
           </div>
