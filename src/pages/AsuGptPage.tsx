@@ -820,19 +820,8 @@ export const AsuGptPage: React.FC = () => {
             
             {/* Left Section with Back Button and Conversation Title */}
             <div className="flex items-center space-x-3">
-              <button
-                onClick={handleNewExperience}
-                className="flex items-center space-x-2 px-3 py-1.5 text-sm text-gray-600 hover:text-[#8C1D40] hover:bg-[#8C1D40] hover:bg-opacity-10 rounded-lg transition-colors"
-                title="Back to ASU GPT Homepage"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                </svg>
-                <span>ASU GPT</span>
-              </button>
-              <div className="h-4 w-px bg-gray-300"></div>
-              <h1 className="text-lg font-semibold text-gray-900">
-                {activeConversation?.title || 'Conversation'}
+              <h1 className="text-xl font-bold text-[#8C1D40]">
+                {activeConversation?.title || 'ASU GPT Conversation'}
               </h1>
             </div>
             
