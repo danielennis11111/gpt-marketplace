@@ -399,6 +399,71 @@ export class CustomConversationManager {
     
     return newMessage;
   }
+  
+  // Update an existing message in a conversation
+  updateMessage(conversationId: string, messageId: string, updates: Partial<Message>): void {
+    console.log(`Updating message ${messageId} in conversation ${conversationId}`, updates);
+    
+    const conversation = this.conversations.get(conversationId);
+    if (!conversation) {
+      console.error(`Conversation not found: ${conversationId}`);
+      throw new Error(`Conversation not found: ${conversationId}`);
+    }
+    
+    const messageIndex = conversation.messages.findIndex(msg => msg.id === messageId);
+    if (messageIndex === -1) {
+      console.error(`Message ${messageId} not found in conversation ${conversationId}`);
+      throw new Error(`Message not found: ${messageId}`);
+    }
+    
+    // Update the message with the provided updates
+    conversation.messages[messageIndex] = {
+      ...conversation.messages[messageIndex],
+      ...updates
+    };
+    
+    conversation.updatedAt = new Date();
+    conversation.lastUpdated = new Date();
+    
+    this.saveToLocalStorage();
+    console.log(`Message ${messageId} updated successfully`, conversation.messages[messageIndex]);
+  }
+  
+  // Hide a message in a conversation (set isVisible to false)
+  hideMessage(conversationId: string, messageId: string): void {
+    console.log(`Hiding message ${messageId} in conversation ${conversationId}`);
+    
+    this.updateMessage(conversationId, messageId, { isVisible: false });
+  }
+  
+  // Add a message at a specific position in the conversation
+  addMessageAtPosition(
+    conversationId: string, 
+    message: Omit<Message, 'id' | 'timestamp'>, 
+    position: number
+  ): Message {
+    const conversation = this.conversations.get(conversationId);
+    if (!conversation) {
+      console.error(`Conversation not found: ${conversationId}`);
+      throw new Error(`Conversation not found: ${conversationId}`);
+    }
+    
+    const newMessage: Message = {
+      ...message,
+      id: `msg_${Date.now()}`,
+      timestamp: new Date()
+    };
+    
+    // Insert at the specified position
+    conversation.messages.splice(position, 0, newMessage);
+    conversation.updatedAt = new Date();
+    conversation.lastUpdated = new Date();
+    
+    this.saveToLocalStorage();
+    console.log(`Message added at position ${position} in conversation ${conversationId}`);
+    
+    return newMessage;
+  }
 }
 
 // Export the custom implementations

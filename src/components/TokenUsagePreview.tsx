@@ -65,7 +65,7 @@ const TokenUsagePreview: React.FC<TokenUsagePreviewProps> = ({
   };
 
   return (
-    <div className={`bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm transition-all duration-300 ${isLoading ? 'opacity-70' : 'opacity-100'}`}>
+    <div className={`bg-gray-50 border border-gray-200 rounded-lg p-3 text-sm transition-all duration-300`}>
       {/* Minimized View */}
       <div 
         className="flex items-center justify-between cursor-pointer"
@@ -103,18 +103,8 @@ const TokenUsagePreview: React.FC<TokenUsagePreviewProps> = ({
         </div>
       </div>
 
-      {/* Loading Indicator */}
-      {isLoading && (
-        <div className="mt-2 flex justify-center">
-          <div className="flex space-x-2 items-center text-xs text-gray-500">
-            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-gray-500"></div>
-            <span>Calculating token usage...</span>
-          </div>
-        </div>
-      )}
-
       {/* Expanded View */}
-      {isExpanded && !isLoading && (
+      {isExpanded && (
         <div className="mt-3 pt-3 border-t border-gray-200 space-y-4 animate-fadeIn">
           {/* Visual Token Distribution */}
           <div>

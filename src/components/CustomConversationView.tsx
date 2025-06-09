@@ -50,6 +50,7 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
 }) => {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isStreaming, setIsStreaming] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const ollama = useOllama();
   const { settings } = useSettings();
@@ -66,7 +67,6 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
   const [isFileLoading, setIsFileLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState(settings.preferredChatProvider === 'gemini' ? 'gemini-2.0-flash' : (ollama.status.currentModel || 'llama3.1:8b'));
   const [activeParticipant, setActiveParticipant] = useState<string | undefined>(undefined);
-  const [isTokenCalculating, setIsTokenCalculating] = useState(false);
   const [isScrolling, setIsScrolling] = useState(false);
   
   // Auto-scroll to bottom of messages
@@ -77,9 +77,6 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
   // Calculate token usage when messages change
   useEffect(() => {
     const calculateTokens = () => {
-      // Show loading state
-      setIsTokenCalculating(true);
-      
       // Determine which model is being used
       const currentModel = settings.preferredChatProvider === 'gemini' ? 'gemini-2.0-flash' : 
                           ollama.status.currentModel || 'llama3.1:8b';
@@ -103,16 +100,13 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
       const remaining = Math.max(0, maxTokens - totalTokens);
       const percentage = Math.min(100, Math.round((totalTokens / maxTokens) * 100));
       
-      // Update with a small delay to show loading animation
-      setTimeout(() => {
-        setTokenUsage({
-          total: totalTokens,
-          remaining,
-          percentage,
-          maxTokens
-        });
-        setIsTokenCalculating(false);
-      }, 300);
+      // Update token usage immediately
+      setTokenUsage({
+        total: totalTokens,
+        remaining,
+        percentage,
+        maxTokens
+      });
     };
     
     calculateTokens();
@@ -182,6 +176,153 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
     }
   };
   
+  // Stream AI response
+  const streamAIResponse = async (
+    userMessage: string, 
+    messageId: string
+  ): Promise<string> => {
+    const preferredProvider = settings.preferredChatProvider;
+    const hasGeminiApiKey = !!settings.geminiApiKey && settings.geminiApiKey.trim() !== '';
+    
+    // Build message history for context
+    const messageHistory = conversation.messages
+      .filter(msg => {
+        // Include messages that are user or assistant messages
+        return msg.role === 'user' || msg.role === 'assistant';
+      })
+      .map(msg => ({
+        role: msg.role,
+        content: msg.content
+      }));
+    
+    // Add the new user message
+    messageHistory.push({
+      role: 'user',
+      content: userMessage
+    });
+    
+    // Stream using Gemini if it's the preferred provider
+    if (preferredProvider === 'gemini' && hasGeminiApiKey && geminiService.isStreamingSupported()) {
+      try {
+        console.log('Starting Gemini streaming response');
+        let fullResponse = '';
+        
+        // Create the stream but handle it directly in the for-await loop
+        const stream = geminiService.generateChatCompletionStream(
+          messageHistory,
+          undefined,
+          {}
+        );
+        
+        // Process the stream with for-await
+        for await (const chunk of stream) {
+          // Add the chunk to our response
+          fullResponse += chunk;
+          
+          // Update the message with accumulated response
+          conversationManager.updateMessage(
+            conversation.id,
+            messageId,
+            { 
+              content: fullResponse,
+              role: 'assistant' // Explicitly ensure role is 'assistant'
+            }
+          );
+          
+          // Trigger UI update
+          onConversationUpdate();
+          
+          // Add a small delay to make streaming smoother and reduce UI updates
+          await new Promise(resolve => setTimeout(resolve, 10));
+        }
+        
+        console.log('Gemini streaming complete, full response length:', fullResponse.length);
+        
+        // Make one final update to ensure the role is correct
+        conversationManager.updateMessage(
+          conversation.id,
+          messageId,
+          { 
+            content: fullResponse,
+            role: 'assistant'
+          }
+        );
+        
+        return fullResponse;
+      } catch (error) {
+        console.error("Error streaming from Gemini:", error);
+        throw new Error(`Gemini streaming error: ${(error as Error).message}`);
+      }
+    }
+    // Stream using Ollama if connected
+    else if (ollama.status.isConnected && ollama.isStreamingSupported()) {
+      try {
+        console.log('Starting Ollama streaming response');
+        let fullResponse = '';
+        
+        // Create the stream but handle it directly in the for-await loop
+        const stream = ollama.sendMessageStream(userMessage);
+        
+        // Process the stream with for-await
+        for await (const chunk of stream) {
+          // Add the chunk to our response
+          fullResponse += chunk;
+          
+          // Update the message with accumulated response
+          conversationManager.updateMessage(
+            conversation.id,
+            messageId,
+            { 
+              content: fullResponse,
+              role: 'assistant' // Explicitly ensure role is 'assistant'
+            }
+          );
+          
+          // Trigger UI update
+          onConversationUpdate();
+          
+          // Add a small delay to make streaming smoother and reduce UI updates
+          await new Promise(resolve => setTimeout(resolve, 10));
+        }
+        
+        console.log('Ollama streaming complete, full response length:', fullResponse.length);
+        
+        // Make one final update to ensure the role is correct
+        conversationManager.updateMessage(
+          conversation.id,
+          messageId,
+          { 
+            content: fullResponse,
+            role: 'assistant'
+          }
+        );
+        
+        return fullResponse;
+      } catch (error) {
+        console.error("Error streaming from Ollama:", error);
+        throw new Error(`Ollama streaming error: ${(error as Error).message}`);
+      }
+    } 
+    // Fall back to non-streaming approach
+    else {
+      return getAIResponse(userMessage);
+    }
+  };
+  
+  // Check if streaming is supported for the current provider
+  const isStreamingSupportedForCurrentProvider = (): boolean => {
+    const preferredProvider = settings.preferredChatProvider;
+    const hasGeminiApiKey = !!settings.geminiApiKey && settings.geminiApiKey.trim() !== '';
+    
+    if (preferredProvider === 'gemini' && hasGeminiApiKey) {
+      return geminiService.isStreamingSupported();
+    } else if (preferredProvider === 'ollama' && ollama.status.isConnected) {
+      return ollama.isStreamingSupported();
+    }
+    
+    return false;
+  };
+  
   // Handle submitting a new message
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -202,17 +343,49 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
     onConversationUpdate();
     
     try {
-      // Get response from AI provider
-      const response = await getAIResponse(input);
-      
-      // Add AI response to conversation
+      // Create an initial empty message for the assistant
       const aiMessage: Omit<Message, 'id' | 'timestamp'> = {
         role: 'assistant',
-        content: response,
+        content: '',
         isVisible: true
       };
       
-      conversationManager.addMessage(conversation.id, aiMessage);
+      // Add the empty message and get its ID
+      const newMessage = conversationManager.addMessage(conversation.id, aiMessage);
+      
+      // Verify the role is set correctly for the new message
+      console.log('Created assistant message with ID:', newMessage.id, 'and role:', newMessage.role);
+      
+      // Ensure the role is set correctly
+      if (newMessage.role !== 'assistant') {
+        console.warn('Message role was not set correctly, fixing...');
+        conversationManager.updateMessage(conversation.id, newMessage.id, {
+          role: 'assistant'
+        });
+      }
+      
+      onConversationUpdate();
+      
+      // Check if streaming is supported for the current provider
+      const canStream = isStreamingSupportedForCurrentProvider();
+      setIsStreaming(canStream);
+      
+      let response: string;
+      
+      // Use streaming if supported
+      if (canStream) {
+        response = await streamAIResponse(input, newMessage.id);
+      } else {
+        // Get response from AI provider (non-streaming)
+        response = await getAIResponse(input);
+        
+        // Update the assistant message with the response
+        conversationManager.updateMessage(conversation.id, newMessage.id, {
+          content: response,
+          role: 'assistant' // Explicitly ensure role is assistant
+        });
+      }
+      
       onConversationUpdate();
     } catch (error) {
       console.error('Error getting AI response:', error);
@@ -228,6 +401,7 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
       onConversationUpdate();
     } finally {
       setIsLoading(false);
+      setIsStreaming(false);
     }
   };
   
@@ -240,25 +414,22 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
       return {
         isConnected: true,
         name: 'Gemini 2.0 Flash',
-        status: 'Connected'
+        status: 'Connected',
+        canStream: geminiService.isStreamingSupported()
       };
     } else if (preferredProvider === 'ollama' && ollama.status.isConnected) {
       return {
         isConnected: true,
         name: ollama.status.currentModel || 'Ollama',
-        status: 'Connected'
-      };
-    } else if (ollama.status.isConnected) {
-      return {
-        isConnected: true,
-        name: ollama.status.currentModel || 'Ollama',
-        status: 'Connected'
+        status: 'Connected',
+        canStream: ollama.isStreamingSupported()
       };
     } else {
       return {
         isConnected: false,
         name: 'AI Provider',
-        status: 'Not Connected'
+        status: 'Not Connected',
+        canStream: false
       };
     }
   };
@@ -436,10 +607,10 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
                     : 'bg-white border border-gray-200 text-gray-900'
                 }`}
               >
-                {message.role === 'assistant' ? (
-                  <MarkdownContent content={message.content} />
-                ) : (
+                {message.role === 'user' ? (
                   <div className="whitespace-pre-wrap">{message.content}</div>
+                ) : (
+                  <MarkdownContent content={message.content} />
                 )}
               </div>
             </div>
@@ -449,7 +620,7 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
               <ProgressiveThinkingIndicator 
                 isThinking={isLoading} 
                 modelName={providerInfo.name}
-                canStream={false} 
+                canStream={isStreaming} 
               />
             </>
           )}
@@ -562,7 +733,6 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
           total={tokenUsage.total} 
           remaining={tokenUsage.remaining} 
           max={tokenUsage.maxTokens}
-          isLoading={isTokenCalculating}
         />
         
         {/* Only show warning if approaching limit */}

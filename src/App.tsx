@@ -15,6 +15,7 @@ import { ProjectsProvider } from './contexts/ProjectsContext';
 import { SettingsProvider } from './contexts/SettingsContext';
 import { SettingsPage } from './pages/SettingsPage';
 import { CommunityIdeaDetail } from './pages/CommunityIdeaDetail';
+import MainLayout from './components/MainLayout';
 import {
   HomeIcon,
   PlusCircleIcon,
@@ -278,7 +279,9 @@ export const App: React.FC = () => {
     <Router>
       <SettingsProvider>
         <ProjectsProvider>
-          <AppContent />
+          <MainLayout>
+            <AppContent />
+          </MainLayout>
         </ProjectsProvider>
       </SettingsProvider>
     </Router>

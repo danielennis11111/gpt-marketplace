@@ -190,6 +190,7 @@ export const useOllama = () => {
   // Send message to Ollama
   const sendMessage = useCallback(async (message: string, model?: string) => {
     if (!status.isConnected) {
+      console.error('Ollama is not connected');
       throw new Error('Ollama is not connected');
     }
 
@@ -206,24 +207,148 @@ export const useOllama = () => {
         body: JSON.stringify({
           model: modelToUse,
           prompt: message,
-          stream: false,
         }),
       });
 
       if (!response.ok) {
-        throw new Error(`Ollama API error: ${response.statusText}`);
+        let errorText = '';
+        try {
+          const errorData = await response.text();
+          errorText = errorData;
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError);
+        }
+        throw new Error(`Ollama API error: ${response.statusText} (${errorText || 'No error details'})`);
       }
 
       const data = await response.json();
       return data.response;
     } catch (error) {
+      console.error('Error sending message to Ollama:', error);
       throw new Error(`Failed to send message to Ollama: ${error}`);
     }
   }, [status.isConnected, status.currentModel]);
 
+  // Send message with streaming
+  const sendMessageStream = useCallback(async function* (
+    message: string, 
+    model?: string,
+    onUpdate?: (chunk: string) => void
+  ): AsyncGenerator<string, string, unknown> {
+    if (!status.isConnected) {
+      console.error('Ollama is not connected');
+      throw new Error('Ollama is not connected');
+    }
+
+    const modelToUse = model || status.currentModel || 'llama3.3:8b';
+    let fullResponse = '';
+
+    try {
+      console.log(`Streaming message from Ollama using model: ${modelToUse}`);
+      
+      const requestBody = {
+        model: modelToUse,
+        prompt: message,
+        stream: true,
+      };
+      
+      console.log('Sending Ollama streaming request with body:', JSON.stringify(requestBody));
+      
+      const response = await fetch('http://localhost:11434/api/generate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      console.log('Ollama streaming response status:', response.status, response.statusText);
+      
+      if (!response.ok) {
+        let errorText = '';
+        try {
+          const errorData = await response.text();
+          errorText = errorData;
+          console.error('Ollama API error response:', errorData);
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError);
+        }
+        throw new Error(`Ollama API error: ${response.statusText} (${errorText || 'No error details'})`);
+      }
+
+      if (!response.body) {
+        console.error('ReadableStream not supported in this browser.');
+        throw new Error('ReadableStream not supported in this browser.');
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let chunkCounter = 0;
+
+      try {
+        console.log('Starting to read Ollama stream...');
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            console.log('Ollama stream reading complete');
+            break;
+          }
+          
+          const chunk = decoder.decode(value, { stream: true });
+          console.log(`Received raw chunk #${++chunkCounter}:`, chunk.substring(0, 100) + (chunk.length > 100 ? '...' : ''));
+          
+          // Ollama sends JSON objects with a "response" field
+          const lines = chunk.split('\n').filter(line => line.trim());
+          console.log(`Chunk contains ${lines.length} lines`);
+          
+          for (const line of lines) {
+            try {
+              const data = JSON.parse(line);
+              console.log('Parsed Ollama data:', JSON.stringify(data).substring(0, 100) + '...');
+              
+              if (data.response) {
+                const responseChunk = data.response;
+                fullResponse += responseChunk;
+                console.log('Extracted response text:', responseChunk || '(empty response)');
+                
+                // Yield each chunk
+                yield responseChunk;
+                
+                // If done is true, we've reached the end
+                if (data.done === true) {
+                  console.log('Received done=true from Ollama, ending stream');
+                  break;
+                }
+              } else {
+                console.warn('No response field in Ollama data chunk:', data);
+              }
+            } catch (e) {
+              console.warn('Error parsing JSON in Ollama stream:', e, 'Line:', line);
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock();
+        console.log('Ollama reader released');
+      }
+      
+      console.log('Ollama streaming complete, full response length:', fullResponse.length);
+      return fullResponse;
+    } catch (error) {
+      console.error('Error streaming from Ollama:', error);
+      throw new Error(`Failed to stream from Ollama: ${error}`);
+    }
+  }, [status.isConnected, status.currentModel]);
+
+  // Check if streaming is supported
+  const isStreamingSupported = useCallback(() => {
+    return true; // Ollama always supports streaming
+  }, []);
+
   // Send message specifically to Llama 4 Scout
   const sendMessageToLlama4Scout = useCallback(async (message: string) => {
     if (!status.isConnected) {
+      console.error('Ollama is not connected');
       throw new Error('Ollama is not connected');
     }
 
@@ -252,14 +377,22 @@ export const useOllama = () => {
           stream: false,
         }),
       });
-
+      
       if (!response.ok) {
-        throw new Error(`Ollama API error: ${response.statusText}`);
+        let errorText = '';
+        try {
+          const errorData = await response.text();
+          errorText = errorData;
+        } catch (parseError) {
+          console.error('Failed to parse error response:', parseError);
+        }
+        throw new Error(`Ollama API error: ${response.statusText} (${errorText || 'No error details'})`);
       }
 
       const data = await response.json();
       return data.response;
     } catch (error) {
+      console.error('Error sending message to Llama 4 Scout:', error);
       throw new Error(`Failed to send message using available model: ${error}`);
     }
   }, [status.isConnected, status.models, status.currentModel]);
@@ -342,6 +475,8 @@ export const useOllama = () => {
     checkOllamaStatus,
     startOllama,
     sendMessage,
+    sendMessageStream,
+    isStreamingSupported,
     sendMessageToLlama4Scout,
     pullModel,
     pullLlama4Scout,
