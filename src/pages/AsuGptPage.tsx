@@ -6,16 +6,31 @@ import { useSettings } from '../contexts/SettingsContext';
 import { useOllama } from '../hooks/useOllama';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { geminiService } from '../utils/rate-limiter/geminiService';
 
 // Import our custom implementations instead of the rate-limiter ones
 import { ModelManager, ConversationManager } from '../utils/rate-limiter/custom-adapter';
-import type { Conversation, ConversationTemplate } from '../utils/rate-limiter/custom-adapter';
+import type { Conversation, ConversationTemplate, Message } from '../utils/rate-limiter/custom-adapter';
 import { llamaService } from '../utils/rate-limiter/llamaService';
 import SafeCustomModelStatusBar from '../components/SafeCustomModelStatusBar';
 import SafeCustomConversationView from '../components/SafeCustomConversationView';
 import OllamaStatusIndicator from '../components/OllamaStatusIndicator';
+import ModelSwitcher from '../components/ModelSwitcher';
 import PersonaChatSelection, { PERSONA_CHAT_TEMPLATES } from '../components/PersonaChatSelection';
 import type { PersonaChatTemplate } from '../components/PersonaChatSelection';
+import ParticipantSelector from '../components/ParticipantSelector';
+import ChatInstructionsSelector from '../components/ChatInstructionsSelector';
+import { ASU_PARTICIPANTS } from '../components/ConversationParticipant';
+
+// Define the CommunityIdea type
+interface CommunityIdea {
+  id: string;
+  title: string;
+  description: string;
+  prompt?: string;
+  category: string;
+  aiSystemInstructions?: string;
+}
 
 export const AsuGptPage: React.FC = () => {
   const { settings } = useSettings();
@@ -38,6 +53,11 @@ export const AsuGptPage: React.FC = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currentModel, setCurrentModel] = useState('gpt-4o-mini');
+
+  // Add new state for participant and instructions
+  const [activeParticipant, setActiveParticipant] = useState<string | undefined>(undefined);
+  const [activeInstruction, setActiveInstruction] = useState<CommunityIdea | null>(null);
 
   // Initialize model manager with settings
   useEffect(() => {
@@ -237,6 +257,227 @@ export const AsuGptPage: React.FC = () => {
     }
   };
 
+  const handleModelChange = (modelId: string) => {
+    setCurrentModel(modelId);
+  };
+
+  // Handle participant selection
+  const handleSelectParticipant = (participantId: string) => {
+    // Toggle off if the same participant is selected again
+    const newActiveParticipant = participantId === activeParticipant ? undefined : participantId;
+    setActiveParticipant(newActiveParticipant);
+    
+    // Only proceed if we have an active conversation
+    if (!activeConversation) return;
+    
+    // If a new participant is selected, update the system prompt
+    if (newActiveParticipant) {
+      const participant = ASU_PARTICIPANTS.find(p => p.id === newActiveParticipant);
+      if (participant) {
+        console.log(`Selected participant: ${participant.name}`);
+        
+        // Find matching persona from PERSONA_CHAT_TEMPLATES
+        const personaTemplate = PERSONA_CHAT_TEMPLATES.find(
+          template => template.persona === participant.name
+        );
+        
+        if (personaTemplate && personaTemplate.systemPrompt) {
+          // Add or update system message
+          const existingSystemMessage = activeConversation.messages.find(m => m.role === 'system');
+          
+          if (existingSystemMessage) {
+            // Update existing system message
+            conversationManager.updateMessage(
+              activeConversation.id,
+              existingSystemMessage.id,
+              { content: personaTemplate.systemPrompt }
+            );
+          } else {
+            // Add new system message
+            const systemMessage = {
+              role: 'system',
+              content: personaTemplate.systemPrompt,
+              isVisible: false
+            };
+            
+            conversationManager.addMessageAtPosition(activeConversation.id, systemMessage, 0);
+          }
+          
+          // Add a user-visible message about the participant
+          const infoMessage = {
+            role: 'assistant',
+            content: `You are now chatting with **${participant.name}**, ${participant.role}. Feel free to ask about ${participant.expertise.join(', ')}.`,
+            isVisible: true
+          };
+          
+          conversationManager.addMessage(activeConversation.id, infoMessage);
+          
+          // Update our local state
+          const updatedActive = conversationManager.getActiveConversation();
+          setActiveConversation(updatedActive);
+        }
+      }
+    } else if (activeParticipant && !newActiveParticipant) {
+      // If participant is deselected, remove system prompt
+      const existingSystemMessage = activeConversation.messages.find(m => m.role === 'system');
+      
+      if (existingSystemMessage) {
+        // Remove the system message or reset to default
+        conversationManager.hideMessage(activeConversation.id, existingSystemMessage.id);
+        
+        // Add a message about ending the specialized chat
+        const endMessage = {
+          role: 'assistant',
+          content: 'You are now back to chatting with a general AI assistant.',
+          isVisible: true
+        };
+        
+        conversationManager.addMessage(activeConversation.id, endMessage);
+        
+        // Update our local state
+        const updatedActive = conversationManager.getActiveConversation();
+        setActiveConversation(updatedActive);
+      }
+    }
+  };
+  
+  // Handle chat instruction selection
+  const handleSelectInstruction = (idea: CommunityIdea | null) => {
+    setActiveInstruction(idea);
+    
+    // Only proceed if we have an active conversation
+    if (!activeConversation) return;
+    
+    if (idea && idea.aiSystemInstructions) {
+      // Find existing system message
+      const existingSystemMessage = activeConversation.messages.find(m => m.role === 'system');
+      
+      let newSystemContent = idea.aiSystemInstructions;
+      
+      // If there's an active participant, combine their system prompt with the instructions
+      if (activeParticipant) {
+        const participant = ASU_PARTICIPANTS.find(p => p.id === activeParticipant);
+        if (participant) {
+          const personaTemplate = PERSONA_CHAT_TEMPLATES.find(
+            template => template.persona === participant.name
+          );
+          
+          if (personaTemplate && personaTemplate.systemPrompt) {
+            newSystemContent = `${personaTemplate.systemPrompt}\n\n## Additional Instructions\n${idea.aiSystemInstructions}`;
+          }
+        }
+      }
+      
+      if (existingSystemMessage) {
+        // Update existing system message
+        conversationManager.updateMessage(
+          activeConversation.id,
+          existingSystemMessage.id,
+          { content: newSystemContent }
+        );
+      } else {
+        // Add new system message
+        const systemMessage = {
+          role: 'system',
+          content: newSystemContent,
+          isVisible: false
+        };
+        
+        conversationManager.addMessageAtPosition(activeConversation.id, systemMessage, 0);
+      }
+      
+      // Add a user-visible message about the instructions
+      const infoMessage = {
+        role: 'assistant',
+        content: `Added instruction: **${idea.title}**\n\n${idea.description}`,
+        isVisible: true
+      };
+      
+      conversationManager.addMessage(activeConversation.id, infoMessage);
+      
+      // Update our local state
+      const updatedActive = conversationManager.getActiveConversation();
+      setActiveConversation(updatedActive);
+    } else if (!idea && activeInstruction) {
+      // If instructions are cleared, update system message with just the participant prompt if any
+      const existingSystemMessage = activeConversation.messages.find(m => m.role === 'system');
+      
+      if (existingSystemMessage) {
+        if (activeParticipant) {
+          // If there's still an active participant, restore just their system prompt
+          const participant = ASU_PARTICIPANTS.find(p => p.id === activeParticipant);
+          if (participant) {
+            const personaTemplate = PERSONA_CHAT_TEMPLATES.find(
+              template => template.persona === participant.name
+            );
+            
+            if (personaTemplate && personaTemplate.systemPrompt) {
+              conversationManager.updateMessage(
+                activeConversation.id,
+                existingSystemMessage.id,
+                { content: personaTemplate.systemPrompt }
+              );
+            }
+          }
+        } else {
+          // If no active participant, remove the system message
+          conversationManager.hideMessage(activeConversation.id, existingSystemMessage.id);
+        }
+        
+        // Add a message about removing the instructions
+        const endMessage = {
+          role: 'assistant',
+          content: 'Chat instructions have been removed.',
+          isVisible: true
+        };
+        
+        conversationManager.addMessage(activeConversation.id, endMessage);
+        
+        // Update our local state
+        const updatedActive = conversationManager.getActiveConversation();
+        setActiveConversation(updatedActive);
+      }
+    }
+  };
+
+  // Get current provider info for display
+  const getProviderInfo = () => {
+    const preferredProvider = settings.preferredChatProvider;
+    const hasGeminiApiKey = !!settings.geminiApiKey && settings.geminiApiKey.trim() !== '';
+    
+    if (preferredProvider === 'gemini' && hasGeminiApiKey) {
+      return {
+        isConnected: true,
+        name: 'Gemini 2.0 Flash',
+        status: 'Connected',
+        canStream: geminiService.isStreamingSupported(),
+        modelId: 'gemini-2.0-flash'
+      };
+    } else if (preferredProvider === 'ollama' && ollama.status.isConnected) {
+      return {
+        isConnected: true,
+        name: ollama.status.currentModel || 'Ollama',
+        status: 'Connected',
+        canStream: ollama.isStreamingSupported(),
+        modelId: ollama.status.currentModel || 'llama3.1:8b'
+      };
+    } else {
+      return {
+        isConnected: false,
+        name: 'AI Provider',
+        status: 'Not Connected',
+        canStream: false,
+        modelId: 'gpt-4o-mini' // Default model when no provider is connected
+      };
+    }
+  };
+  
+  // Update current model based on provider info
+  useEffect(() => {
+    const providerInfo = getProviderInfo();
+    setCurrentModel(providerInfo.modelId);
+  }, [settings.preferredChatProvider, settings.geminiApiKey, ollama.status]);
+
   // Show error message if something went wrong
   if (error) {
     return (
@@ -255,8 +496,8 @@ export const AsuGptPage: React.FC = () => {
     );
   }
 
-  // Show welcome screen if no active conversation
-  if (showWelcome) {
+  // Show welcome view when no active conversation
+  if (!activeConversation) {
     return (
       <div className="flex h-screen bg-gray-50">
         {/* Sidebar */}
@@ -297,7 +538,7 @@ export const AsuGptPage: React.FC = () => {
           
           {/* Conversation List */}
           <div className="flex-1 overflow-y-auto p-2">
-            {conversations.map(conv => (
+            {Array.isArray(conversations) && (conversations as {id: string, title: string}[]).map(conv => (
               <div 
                 key={conv.id}
                 className={`p-2 mb-1 rounded-md cursor-pointer hover:bg-gray-100 ${
@@ -349,7 +590,6 @@ export const AsuGptPage: React.FC = () => {
           </div>
         </div>
         
-        {/* Main Content */}
         <div className="flex-1 flex flex-col">
           {/* Top Bar */}
           <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
@@ -370,8 +610,27 @@ export const AsuGptPage: React.FC = () => {
               ASU GPT
             </div>
             
-            {/* Model Status */}
-            <SafeCustomModelStatusBar />
+            {/* Right Section with Model Switcher and Status */}
+            <div className="flex items-center space-x-2">
+              {/* Connection Status Indicator */}
+              <div className="flex items-center mr-2">
+                <div 
+                  className={`w-2 h-2 rounded-full mr-2 ${
+                    getProviderInfo().isConnected ? 'bg-green-500' : 'bg-red-500'
+                  }`}
+                />
+                <span className="text-xs text-gray-600">
+                  {getProviderInfo().name}: {getProviderInfo().status}
+                </span>
+              </div>
+              
+              {/* Model Switcher */}
+              <ModelSwitcher 
+                currentModel={currentModel}
+                onModelChange={handleModelChange}
+                compact={true}
+              />
+            </div>
           </div>
 
           {/* Welcome Content */}
@@ -382,10 +641,6 @@ export const AsuGptPage: React.FC = () => {
                 <p className="text-lg text-gray-700 mb-4">
                   A powerful AI assistant to help with your questions about ASU, academics, and more.
                 </p>
-                
-                <div className="mb-8 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                  <OllamaStatusIndicator />
-                </div>
                 
                 {/* Persona Chat Selection Component */}
                 <PersonaChatSelection onSelectChat={handleSelectPersonaChat} />
@@ -438,7 +693,7 @@ export const AsuGptPage: React.FC = () => {
         
         {/* Conversation List */}
         <div className="flex-1 overflow-y-auto p-2">
-          {conversations.map(conv => (
+          {Array.isArray(conversations) && (conversations as {id: string, title: string}[]).map(conv => (
             <div 
               key={conv.id}
               className={`p-2 mb-1 rounded-md cursor-pointer hover:bg-gray-100 ${
@@ -492,7 +747,7 @@ export const AsuGptPage: React.FC = () => {
       
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {/* Top Bar */}
+        {/* Top Bar - Condensed with all elements and connection status */}
         <div className="bg-white border-b border-gray-200 px-4 py-3 flex items-center justify-between">
           {/* Mobile Menu Button */}
           {isMobile && (
@@ -506,7 +761,7 @@ export const AsuGptPage: React.FC = () => {
             </button>
           )}
           
-          {/* Conversation Title */}
+          {/* Left Section with Back Button and Conversation Title */}
           <div className="flex items-center space-x-3">
             <button
               onClick={handleNewExperience}
@@ -524,8 +779,40 @@ export const AsuGptPage: React.FC = () => {
             </h1>
           </div>
           
-          {/* Model Status */}
-          <SafeCustomModelStatusBar />
+          {/* Center Section with Participant and Instructions Selectors */}
+          <div className="flex items-center space-x-2">
+            <ParticipantSelector 
+              activeParticipant={activeParticipant}
+              onSelectParticipant={handleSelectParticipant}
+            />
+            
+            <ChatInstructionsSelector
+              activeInstruction={activeInstruction || undefined}
+              onSelectInstruction={handleSelectInstruction}
+            />
+          </div>
+          
+          {/* Right Section with Model Switcher and Status */}
+          <div className="flex items-center space-x-2">
+            {/* Connection Status Indicator */}
+            <div className="flex items-center mr-2">
+              <div 
+                className={`w-2 h-2 rounded-full mr-2 ${
+                  getProviderInfo().isConnected ? 'bg-green-500' : 'bg-red-500'
+                }`}
+              />
+              <span className="text-xs text-gray-600">
+                {getProviderInfo().name}: {getProviderInfo().status}
+              </span>
+            </div>
+            
+            {/* Model Switcher */}
+            <ModelSwitcher 
+              currentModel={currentModel}
+              onModelChange={handleModelChange}
+              compact={true}
+            />
+          </div>
         </div>
 
         {/* Conversation View */}

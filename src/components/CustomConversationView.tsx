@@ -615,40 +615,11 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
   
   return (
     <div className="flex flex-col h-full bg-gray-50">
-      {/* Header with model selection */}
-      <div className="p-4 border-b border-gray-200 bg-white">
-        <div className="flex flex-wrap items-center gap-2 justify-between">
-          <div>
-            <h2 className="text-lg font-semibold text-gray-900">
-              {conversation.title || 'New Conversation'}
-            </h2>
-            <p className="text-sm text-gray-500">
-              {providerInfo.name} - {providerInfo.status}
-            </p>
-          </div>
-          
-          <ModelSwitcher 
-            currentModel={selectedModel} 
-            onModelChange={handleModelChange}
-            compact={true}
-          />
-        </div>
-      </div>
+      {/* Header with model selection - Removed as it's already in AsuGptPage */}
       
       {/* Main chat area - now full width */}
       <div className="flex-1 overflow-auto p-4">
-        {/* Participant selection (if implemented) */}
-        <CollapsiblePanel 
-          title="Conversation Partners" 
-          initiallyExpanded={false}
-          className="mb-4"
-        >
-          <ParticipantGrid 
-            participants={ASU_PARTICIPANTS} 
-            activeParticipant={activeParticipant}
-            onSelectParticipant={handleSelectParticipant}
-          />
-        </CollapsiblePanel>
+        {/* Conversation Partners panel removed - now in top bar */}
         
         {/* Messages */}
         <div className="space-y-4 mb-4">
