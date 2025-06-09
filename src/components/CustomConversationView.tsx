@@ -10,29 +10,21 @@ import TokenUsagePreview from './TokenUsagePreview';
 import ModelSwitcher from './ModelSwitcher';
 import CollapsiblePanel from './CollapsiblePanel';
 import ContextLimitWarning from './ContextLimitWarning';
-import { estimateTokenCount, MODEL_LIMITS } from '../utils/rate-limiter/tokenCounter';
-import { CompressionEngine } from '../utils/rate-limiter/compressionEngine';
-import type { CompressionStrategy } from '../utils/rate-limiter/compressionEngine';
-import { processDocumentForRAG } from '../utils/rate-limiter/tokenCounter';
+import { estimateTokenCount, MODEL_LIMITS, processDocumentForRAG } from '../utils/rate-limiter/tokenCounter';
 import type { DocumentContext } from '../utils/rate-limiter/tokenCounter';
+import { CompressionEngine } from '../utils/rate-limiter/compressionEngine';
+import type { CompressionStrategy, DocumentContext as CompressionDocumentContext } from '../utils/rate-limiter/compressionEngine';
 import RateLimitIndicator from './RateLimitIndicator';
 import ContextOptimizationPanel from './ContextOptimizationPanel';
 import AudioInputButton from './AudioInputButton';
 import CompressionStatisticsPanel from './CompressionStatisticsPanel';
 import { Upload } from 'lucide-react';
 import { ASU_PARTICIPANTS, ParticipantGrid } from './ConversationParticipant';
-import { PERSONA_CHAT_TEMPLATES, PersonaChatTemplate } from './PersonaChatSelection';
+import { PERSONA_CHAT_TEMPLATES } from './PersonaChatSelection';
+import type { PersonaChatTemplate } from './PersonaChatSelection';
 
-// Create a wrapper component for markdown content
-const MarkdownContent: React.FC<{ content: string }> = ({ content }) => {
-  return (
-    <div className="prose prose-sm max-w-none overflow-auto">
-      <ReactMarkdown remarkPlugins={[remarkGfm]}>
-        {content}
-      </ReactMarkdown>
-    </div>
-  );
-};
+// Import the MarkdownContent component
+import MarkdownContent from './MarkdownContent';
 
 interface CustomConversationViewProps {
   conversation: Conversation;
@@ -63,7 +55,7 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
   });
   
   // Add state for RAG documents
-  const [ragDocuments, setRagDocuments] = useState<TokenCounterDocumentContext[]>([]);
+  const [ragDocuments, setRagDocuments] = useState<DocumentContext[]>([]);
   const [isFileLoading, setIsFileLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState(settings.preferredChatProvider === 'gemini' ? 'gemini-2.0-flash' : (ollama.status.currentModel || 'llama3.1:8b'));
   const [activeParticipant, setActiveParticipant] = useState<string | undefined>(undefined);
@@ -74,27 +66,59 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
     scrollToBottom();
   }, [conversation.messages]);
   
-  // Calculate token usage when messages change
+      // Calculate token usage when messages change
   useEffect(() => {
     const calculateTokens = () => {
-      // Determine which model is being used
-      const currentModel = settings.preferredChatProvider === 'gemini' ? 'gemini-2.0-flash' : 
-                          ollama.status.currentModel || 'llama3.1:8b';
+      // Look for latest assistant message to identify model being used
+      const assistantMessages = conversation.messages.filter(msg => 
+        msg.role === 'assistant' && msg.metadata?.modelUsed
+      );
       
-      // Get the context window size for this model
-      const modelLimits = MODEL_LIMITS[currentModel] || MODEL_LIMITS['gemini-2.0-flash'];
-      const maxTokens = modelLimits.contextWindow;
+      let modelId;
+      if (assistantMessages.length > 0) {
+        // Use the model from the most recent assistant message
+        modelId = assistantMessages[assistantMessages.length - 1]?.metadata?.modelUsed;
+        console.log("Using model from last assistant message:", modelId);
+      } else {
+        // Fallback to current provider settings
+        modelId = settings.preferredChatProvider === 'gemini' ? 'gemini-2.0-flash' : 
+                 ollama.status.currentModel || 'llama3.1:8b';
+        console.log("No assistant message found with model, using current provider:", modelId);
+      }
       
-      // Count tokens in all messages
+      // Get accurate model limits based on used model
+      const modelLimits = MODEL_LIMITS[modelId];
+      if (!modelLimits) {
+        console.warn(`Model ${modelId} not found in MODEL_LIMITS, using claude-3.7-sonnet as fallback`);
+      }
+      
+      const maxTokens = modelLimits ? modelLimits.contextWindow : MODEL_LIMITS['claude-3.7-sonnet'].contextWindow;
+      
+      console.log(`Using model ${modelId} with context window of ${maxTokens} tokens for token calculation`);
+      
+      // Count tokens in all messages, skipping empty or placeholder content
       let totalTokens = 0;
       conversation.messages.forEach(msg => {
-        totalTokens += estimateTokenCount(msg.content);
+        // Skip empty or placeholder messages
+        const content = msg.content || '';
+        if (content.trim() && content !== '...') {
+          const msgTokens = estimateTokenCount(content);
+          totalTokens += msgTokens;
+          console.log(`Message (${msg.role}): ${msgTokens} tokens`);
+        }
       });
       
       // Add tokens from current input
       if (input) {
-        totalTokens += estimateTokenCount(input);
+        const inputTokens = estimateTokenCount(input);
+        totalTokens += inputTokens;
+        console.log(`Current input: ${inputTokens} tokens`);
       }
+      
+      // Add tokens from RAG documents
+      const ragTokens = ragDocuments.reduce((sum, doc) => sum + doc.tokenCount, 0);
+      totalTokens += ragTokens;
+      console.log(`RAG documents: ${ragTokens} tokens`);
       
       // Calculate remaining and percentage
       const remaining = Math.max(0, maxTokens - totalTokens);
@@ -110,7 +134,7 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
     };
     
     calculateTokens();
-  }, [conversation.messages, input, settings.preferredChatProvider, ollama.status.currentModel]);
+  }, [conversation.messages, input, settings.preferredChatProvider, ollama.status.currentModel, ragDocuments]);
   
   const scrollToBottom = () => {
     if (messagesEndRef.current) {
@@ -124,9 +148,13 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
     }
   };
   
-  // Filter visible messages
+      // Filter visible messages
   const visibleMessages = conversation.messages.filter(msg => 
-    msg.isVisible !== false && msg.role !== 'system'
+    msg.isVisible !== false && 
+    msg.role !== 'system' &&
+    msg.content && 
+    msg.content.trim() !== '' &&
+    msg.content !== '...' // Filter out placeholder message
   );
   
   // Get AI response based on currently selected provider
@@ -184,11 +212,18 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
     const preferredProvider = settings.preferredChatProvider;
     const hasGeminiApiKey = !!settings.geminiApiKey && settings.geminiApiKey.trim() !== '';
     
-    // Build message history for context
+    // Get current model for token tracking
+    const currentModel = settings.preferredChatProvider === 'gemini' ? 'gemini-2.0-flash' : 
+                         ollama.status.currentModel || 'llama3.1:8b';
+    console.log(`Using model ${currentModel} for streaming response`);
+    
+    // Build message history for context (filter out empty messages)
     const messageHistory = conversation.messages
       .filter(msg => {
-        // Include messages that are user or assistant messages
-        return msg.role === 'user' || msg.role === 'assistant';
+        // Include messages that are user or assistant messages and have content
+        return (msg.role === 'user' || msg.role === 'assistant') && 
+               msg.content && msg.content.trim() && 
+               msg.content !== '...'; // Filter out placeholder content
       })
       .map(msg => ({
         role: msg.role,
@@ -214,23 +249,30 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
           {}
         );
         
-        // Process the stream with for-await
+                  // Process the stream with for-await
         for await (const chunk of stream) {
           // Add the chunk to our response
           fullResponse += chunk;
           
-          // Update the message with accumulated response
-          conversationManager.updateMessage(
-            conversation.id,
-            messageId,
-            { 
-              content: fullResponse,
-              role: 'assistant' // Explicitly ensure role is 'assistant'
-            }
-          );
-          
-          // Trigger UI update
-          onConversationUpdate();
+          // Only update if we have actual content to avoid empty messages
+          if (fullResponse.trim()) {
+            // Update the message with accumulated response
+            conversationManager.updateMessage(
+              conversation.id,
+              messageId,
+              { 
+                content: fullResponse,
+                role: 'assistant', // Explicitly ensure role is 'assistant'
+                metadata: {
+                  citations: [],
+                  modelUsed: currentModel
+                }
+              }
+            );
+            
+            // Trigger UI update
+            onConversationUpdate();
+          }
           
           // Add a small delay to make streaming smoother and reduce UI updates
           await new Promise(resolve => setTimeout(resolve, 10));
@@ -238,13 +280,22 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
         
         console.log('Gemini streaming complete, full response length:', fullResponse.length);
         
-        // Make one final update to ensure the role is correct
+        // Verify we have a valid response to avoid blank messages
+        if (!fullResponse || !fullResponse.trim()) {
+          throw new Error("Empty response received from Gemini");
+        }
+        
+        // Make one final update to ensure the role is correct and model is tracked
         conversationManager.updateMessage(
           conversation.id,
           messageId,
           { 
             content: fullResponse,
-            role: 'assistant'
+            role: 'assistant',
+            metadata: {
+              citations: [],
+              modelUsed: currentModel
+            }
           }
         );
         
@@ -263,23 +314,30 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
         // Create the stream but handle it directly in the for-await loop
         const stream = ollama.sendMessageStream(userMessage);
         
-        // Process the stream with for-await
+                  // Process the stream with for-await
         for await (const chunk of stream) {
           // Add the chunk to our response
           fullResponse += chunk;
           
-          // Update the message with accumulated response
-          conversationManager.updateMessage(
-            conversation.id,
-            messageId,
-            { 
-              content: fullResponse,
-              role: 'assistant' // Explicitly ensure role is 'assistant'
-            }
-          );
-          
-          // Trigger UI update
-          onConversationUpdate();
+          // Only update if we have actual content to avoid empty messages
+          if (fullResponse.trim()) {
+            // Update the message with accumulated response
+            conversationManager.updateMessage(
+              conversation.id,
+              messageId,
+              { 
+                content: fullResponse,
+                role: 'assistant', // Explicitly ensure role is 'assistant'
+                metadata: {
+                  citations: [],
+                  modelUsed: currentModel
+                }
+              }
+            );
+            
+            // Trigger UI update
+            onConversationUpdate();
+          }
           
           // Add a small delay to make streaming smoother and reduce UI updates
           await new Promise(resolve => setTimeout(resolve, 10));
@@ -287,13 +345,22 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
         
         console.log('Ollama streaming complete, full response length:', fullResponse.length);
         
-        // Make one final update to ensure the role is correct
+        // Verify we have a valid response to avoid blank messages
+        if (!fullResponse || !fullResponse.trim()) {
+          throw new Error("Empty response received from Ollama");
+        }
+        
+        // Make one final update to ensure the role is correct and model is tracked
         conversationManager.updateMessage(
           conversation.id,
           messageId,
           { 
             content: fullResponse,
-            role: 'assistant'
+            role: 'assistant',
+            metadata: {
+              citations: [],
+              modelUsed: currentModel
+            }
           }
         );
         
@@ -343,24 +410,36 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
     onConversationUpdate();
     
     try {
-      // Create an initial empty message for the assistant
+      // Identify correct model for token calculations
+      const currentModel = settings.preferredChatProvider === 'gemini' ? 'gemini-2.0-flash' : 
+                           ollama.status.currentModel || 'llama3.1:8b';
+      
+      // Create an initial message for the assistant
       const aiMessage: Omit<Message, 'id' | 'timestamp'> = {
         role: 'assistant',
-        content: '',
-        isVisible: true
+        content: '...',  // Use placeholder instead of empty string
+        isVisible: true,
+        metadata: { 
+          citations: [],
+          modelUsed: currentModel  // Track which model is being used
+        }
       };
       
-      // Add the empty message and get its ID
+      // Add the message and get its ID
       const newMessage = conversationManager.addMessage(conversation.id, aiMessage);
       
       // Verify the role is set correctly for the new message
-      console.log('Created assistant message with ID:', newMessage.id, 'and role:', newMessage.role);
+      console.log('Created assistant message with ID:', newMessage.id, 'and role:', newMessage.role, 'using model:', currentModel);
       
-      // Ensure the role is set correctly
-      if (newMessage.role !== 'assistant') {
-        console.warn('Message role was not set correctly, fixing...');
+      // Ensure the role and metadata are set correctly
+      if (newMessage.role !== 'assistant' || !newMessage.metadata?.modelUsed) {
+        console.warn('Message properties were not set correctly, fixing...');
         conversationManager.updateMessage(conversation.id, newMessage.id, {
-          role: 'assistant'
+          role: 'assistant',
+          metadata: {
+            ...newMessage.metadata,
+            modelUsed: currentModel
+          }
         });
       }
       
@@ -379,11 +458,21 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
         // Get response from AI provider (non-streaming)
         response = await getAIResponse(input);
         
-        // Update the assistant message with the response
-        conversationManager.updateMessage(conversation.id, newMessage.id, {
-          content: response,
-          role: 'assistant' // Explicitly ensure role is assistant
-        });
+        // Verify the response is not empty
+        if (response && response.trim()) {
+          // Update the assistant message with the response
+          conversationManager.updateMessage(conversation.id, newMessage.id, {
+            content: response,
+            role: 'assistant', // Explicitly ensure role is assistant
+            metadata: {
+              ...newMessage.metadata,
+              modelUsed: currentModel
+            }
+          });
+        } else {
+          console.error("Empty response received from AI provider");
+          throw new Error("Empty response received from AI provider");
+        }
       }
       
       onConversationUpdate();
@@ -520,7 +609,7 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
   };
   
   // Handle file processing from FileUploadArea
-  const handleFilesProcessed = (newDocuments: TokenCounterDocumentContext[]) => {
+  const handleFilesProcessed = (newDocuments: DocumentContext[]) => {
     setRagDocuments(prevDocuments => [...prevDocuments, ...newDocuments]);
   };
   
@@ -624,7 +713,7 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
       // Check if we need to compress based on context size
       const currentModelId = settings.preferredChatProvider === 'gemini' ? 'gemini-2.0-flash' : 
                              ollama.status.currentModel || 'llama3.1:8b';
-      const modelLimits = MODEL_LIMITS[currentModelId] || MODEL_LIMITS['gemini-2.0-flash'];
+      const modelLimits = MODEL_LIMITS[currentModelId] || MODEL_LIMITS['claude-3.7-sonnet'];
       const maxContextSize = modelLimits.contextWindow;
       
       let newDocuments = [...ragDocuments, docContext];
@@ -636,11 +725,24 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
       // If RAG documents exceed 30% of context window, compress them
       if (percentageUsed > 30) {
         console.log(`RAG documents exceeding 30% of context window (${percentageUsed.toFixed(1)}%), compressing...`);
-        newDocuments = compressionEngine.compressRagDocuments(
-          newDocuments, 
-          30,  // Target max percentage 
-          maxContextSize
-        );
+        try {
+          // Type cast to any to avoid TypeScript errors between different DocumentContext interfaces
+          const compressedDocs = compressionEngine.compressRagDocuments(
+            newDocuments as any, 
+            30,  // Target max percentage 
+            maxContextSize
+          );
+          // Verify compression was successful
+          if (compressedDocs && compressedDocs.length === newDocuments.length) {
+            // Type cast to avoid TypeScript errors
+            newDocuments = compressedDocs as typeof newDocuments;
+            console.log("RAG compression successful:", newDocuments);
+          } else {
+            console.error("RAG compression returned invalid result:", compressedDocs);
+          }
+        } catch (compressionError) {
+          console.error("Error during RAG compression:", compressionError);
+        }
       }
       
       // Update state with processed documents
