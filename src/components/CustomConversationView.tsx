@@ -613,6 +613,54 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
     setRagDocuments(updatedDocuments);
   };
   
+  // Add this function to handle uploading files
+  const handleFileUpload = async (file: File) => {
+    setIsFileLoading(true);
+    try {
+      // Process the file
+      const content = await file.text();
+      const docContext = processDocumentForRAG(file, content);
+      
+      // Check if we need to compress based on context size
+      const currentModelId = settings.preferredChatProvider === 'gemini' ? 'gemini-2.0-flash' : 
+                             ollama.status.currentModel || 'llama3.1:8b';
+      const modelLimits = MODEL_LIMITS[currentModelId] || MODEL_LIMITS['gemini-2.0-flash'];
+      const maxContextSize = modelLimits.contextWindow;
+      
+      let newDocuments = [...ragDocuments, docContext];
+      
+      // Calculate if we need to compress
+      const totalRagTokens = newDocuments.reduce((sum, doc) => sum + doc.tokenCount, 0);
+      const percentageUsed = (totalRagTokens / maxContextSize) * 100;
+      
+      // If RAG documents exceed 30% of context window, compress them
+      if (percentageUsed > 30) {
+        console.log(`RAG documents exceeding 30% of context window (${percentageUsed.toFixed(1)}%), compressing...`);
+        newDocuments = compressionEngine.compressRagDocuments(
+          newDocuments, 
+          30,  // Target max percentage 
+          maxContextSize
+        );
+      }
+      
+      // Update state with processed documents
+      setRagDocuments(newDocuments);
+      
+      // Show notification about compression
+      if (percentageUsed > 30) {
+        // Display notification about compression
+        alert(`Added document "${file.name}" (${docContext.tokenCount.toLocaleString()} tokens). Documents were compressed to fit in context window.`);
+      } else {
+        alert(`Added document "${file.name}" (${docContext.tokenCount.toLocaleString()} tokens)`);
+      }
+    } catch (error) {
+      console.error("Error processing document:", error);
+      alert(`Error processing document: ${error}`);
+    } finally {
+      setIsFileLoading(false);
+    }
+  };
+  
   return (
     <div className="flex flex-col h-full bg-gray-50">
       {/* Header with model selection - Removed as it's already in AsuGptPage */}
@@ -687,28 +735,7 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) {
-                  setIsFileLoading(true);
-                  
-                  // Read the file content
-                  const reader = new FileReader();
-                  reader.onload = (event) => {
-                    const content = event.target?.result as string;
-                    // Now process the document with both file and content
-                    const docContext = processDocumentForRAG(file, content);
-                    handleFilesProcessed([docContext]);
-                    setIsFileLoading(false);
-                  };
-                  
-                  reader.onerror = () => {
-                    console.error("Error reading file");
-                    setIsFileLoading(false);
-                  };
-                  
-                  // Start reading the file as text
-                  reader.readAsText(file);
-                  
-                  // Clear the input so the same file can be uploaded again if needed
-                  e.target.value = '';
+                  handleFileUpload(file);
                 }
               }}
               className="hidden"

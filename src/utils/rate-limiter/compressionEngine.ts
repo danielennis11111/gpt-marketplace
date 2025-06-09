@@ -1,4 +1,5 @@
 import { Message } from '../../types';
+import { estimateTokenCount } from './tokenCounter';
 
 export interface CompressionStrategy {
   type: 'lossless' | 'semantic' | 'summary' | 'hybrid';
@@ -34,6 +35,16 @@ export interface CompressionStatistics {
     daily: { date: string; compressions: number; tokensSaved: number }[];
     weekly: { week: string; compressions: number; tokensSaved: number }[];
   };
+}
+
+export interface DocumentContext {
+  type: string;
+  name: string;
+  content: string;
+  tokenCount: number;
+  size: number;
+  uploadedAt: Date;
+  isCompressed?: boolean;
 }
 
 export class CompressionEngine {
@@ -440,5 +451,113 @@ export class CompressionEngine {
       losslessPercentage,
       compressionsByStrategy
     };
+  }
+
+  /**
+   * Compresses RAG documents to fit within context limits
+   * @param documents Array of RAG documents
+   * @param maxTokenPercentage Maximum percentage of context window that should be used by RAG (0-100)
+   * @param contextSize Total context window size in tokens
+   * @returns Compressed documents
+   */
+  public compressRagDocuments(
+    documents: DocumentContext[],
+    maxTokenPercentage: number = 30,
+    contextSize: number = 8192
+  ): DocumentContext[] {
+    if (!documents || documents.length === 0) {
+      return [];
+    }
+
+    // Calculate total tokens in all documents
+    const totalTokens = documents.reduce((sum, doc) => sum + (doc.tokenCount || 0), 0);
+    
+    // Calculate maximum allowed tokens for RAG
+    const maxAllowedTokens = Math.floor(contextSize * (maxTokenPercentage / 100));
+    
+    // If we're under the limit, return original documents
+    if (totalTokens <= maxAllowedTokens) {
+      return documents;
+    }
+    
+    console.log(`🔄 Compressing RAG documents: ${totalTokens} tokens -> target ${maxAllowedTokens} tokens`);
+    
+    // Determine compression ratio needed
+    const compressionRatio = maxAllowedTokens / totalTokens;
+    
+    // Compress each document proportionally
+    return documents.map(doc => {
+      // Determine target token count for this document
+      const targetTokens = Math.floor(doc.tokenCount * compressionRatio);
+      
+      // If document is small enough, don't compress
+      if (doc.tokenCount <= 500) {
+        return doc;
+      }
+      
+      // Extract important sentences to fit target
+      const compressedContent = this.extractImportantContent(doc.content, targetTokens);
+      
+      return {
+        ...doc,
+        content: compressedContent,
+        tokenCount: Math.min(doc.tokenCount, targetTokens),
+        isCompressed: true
+      };
+    });
+  }
+
+  /**
+   * Extracts important content from text to meet token target
+   * Uses a simple extraction approach prioritizing first and last paragraphs
+   * and longest sentences (which often contain more information)
+   */
+  private extractImportantContent(text: string, targetTokens: number): string {
+    // Split into paragraphs
+    const paragraphs = text.split(/\n\n+/);
+    
+    // Always include first and last paragraph if available
+    const essentialParagraphs = [];
+    if (paragraphs.length > 0) essentialParagraphs.push(paragraphs[0]);
+    if (paragraphs.length > 1) essentialParagraphs.push(paragraphs[paragraphs.length - 1]);
+    
+    // Join essential paragraphs with a separator
+    let compressed = essentialParagraphs.join('\n\n--- ... ---\n\n');
+    
+    // If we're still over target, extract key sentences
+    if (this.estimateTokens(compressed) > targetTokens && paragraphs.length > 2) {
+      // Extract middle paragraphs
+      const middleParagraphs = paragraphs.slice(1, paragraphs.length - 1);
+      
+      // Extract all sentences from middle paragraphs
+      const sentences = middleParagraphs.join(' ').split(/(?<=[.!?])\s+/);
+      
+      // Sort sentences by length (longer sentences often have more information)
+      const sortedSentences = [...sentences].sort((a, b) => b.length - a.length);
+      
+      // Take top sentences until we approach target
+      let selectedSentences = [];
+      let currentTokens = this.estimateTokens(compressed);
+      
+      for (const sentence of sortedSentences) {
+        const sentenceTokens = this.estimateTokens(sentence);
+        if (currentTokens + sentenceTokens <= targetTokens * 0.9) {
+          selectedSentences.push(sentence);
+          currentTokens += sentenceTokens;
+        }
+      }
+      
+      // Add selected middle content
+      if (selectedSentences.length > 0) {
+        compressed = `${essentialParagraphs[0]}\n\n--- Important extracts: ---\n\n${selectedSentences.join(' ')}\n\n--- ... ---\n\n${essentialParagraphs[1]}`;
+      }
+    }
+    
+    return compressed + "\n\n[Document compressed to fit context window]";
+  }
+
+  // Helper method for token estimation
+  private estimateTokens(text: string): number {
+    return estimateTokenCount(text);
   }
 } 
