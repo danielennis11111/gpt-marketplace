@@ -1,6 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { DocumentTextIcon, XMarkIcon, ArrowUpTrayIcon } from '@heroicons/react/24/outline';
 import type { DocumentContext } from '../utils/rate-limiter/tokenCounter';
+import { PDFProcessor } from '../utils/rate-limiter/pdfProcessor';
 
 interface FileUploadAreaProps {
   onFilesProcessed: (documents: DocumentContext[]) => void;
@@ -19,7 +20,9 @@ const FileUploadArea: React.FC<FileUploadAreaProps> = ({
   processDocumentForRAG
 }) => {
   const [isDragging, setIsDragging] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<{[key: string]: string}>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const pdfProcessor = useRef(new PDFProcessor());
 
   // Handle drag events
   const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -47,29 +50,55 @@ const FileUploadArea: React.FC<FileUploadAreaProps> = ({
     if (files.length === 0) return;
     
     setIsLoading(true);
+    setUploadStatus({});
     
     try {
       const newDocuments: DocumentContext[] = [];
       
       for (let i = 0; i < files.length; i++) {
         const file = files[i];
+        const fileId = `${file.name}-${file.size}`;
         
-        // Skip unsupported file types
-        if (!isSupportedFileType(file.name)) {
-          console.warn(`Unsupported file type: ${file.name}`);
-          continue;
+        try {
+          // Skip unsupported file types
+          if (!isSupportedFileType(file.name)) {
+            setUploadStatus(prev => ({
+              ...prev,
+              [fileId]: `Unsupported file type: ${getFileExtension(file.name)}`
+            }));
+            console.warn(`Unsupported file type: ${file.name}`);
+            continue;
+          }
+          
+          setUploadStatus(prev => ({
+            ...prev,
+            [fileId]: 'Processing...'
+          }));
+          
+          // Read file content based on file type
+          const content = await readFileContent(file);
+          
+          // Process document for RAG
+          const document = processDocumentForRAG(file, content);
+          
+          newDocuments.push(document);
+          
+          setUploadStatus(prev => ({
+            ...prev,
+            [fileId]: 'Complete'
+          }));
+        } catch (error) {
+          console.error(`Error processing file ${file.name}:`, error);
+          setUploadStatus(prev => ({
+            ...prev,
+            [fileId]: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`
+          }));
         }
-        
-        // Read file content
-        const content = await readFileContent(file);
-        
-        // Process document for RAG
-        const document = processDocumentForRAG(file, content);
-        
-        newDocuments.push(document);
       }
       
-      onFilesProcessed(newDocuments);
+      if (newDocuments.length > 0) {
+        onFilesProcessed(newDocuments);
+      }
     } catch (error) {
       console.error('Error processing files:', error);
     } finally {
@@ -100,8 +129,26 @@ const FileUploadArea: React.FC<FileUploadAreaProps> = ({
     }
   }, [processFiles]);
 
-  // Helper function to read file content
-  const readFileContent = (file: File): Promise<string> => {
+  // Get file extension
+  const getFileExtension = (filename: string): string => {
+    return filename.substring(filename.lastIndexOf('.')).toLowerCase();
+  };
+
+  // Helper function to read file content based on file type
+  const readFileContent = async (file: File): Promise<string> => {
+    const fileExt = getFileExtension(file.name);
+    
+    // Handle PDF files
+    if (fileExt === '.pdf') {
+      return await pdfProcessor.current.extractText(file);
+    }
+    
+    // Handle binary files
+    if (['.docx', '.doc', '.xlsx', '.xls', '.pptx', '.ppt'].includes(fileExt)) {
+      return `[Binary file: ${file.name}]\n\nThis file type (${fileExt}) requires specialized processing.`;
+    }
+    
+    // For text-based files, use the standard text reader
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       
@@ -124,8 +171,13 @@ const FileUploadArea: React.FC<FileUploadAreaProps> = ({
 
   // Check if file type is supported
   const isSupportedFileType = (filename: string): boolean => {
-    const supportedExtensions = ['.txt', '.pdf', '.md', '.csv', '.json'];
-    const ext = filename.substring(filename.lastIndexOf('.')).toLowerCase();
+    const supportedExtensions = [
+      '.txt', '.pdf', '.md', '.csv', '.json', 
+      '.xml', '.html', '.htm', '.js', '.ts', 
+      '.jsx', '.tsx', '.py', '.java', '.c', 
+      '.cpp', '.cs', '.go', '.rb'
+    ];
+    const ext = getFileExtension(filename);
     return supportedExtensions.includes(ext);
   };
 
@@ -149,7 +201,7 @@ const FileUploadArea: React.FC<FileUploadAreaProps> = ({
           ref={fileInputRef}
           onChange={handleFileInputChange}
           multiple
-          accept=".txt,.pdf,.md,.csv,.json"
+          accept=".txt,.pdf,.md,.csv,.json,.xml,.html,.htm,.js,.ts,.jsx,.tsx,.py,.java,.c,.cpp,.cs,.go,.rb"
           disabled={isLoading}
         />
         
@@ -166,12 +218,26 @@ const FileUploadArea: React.FC<FileUploadAreaProps> = ({
                 Drag and drop files here, or click to select
               </p>
               <p className="text-xs text-gray-500">
-                Supported formats: TXT, PDF, MD, CSV, JSON
+                Supported formats: TXT, PDF, MD, CSV, JSON, XML, HTML, code files
               </p>
             </>
           )}
         </div>
       </div>
+      
+      {/* File processing status */}
+      {Object.keys(uploadStatus).length > 0 && (
+        <div className="mt-2 text-xs">
+          {Object.entries(uploadStatus).map(([fileId, status]) => (
+            <div key={fileId} className="flex justify-between items-center py-1">
+              <span>{fileId.split('-')[0]}</span>
+              <span className={status === 'Complete' ? 'text-green-600' : status.startsWith('Error') ? 'text-red-600' : 'text-blue-600'}>
+                {status}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

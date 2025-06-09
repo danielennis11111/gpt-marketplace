@@ -148,41 +148,167 @@ export function parseTextWithHighlighting(
   
   let currentIndex = 0;
   
-  // Simple approach: look for quoted content that matches citation sources
-  // For now, implement a basic version that looks for similar text
-  // In a production system, this would use more sophisticated NLP
-  
+  // Improved approach to look for quoted content that matches citation sources
   for (const citation of citations) {
-    const highlightText = citation.highlightedText || citation.content.substring(0, 100);
-    const matchIndex = text.toLowerCase().indexOf(highlightText.toLowerCase().substring(0, 50));
+    // Try different approaches to find matching content
+    let matchFound = false;
     
-    if (matchIndex !== -1 && matchIndex >= currentIndex) {
-      // Add non-highlighted text before this match
-      if (matchIndex > currentIndex) {
+    // 1. First try to use the highlightedText if available
+    if (citation.highlightedText && citation.highlightedText.length > 10) {
+      const highlightText = citation.highlightedText;
+      // Try to find a match for the first 50 characters of the highlight (case insensitive)
+      const searchLength = Math.min(50, highlightText.length);
+      const searchText = highlightText.substring(0, searchLength).toLowerCase();
+      const matchIndex = text.toLowerCase().indexOf(searchText);
+      
+      if (matchIndex !== -1 && matchIndex >= currentIndex) {
+        // Add non-highlighted text before this match
+        if (matchIndex > currentIndex) {
+          segments.push({
+            text: text.substring(currentIndex, matchIndex),
+            isHighlighted: false
+          });
+        }
+        
+        // Add highlighted text
+        const matchEnd = matchIndex + highlightText.length;
         segments.push({
-          text: text.substring(currentIndex, matchIndex),
-          isHighlighted: false
+          text: text.substring(matchIndex, Math.min(matchEnd, text.length)),
+          isHighlighted: true,
+          citationId: citation.id
         });
+        
+        // Add reference
+        references.push({
+          citationId: citation.id,
+          inlineText: text.substring(matchIndex, Math.min(matchEnd, text.length)),
+          position: matchIndex,
+          highlightStart: matchIndex,
+          highlightEnd: Math.min(matchEnd, text.length)
+        });
+        
+        currentIndex = Math.min(matchEnd, text.length);
+        matchFound = true;
       }
+    }
+    
+    // 2. If no match found with highlightedText, try with the first paragraph of content
+    if (!matchFound && citation.content) {
+      // Extract the first paragraph of the content (up to 200 chars)
+      const contentParagraphs = citation.content.split('\n\n');
+      const firstParagraph = contentParagraphs[0].substring(0, 200);
       
-      // Add highlighted text
-      const matchEnd = matchIndex + highlightText.length;
-      segments.push({
-        text: text.substring(matchIndex, Math.min(matchEnd, text.length)),
-        isHighlighted: true,
-        citationId: citation.id
-      });
+      // Try to find keyword matches (look for 3+ word phrases)
+      const words = firstParagraph.split(/\s+/).filter(w => w.length > 3);
       
-      // Add reference
-      references.push({
-        citationId: citation.id,
-        inlineText: text.substring(matchIndex, Math.min(matchEnd, text.length)),
-        position: matchIndex,
-        highlightStart: matchIndex,
-        highlightEnd: Math.min(matchEnd, text.length)
-      });
-      
-      currentIndex = Math.min(matchEnd, text.length);
+      for (let i = 0; i < words.length - 2; i++) {
+        // Create a 3-word phrase to search for
+        const phrase = `${words[i]} ${words[i+1]} ${words[i+2]}`.toLowerCase();
+        if (phrase.length < 10) continue; // Skip very short phrases
+        
+        const phraseIndex = text.toLowerCase().indexOf(phrase);
+        if (phraseIndex !== -1 && phraseIndex >= currentIndex) {
+          // Expand match to include surrounding context (find sentence boundaries)
+          let expandedStart = phraseIndex;
+          let expandedEnd = phraseIndex + phrase.length;
+          
+          // Expand backward to sentence start or reasonable limit
+          for (let j = phraseIndex; j > Math.max(currentIndex, phraseIndex - 100); j--) {
+            if ('.!?'.includes(text[j])) {
+              expandedStart = j + 1;
+              break;
+            }
+          }
+          
+          // Expand forward to sentence end or reasonable limit
+          for (let j = phraseIndex + phrase.length; j < Math.min(text.length, phraseIndex + phrase.length + 100); j++) {
+            if ('.!?'.includes(text[j])) {
+              expandedEnd = j + 1;
+              break;
+            }
+          }
+          
+          // Add non-highlighted text before this match
+          if (expandedStart > currentIndex) {
+            segments.push({
+              text: text.substring(currentIndex, expandedStart),
+              isHighlighted: false
+            });
+          }
+          
+          // Add highlighted text
+          segments.push({
+            text: text.substring(expandedStart, expandedEnd),
+            isHighlighted: true,
+            citationId: citation.id
+          });
+          
+          // Add reference
+          references.push({
+            citationId: citation.id,
+            inlineText: text.substring(expandedStart, expandedEnd),
+            position: expandedStart,
+            highlightStart: expandedStart,
+            highlightEnd: expandedEnd
+          });
+          
+          currentIndex = expandedEnd;
+          matchFound = true;
+          break;
+        }
+      }
+    }
+    
+    // 3. If still no match found, try source name as last resort
+    if (!matchFound && citation.source) {
+      const sourceNameIndex = text.indexOf(citation.source);
+      if (sourceNameIndex !== -1 && sourceNameIndex >= currentIndex) {
+        // Find the sentence containing the source name
+        let sentenceStart = sourceNameIndex;
+        let sentenceEnd = sourceNameIndex + citation.source.length;
+        
+        // Look back for sentence start
+        for (let j = sourceNameIndex; j > Math.max(currentIndex, sourceNameIndex - 100); j--) {
+          if ('.!?'.includes(text[j])) {
+            sentenceStart = j + 1;
+            break;
+          }
+        }
+        
+        // Look forward for sentence end
+        for (let j = sentenceEnd; j < Math.min(text.length, sentenceEnd + 100); j++) {
+          if ('.!?'.includes(text[j])) {
+            sentenceEnd = j + 1;
+            break;
+          }
+        }
+        
+        // Add non-highlighted text before this match
+        if (sentenceStart > currentIndex) {
+          segments.push({
+            text: text.substring(currentIndex, sentenceStart),
+            isHighlighted: false
+          });
+        }
+        
+        // Add highlighted text
+        segments.push({
+          text: text.substring(sentenceStart, sentenceEnd),
+          isHighlighted: true,
+          citationId: citation.id
+        });
+        
+        // Add reference
+        references.push({
+          citationId: citation.id,
+          inlineText: text.substring(sentenceStart, sentenceEnd),
+          position: sentenceStart,
+          highlightStart: sentenceStart,
+          highlightEnd: sentenceEnd
+        });
+        
+        currentIndex = sentenceEnd;
+      }
     }
   }
   
@@ -376,4 +502,37 @@ export function filterAndRankCitations(
   
   // Limit to max number
   return sortedCitations.slice(0, maxCitations);
+}
+
+/**
+ * Add citations to a message
+ * This function should be called after streaming is complete
+ * @param message The message content
+ * @param citations Array of citations to attach
+ * @returns Object containing the message with citation references attached
+ */
+export function attachCitationsToMessage(
+  message: string,
+  citations: Citation[]
+): {
+  messageWithCitations: string;
+  citationReferences: CitationReference[];
+} {
+  // If no citations, return the original message
+  if (!citations || citations.length === 0) {
+    return { 
+      messageWithCitations: message,
+      citationReferences: []
+    };
+  }
+  
+  // Use the parsing function to get citation references
+  const { segments, references } = parseTextWithHighlighting(message, citations);
+  
+  // The message content should remain the same for now
+  // But we return the citation references for later use
+  return {
+    messageWithCitations: message,
+    citationReferences: references
+  };
 } 

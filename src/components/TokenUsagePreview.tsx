@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { 
   ChartBarIcon,
   ArrowsPointingOutIcon, 
@@ -7,14 +7,55 @@ import {
   DocumentTextIcon,
   ChatBubbleLeftRightIcon,
   UserIcon,
-  CpuChipIcon
+  CpuChipIcon,
+  DocumentDuplicateIcon
 } from '@heroicons/react/24/outline';
+import { estimateTokenCount } from '../utils/rate-limiter/tokenCounter';
+import type { DocumentContext } from '../utils/rate-limiter/tokenCounter';
+
+// Define the types we need locally
+interface Message {
+  id?: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp?: Date;
+  tokens?: number;
+}
+
+interface Conversation {
+  id: string;
+  templateId: string;
+  messages: Message[];
+  title?: string;
+  lastUpdated?: Date;
+}
+
+interface ConversationTemplate {
+  id: string;
+  name: string;
+  persona?: string;
+  description?: string;
+  modelId: string;
+  systemPrompt: string;
+  features: {
+    contextLength?: number;
+    [key: string]: any;
+  };
+  parameters: {
+    temperature: number;
+    maxTokens: number;
+    topP: number;
+    [key: string]: any;
+  };
+}
 
 interface TokenUsagePreviewProps {
-  total: number;
-  remaining: number;
-  max: number;
-  isLoading?: boolean;
+  conversation: Conversation;
+  template: ConversationTemplate;
+  currentInput: string;
+  currentModelId?: string;
+  ragContext?: string;
+  ragDocuments?: DocumentContext[];
 }
 
 /**
@@ -22,28 +63,45 @@ interface TokenUsagePreviewProps {
  * Shows real-time token usage with visual breakdown and animation
  */
 const TokenUsagePreview: React.FC<TokenUsagePreviewProps> = ({
-  total,
-  remaining,
-  max,
-  isLoading = false
+  conversation,
+  template,
+  currentInput,
+  currentModelId,
+  ragContext,
+  ragDocuments = []
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [prevTotal, setPrevTotal] = useState(total);
   
+  // Calculate token usage
+  const getModelContextWindow = useCallback((): number => {
+    // This is a simplified implementation - in production would use detailed model info
+    return 8192; // Default context window size
+  }, [currentModelId, template]);
+
+  // Calculate token counts with null checks
+  const systemTokens = template?.systemPrompt ? estimateTokenCount(template.systemPrompt) : 0;
+  const historyTokens = conversation?.messages
+    ? conversation.messages.reduce((sum: number, msg: Message) => sum + (msg.tokens || estimateTokenCount(msg.content)), 0)
+    : 0;
+  const ragTokens = ragDocuments?.length 
+    ? ragDocuments.reduce((sum: number, doc: DocumentContext) => sum + (doc.tokenCount || 0), 0) 
+    : (ragContext ? estimateTokenCount(ragContext) : 0);
+  const messageTokens = currentInput ? estimateTokenCount(currentInput) : 0;
+  
+  const total = systemTokens + historyTokens + ragTokens + messageTokens;
+  const max = getModelContextWindow();
+  const remaining = Math.max(0, max - total);
   const percentage = Math.round((total / max) * 100);
   
   // Detect changes in token usage to trigger animations
   useEffect(() => {
-    if (total !== prevTotal) {
-      setIsAnimating(true);
-      const timer = setTimeout(() => {
-        setIsAnimating(false);
-        setPrevTotal(total);
-      }, 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [total, prevTotal]);
+    setIsAnimating(true);
+    const timer = setTimeout(() => {
+      setIsAnimating(false);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [total]);
 
   const getUsageColor = () => {
     if (percentage < 50) return 'text-green-600';
@@ -57,11 +115,12 @@ const TokenUsagePreview: React.FC<TokenUsagePreviewProps> = ({
     return 'bg-red-500';
   };
 
-  // Simulated breakdown for visualization purposes
+  // Breakdown calculation with RAG tokens included
   const breakdowns = {
-    system: Math.round(total * 0.1),
-    history: Math.round(total * 0.7),
-    current: Math.round(total * 0.2),
+    system: systemTokens,
+    rag: ragTokens,
+    history: historyTokens,
+    current: messageTokens,
   };
 
   return (
@@ -120,17 +179,24 @@ const TokenUsagePreview: React.FC<TokenUsagePreviewProps> = ({
                 title={`System Instructions: ~${breakdowns.system} tokens`}
               />
               
+              {/* RAG Documents - added new section */}
+              <div 
+                className="h-full bg-amber-400 absolute left-0 transition-all duration-500"
+                style={{ width: `${(breakdowns.rag / max) * 100}%`, marginLeft: `${(breakdowns.system / max) * 100}%` }}
+                title={`RAG Documents: ${breakdowns.rag} tokens`}
+              />
+              
               {/* Conversation History */}
               <div 
                 className="h-full bg-purple-400 absolute left-0 transition-all duration-500"
-                style={{ width: `${((breakdowns.system + breakdowns.history) / max) * 100}%`, marginLeft: `${(breakdowns.system / max) * 100}%` }}
+                style={{ width: `${(breakdowns.history / max) * 100}%`, marginLeft: `${((breakdowns.system + breakdowns.rag) / max) * 100}%` }}
                 title={`Conversation History: ~${breakdowns.history} tokens`}
               />
               
               {/* Current Message */}
               <div 
                 className="h-full bg-green-400 absolute left-0 transition-all duration-500"
-                style={{ width: `${(breakdowns.current / max) * 100}%`, marginLeft: `${((breakdowns.system + breakdowns.history) / max) * 100}%` }}
+                style={{ width: `${(breakdowns.current / max) * 100}%`, marginLeft: `${((breakdowns.system + breakdowns.rag + breakdowns.history) / max) * 100}%` }}
                 title={`Current Message: ~${breakdowns.current} tokens`}
               />
             </div>
@@ -140,6 +206,10 @@ const TokenUsagePreview: React.FC<TokenUsagePreviewProps> = ({
               <div className="flex items-center">
                 <div className="w-3 h-3 bg-blue-400 rounded-sm mr-1"></div>
                 <span className="text-gray-600">System</span>
+              </div>
+              <div className="flex items-center">
+                <div className="w-3 h-3 bg-amber-400 rounded-sm mr-1"></div>
+                <span className="text-gray-600">RAG</span>
               </div>
               <div className="flex items-center">
                 <div className="w-3 h-3 bg-purple-400 rounded-sm mr-1"></div>
@@ -170,6 +240,13 @@ const TokenUsagePreview: React.FC<TokenUsagePreviewProps> = ({
                     <span className="text-gray-600">System instructions:</span>
                   </div>
                   <span className="font-mono">{breakdowns.system.toLocaleString()}</span>
+                </div>
+                <div className="flex justify-between">
+                  <div className="flex items-center">
+                    <div className="w-2 h-2 bg-amber-400 rounded-full mr-1.5"></div>
+                    <span className="text-gray-600">RAG documents:</span>
+                  </div>
+                  <span className="font-mono">{breakdowns.rag.toLocaleString()}</span>
                 </div>
                 <div className="flex justify-between">
                   <div className="flex items-center">
@@ -236,18 +313,27 @@ const TokenUsagePreview: React.FC<TokenUsagePreviewProps> = ({
                   <>
                     <li>Consider using compression to reduce token usage</li>
                     <li>Responses may be shorter due to limited remaining context</li>
+                    {breakdowns.rag > 0 && breakdowns.rag > total * 0.3 && (
+                      <li>RAG documents using significant context space ({Math.round((breakdowns.rag / total) * 100)}%)</li>
+                    )}
                   </>
                 )}
                 {percentage > 50 && percentage <= 80 && (
                   <>
                     <li>Monitor usage as conversation continues</li>
                     <li>Consider compression if adding large amounts of text</li>
+                    {breakdowns.rag > 0 && (
+                      <li>RAG documents using {Math.round((breakdowns.rag / total) * 100)}% of used context</li>
+                    )}
                   </>
                 )}
                 {percentage <= 50 && (
                   <>
                     <li>Context window has plenty of space</li>
                     <li>Model has good context for high-quality responses</li>
+                    {breakdowns.rag > 0 && (
+                      <li>RAG documents successfully loaded into context</li>
+                    )}
                   </>
                 )}
               </ul>

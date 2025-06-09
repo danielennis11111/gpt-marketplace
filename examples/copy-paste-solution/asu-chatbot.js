@@ -9,23 +9,23 @@
     // Configuration - easily customizable
     const chatbotProfiles = [
         {
-            name: "ASU AI Assistant",
+            name: "Socrates",
             description: "General academic help",
-            url: "https://app-beta.aiml.asu.edu/2afee586704c45fda29aea2eff30b485"
+            url: "https://app-beta.aiml.asu.edu/a6c1cc23e5964dc1a7497684083b3b19"
         },
         {
             name: "Math Tutor",
             description: "Mathematics support",
-            url: "https://app-beta.aiml.asu.edu/2afee586704c45fda29aea2eff30b485"
+            url: "https://app-beta.aiml.asu.edu/a6c1cc23e5964dc1a7497684083b3b19"
         },
         {
             name: "Writing Assistant", 
             description: "Essay and writing help",
-            url: "https://app-beta.aiml.asu.edu/2afee586704c45fda29aea2eff30b485"
+            url: "https://app-beta.aiml.asu.edu/ea158d76c30b4a45bac86d902923670e"
         },
         {
-            name: "Research Helper",
-            description: "Research and citations", 
+            name: "Coding Helper",
+            description: "Get help writing scripts or coding", 
             url: "https://app-beta.aiml.asu.edu/2afee586704c45fda29aea2eff30b485"
         }
     ];

@@ -140,7 +140,7 @@ export interface ConversationTokenStats {
 }
 
 export interface DocumentContext {
-  type: 'pdf' | 'docx' | 'txt' | 'md' | 'csv' | 'json' | 'xml';
+  type: 'pdf' | 'docx' | 'txt' | 'md' | 'csv' | 'json' | 'xml' | 'html' | 'code' | 'binary';
   name: string;
   content: string;
   tokenCount: number;
@@ -493,9 +493,29 @@ function mapFileExtensionToType(extension: string): DocumentContext['type'] {
     'doc': 'docx',
     'txt': 'txt',
     'md': 'md',
+    'markdown': 'md',
     'csv': 'csv',
     'json': 'json',
-    'xml': 'xml'
+    'xml': 'xml',
+    'html': 'html',
+    'htm': 'html',
+    // Code file types
+    'js': 'code',
+    'ts': 'code',
+    'jsx': 'code',
+    'tsx': 'code',
+    'py': 'code',
+    'java': 'code',
+    'c': 'code',
+    'cpp': 'code',
+    'cs': 'code',
+    'go': 'code',
+    'rb': 'code',
+    // Binary formats
+    'xlsx': 'binary',
+    'xls': 'binary',
+    'pptx': 'binary',
+    'ppt': 'binary'
   };
   
   return mapping[extension] || 'txt';

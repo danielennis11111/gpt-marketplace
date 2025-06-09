@@ -758,9 +758,12 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
       {/* Token Usage Preview - moved below chat input */}
       <div className="flex-shrink-0 px-4 py-3 border-t border-gray-200 bg-white">
         <TokenUsagePreview 
-          total={tokenUsage.total} 
-          remaining={tokenUsage.remaining} 
-          max={tokenUsage.maxTokens}
+          conversation={conversation as any}
+          template={template as any}
+          currentInput={input}
+          currentModelId={selectedModel}
+          ragContext=""
+          ragDocuments={ragDocuments as any}
         />
         
         {/* Only show warning if approaching limit */}
