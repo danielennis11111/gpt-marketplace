@@ -132,13 +132,13 @@ const AppContent = () => {
       >
         {/* Logo and Title */}
         <div className="p-4 flex items-center">
-          <img src={siteLogo} alt="Beta aiLand Logo" className="w-10 mr-2" />
+          <img src={siteLogo} alt="META aiLand Logo" className="w-10 mr-2" />
           {!sidebarCollapsed && (
             <>
               <div className="inline-flex items-center bg-amber-400 px-2 py-1 text-xs font-bold text-black rounded-md ml-2">
                 BETA 
               </div>
-              <h1 className="text-base font-bold text-gray-800"> &nbsp;aiLand</h1>
+              <h1 className="text-base font-bold text-gray-800"> &nbsp;META aiLand</h1>
               
             </>
           )}

@@ -5,7 +5,10 @@ import type { Conversation, ConversationTemplate, Message } from '../utils/rate-
 import { geminiService } from '../utils/rate-limiter/geminiService';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import ProgressiveThinkingIndicator from './ProgressiveThinkingIndicator';
 import TokenUsagePreview from './TokenUsagePreview';
+import ModelSwitcher from './ModelSwitcher';
+import CollapsiblePanel from './CollapsiblePanel';
 import ContextLimitWarning from './ContextLimitWarning';
 import { estimateTokenCount, MODEL_LIMITS } from '../utils/rate-limiter/tokenCounter';
 import { CompressionEngine } from '../utils/rate-limiter/compressionEngine';
@@ -14,14 +17,11 @@ import { processDocumentForRAG } from '../utils/rate-limiter/tokenCounter';
 import type { DocumentContext } from '../utils/rate-limiter/tokenCounter';
 import RateLimitIndicator from './RateLimitIndicator';
 import ContextOptimizationPanel from './ContextOptimizationPanel';
-import FileUploadArea from './FileUploadArea';
 import AudioInputButton from './AudioInputButton';
-import ModelSwitcher from './ModelSwitcher';
-import { ParticipantGrid, ASU_PARTICIPANTS } from './ConversationParticipant';
-import CollapsiblePanel from './CollapsiblePanel';
-import ProgressiveThinkingIndicator from './ProgressiveThinkingIndicator';
 import CompressionStatisticsPanel from './CompressionStatisticsPanel';
 import { Upload } from 'lucide-react';
+import { ASU_PARTICIPANTS, ParticipantGrid } from './ConversationParticipant';
+import { PERSONA_CHAT_TEMPLATES, PersonaChatTemplate } from './PersonaChatSelection';
 
 // Create a wrapper component for markdown content
 const MarkdownContent: React.FC<{ content: string }> = ({ content }) => {
@@ -63,7 +63,7 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
   });
   
   // Add state for RAG documents
-  const [ragDocuments, setRagDocuments] = useState<DocumentContext[]>([]);
+  const [ragDocuments, setRagDocuments] = useState<TokenCounterDocumentContext[]>([]);
   const [isFileLoading, setIsFileLoading] = useState(false);
   const [selectedModel, setSelectedModel] = useState(settings.preferredChatProvider === 'gemini' ? 'gemini-2.0-flash' : (ollama.status.currentModel || 'llama3.1:8b'));
   const [activeParticipant, setActiveParticipant] = useState<string | undefined>(undefined);
@@ -520,7 +520,7 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
   };
   
   // Handle file processing from FileUploadArea
-  const handleFilesProcessed = (newDocuments: DocumentContext[]) => {
+  const handleFilesProcessed = (newDocuments: TokenCounterDocumentContext[]) => {
     setRagDocuments(prevDocuments => [...prevDocuments, ...newDocuments]);
   };
   
@@ -537,14 +537,71 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
   
   // Handle participant selection
   const handleSelectParticipant = (participantId: string) => {
-    setActiveParticipant(participantId === activeParticipant ? undefined : participantId);
+    // Toggle off if the same participant is selected again
+    const newActiveParticipant = participantId === activeParticipant ? undefined : participantId;
+    setActiveParticipant(newActiveParticipant);
     
-    // If a participant is selected, update the system prompt or conversation context
-    if (participantId !== activeParticipant) {
-      const participant = ASU_PARTICIPANTS.find(p => p.id === participantId);
+    // If a new participant is selected, update the system prompt
+    if (newActiveParticipant) {
+      const participant = ASU_PARTICIPANTS.find(p => p.id === newActiveParticipant);
       if (participant) {
-        // Add participant context to conversation (simplified for example)
         console.log(`Selected participant: ${participant.name}`);
+        
+        // Find matching persona from PERSONA_CHAT_TEMPLATES
+        const personaTemplate = PERSONA_CHAT_TEMPLATES.find(
+          template => template.persona === participant.name
+        );
+        
+        if (personaTemplate && personaTemplate.systemPrompt) {
+          // Add or update system message
+          const existingSystemMessage = conversation.messages.find(m => m.role === 'system');
+          
+          if (existingSystemMessage) {
+            // Update existing system message
+            conversationManager.updateMessage(
+              conversation.id,
+              existingSystemMessage.id,
+              { content: personaTemplate.systemPrompt }
+            );
+          } else {
+            // Add new system message
+            const systemMessage = {
+              role: 'system',
+              content: personaTemplate.systemPrompt,
+              isVisible: false
+            };
+            
+            conversationManager.addMessageAtPosition(conversation.id, systemMessage, 0);
+          }
+          
+          // Add a user-visible message about the participant
+          const infoMessage = {
+            role: 'assistant',
+            content: `You are now chatting with **${participant.name}**, ${participant.role}. Feel free to ask about ${participant.expertise.join(', ')}.`,
+            isVisible: true
+          };
+          
+          conversationManager.addMessage(conversation.id, infoMessage);
+          onConversationUpdate();
+        }
+      }
+    } else if (activeParticipant && !newActiveParticipant) {
+      // If participant is deselected, remove system prompt
+      const existingSystemMessage = conversation.messages.find(m => m.role === 'system');
+      
+      if (existingSystemMessage) {
+        // Remove the system message or reset to default
+        conversationManager.hideMessage(conversation.id, existingSystemMessage.id);
+        
+        // Add a message about ending the specialized chat
+        const endMessage = {
+          role: 'assistant',
+          content: 'You are now back to chatting with a general AI assistant.',
+          isVisible: true
+        };
+        
+        conversationManager.addMessage(conversation.id, endMessage);
+        onConversationUpdate();
       }
     }
   };
