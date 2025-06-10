@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ASU Repository Downloads</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background: linear-gradient(135deg, #8C1D40 0%, #FFC425 100%);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 {
+            color: #8C1D40;
+            text-align: center;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        .download-card {
+            border: 2px solid #8C1D40;
+            border-radius: 8px;
+            padding: 25px;
+            margin: 20px 0;
+            background: #f9f9f9;
+        }
+        .download-title {
+            color: #8C1D40;
+            font-size: 1.4em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .download-description {
+            color: #666;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+        }
+        .download-btn {
+            background: #8C1D40;
+            color: white;
+            padding: 12px 25px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            display: inline-block;
+            transition: background 0.3s;
+            margin-right: 15px;
+        }
+        .download-btn:hover {
+            background: #6B1532;
+        }
+        .github-btn {
+            background: #333;
+            color: white;
+            padding: 12px 25px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: bold;
+            display: inline-block;
+            transition: background 0.3s;
+        }
+        .github-btn:hover {
+            background: #555;
+        }
+        .features {
+            margin-top: 15px;
+        }
+        .feature {
+            color: #8C1D40;
+            margin: 5px 0;
+        }
+        .feature::before {
+            content: "✅ ";
+            margin-right: 8px;
+        }
+        .note {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 20px 0;
+            color: #856404;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #666;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏛️ ASU Repository Downloads</h1>
+        
+        <div class="download-card">
+            <div class="download-title">ASU Local Wrapper - Enterprise AI Deployment</div>
+            <div class="download-description">
+                A comprehensive rate-limiting wrapper for running AI models locally with enterprise-level security and usage controls. 
+                Perfect for universities, enterprises, and organizations requiring controlled AI deployment with comprehensive governance.
+            </div>
+            
+            <a href="./asu-local-wrapper.zip" class="download-btn" download>
+                📥 Download ZIP (Latest)
+            </a>
+            <a href="https://github.com/danielennis11111/rate-limiter" class="github-btn" target="_blank">
+                🔗 View on GitHub
+            </a>
+            
+            <div class="features">
+                <div class="feature">Rate limiting with visual feedback (15 requests/minute)</div>
+                <div class="feature">Voice interaction (speech-to-text & text-to-speech)</div>
+                <div class="feature">File upload support (PDF & images)</div>
+                <div class="feature">11 AI conversation templates</div>
+                <div class="feature">Multi-provider support (OpenAI, Anthropic, Gemini)</div>
+                <div class="feature">Enterprise security controls</div>
+                <div class="feature">Conversation history management</div>
+                <div class="feature">Responsive design (desktop & mobile)</div>
+            </div>
+        </div>
+        
+        <div class="note">
+            <strong>📋 Quick Setup:</strong><br>
+            1. Download the ZIP file above<br>
+            2. Extract to your desired location<br>
+            3. Run <code>npm install</code><br>
+            4. Copy <code>.env.example</code> to <code>.env</code> and add your API keys<br>
+            5. Run <code>npm run dev</code> to start the wrapper
+        </div>
+        
+        <div class="footer">
+            Created by ASU Enterprise Technology for team handoff and deployment
+        </div>
+    </div>
+</body>
+</html> 
