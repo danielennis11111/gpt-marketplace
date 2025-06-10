@@ -3,9 +3,10 @@ import type { ReactNode } from 'react';
 import { secureStore, secureRetrieve } from '../utils/secureStorage';
 
 export interface UserSettings {
-  preferredChatProvider: 'ollama' | 'gemini';
+  preferredChatProvider: 'ollama' | 'gemini' | 'llama';
   ollamaModel: string;
   geminiApiKey: string;
+  llamaApiKey: string;
   theme: 'light' | 'dark';
   notificationsEnabled: boolean;
 }
@@ -15,12 +16,14 @@ interface SettingsContextType {
   updateSettings: (newSettings: Partial<UserSettings>) => void;
   resetSettings: () => void;
   isGeminiConfigured: () => boolean;
+  isLlamaConfigured: () => boolean;
 }
 
 const defaultSettings: UserSettings = {
   preferredChatProvider: 'gemini',
   ollamaModel: '',
   geminiApiKey: '',
+  llamaApiKey: '',
   theme: 'light',
   notificationsEnabled: true,
 };
@@ -54,18 +57,32 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
           parsedSettings.preferredChatProvider = 'ollama';
         }
         
-        // Load the securely stored Gemini API key if available
+        // Load the securely stored API keys if available
         const secureGeminiApiKey = secureRetrieve('gemini_api_key');
         if (secureGeminiApiKey) {
           parsedSettings.geminiApiKey = secureGeminiApiKey;
         }
+
+        const secureLlamaApiKey = secureRetrieve('llama_api_key');
+        if (secureLlamaApiKey) {
+          parsedSettings.llamaApiKey = secureLlamaApiKey;
+        }
         
         setSettings({ ...defaultSettings, ...parsedSettings });
       } else {
-        // Check if we have a securely stored API key even if no settings are saved
+        // Check if we have securely stored API keys even if no settings are saved
         const secureGeminiApiKey = secureRetrieve('gemini_api_key');
-        if (secureGeminiApiKey) {
-          setSettings(prev => ({ ...prev, geminiApiKey: secureGeminiApiKey }));
+        const secureLlamaApiKey = secureRetrieve('llama_api_key');
+        
+        if (secureGeminiApiKey || secureLlamaApiKey) {
+          const newSettings = { ...defaultSettings };
+          if (secureGeminiApiKey) {
+            newSettings.geminiApiKey = secureGeminiApiKey;
+          }
+          if (secureLlamaApiKey) {
+            newSettings.llamaApiKey = secureLlamaApiKey;
+          }
+          setSettings(newSettings);
         }
       }
     } catch (error) {
@@ -76,14 +93,20 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
   // Save settings to localStorage whenever they change
   useEffect(() => {
     try {
-      // Create a copy of settings without the API key for regular localStorage
+      // Create a copy of settings without the API keys for regular localStorage
       const settingsForStorage = { ...settings };
       
-      // Store the API key securely
+      // Store the API keys securely
       if (settings.geminiApiKey) {
         secureStore('gemini_api_key', settings.geminiApiKey);
         // Remove the API key from the regular settings storage
         settingsForStorage.geminiApiKey = '';
+      }
+      
+      if (settings.llamaApiKey) {
+        secureStore('llama_api_key', settings.llamaApiKey);
+        // Remove the API key from the regular settings storage
+        settingsForStorage.llamaApiKey = '';
       }
       
       localStorage.setItem('userSettings', JSON.stringify(settingsForStorage));
@@ -99,11 +122,16 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
   const resetSettings = () => {
     setSettings(defaultSettings);
     localStorage.removeItem('userSettings');
-    secureStore('gemini_api_key', ''); // Clear the securely stored API key
+    secureStore('gemini_api_key', ''); // Clear the securely stored Gemini API key
+    secureStore('llama_api_key', ''); // Clear the securely stored Llama API key
   };
 
   const isGeminiConfigured = () => {
     return settings.geminiApiKey.trim().length > 0;
+  };
+
+  const isLlamaConfigured = () => {
+    return settings.llamaApiKey.trim().length > 0;
   };
 
   const value: SettingsContextType = {
@@ -111,6 +139,7 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
     updateSettings,
     resetSettings,
     isGeminiConfigured,
+    isLlamaConfigured,
   };
 
   return (
