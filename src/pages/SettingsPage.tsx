@@ -20,14 +20,19 @@ import {
 } from '@heroicons/react/24/outline';
 
 export const SettingsPage: React.FC = () => {
-  const { settings, updateSettings, resetSettings, isGeminiConfigured } = useSettings();
+  const { settings, updateSettings, resetSettings, isGeminiConfigured, isLlamaConfigured } = useSettings();
   const chatService = useChatService();
   const ollama = useOllama();
   const [showApiKey, setShowApiKey] = useState(false);
+  const [showLlamaApiKey, setShowLlamaApiKey] = useState(false);
   const [tempApiKey, setTempApiKey] = useState(settings.geminiApiKey);
+  const [tempLlamaApiKey, setTempLlamaApiKey] = useState(settings.llamaApiKey);
   const [testingConnection, setTestingConnection] = useState(false);
+  const [testingLlamaConnection, setTestingLlamaConnection] = useState(false);
   const [connectionResult, setConnectionResult] = useState<{ success: boolean; message: string } | null>(null);
+  const [llamaConnectionResult, setLlamaConnectionResult] = useState<{ success: boolean; message: string } | null>(null);
   const [unsavedChanges, setUnsavedChanges] = useState(false);
+  const [unsavedLlamaChanges, setUnsavedLlamaChanges] = useState(false);
   const [refreshingModels, setRefreshingModels] = useState(false);
   const [modelPullStatus, setModelPullStatus] = useState<{ model: string; status: string } | null>(null);
 
@@ -44,9 +49,20 @@ export const SettingsPage: React.FC = () => {
     setConnectionResult(null);
   };
 
+  const handleLlamaApiKeyChange = (value: string) => {
+    setTempLlamaApiKey(value);
+    setUnsavedLlamaChanges(value !== settings.llamaApiKey);
+    setLlamaConnectionResult(null);
+  };
+
   const saveApiKey = () => {
     updateSettings({ geminiApiKey: tempApiKey });
     setUnsavedChanges(false);
+  };
+
+  const saveLlamaApiKey = () => {
+    updateSettings({ llamaApiKey: tempLlamaApiKey });
+    setUnsavedLlamaChanges(false);
   };
 
   const discardChanges = () => {
@@ -55,11 +71,24 @@ export const SettingsPage: React.FC = () => {
     setConnectionResult(null);
   };
 
+  const discardLlamaChanges = () => {
+    setTempLlamaApiKey(settings.llamaApiKey);
+    setUnsavedLlamaChanges(false);
+    setLlamaConnectionResult(null);
+  };
+
   const clearApiKey = () => {
     setTempApiKey('');
     updateSettings({ geminiApiKey: '', preferredChatProvider: 'ollama' });
     setUnsavedChanges(false);
     setConnectionResult(null);
+  };
+
+  const clearLlamaApiKey = () => {
+    setTempLlamaApiKey('');
+    updateSettings({ llamaApiKey: '', preferredChatProvider: 'ollama' });
+    setUnsavedLlamaChanges(false);
+    setLlamaConnectionResult(null);
   };
 
   const testConnection = async () => {
@@ -91,9 +120,42 @@ export const SettingsPage: React.FC = () => {
     }
   };
 
-  const handleProviderChange = (provider: 'ollama' | 'gemini') => {
+  const testLlamaConnection = async () => {
+    if (!tempLlamaApiKey.trim()) {
+      setLlamaConnectionResult({ success: false, message: 'Please enter an API key first' });
+      return;
+    }
+
+    setTestingLlamaConnection(true);
+    setLlamaConnectionResult(null);
+
+    try {
+      // Temporarily test with the current temp key
+      const tempService = new (await import('../services/llamaApiService')).LlamaApiService(tempLlamaApiKey);
+      const result = await tempService.testConnection();
+      setLlamaConnectionResult(result);
+      
+      if (result.success && unsavedLlamaChanges) {
+        // Auto-save if test is successful
+        saveLlamaApiKey();
+      }
+    } catch (error) {
+      setLlamaConnectionResult({
+        success: false,
+        message: error instanceof Error ? error.message : 'Connection test failed'
+      });
+    } finally {
+      setTestingLlamaConnection(false);
+    }
+  };
+
+  const handleProviderChange = (provider: 'ollama' | 'gemini' | 'llama') => {
     if (provider === 'gemini' && !isGeminiConfigured()) {
       // Don't allow switching to Gemini if not configured
+      return;
+    }
+    if (provider === 'llama' && !isLlamaConfigured()) {
+      // Don't allow switching to Llama if not configured
       return;
     }
     updateSettings({ preferredChatProvider: provider });
@@ -156,7 +218,7 @@ export const SettingsPage: React.FC = () => {
               Choose your preferred AI model provider for the marketplace assistant and idea generation.
             </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Ollama Option */}
               <div 
                 className={`border rounded-xl p-5 transition duration-200 ${
@@ -401,7 +463,7 @@ export const SettingsPage: React.FC = () => {
               <div 
                 className={`border rounded-xl p-5 transition duration-200 ${
                   settings.preferredChatProvider === 'gemini' 
-                    ? 'border-red-500 bg-red-50' 
+                    ? 'border-blue-500 bg-blue-50' 
                     : 'border-gray-200 hover:border-gray-300'
                 }`}
               >
@@ -413,13 +475,13 @@ export const SettingsPage: React.FC = () => {
                     value="gemini"
                     checked={settings.preferredChatProvider === 'gemini'}
                     onChange={() => handleProviderChange('gemini')}
+                    className="mt-1 text-blue-600 focus:ring-blue-500"
                     disabled={!isGeminiConfigured()}
-                    className={`mt-1 text-red-600 focus:ring-red-500 ${!isGeminiConfigured() ? 'opacity-50' : ''}`}
                   />
-                  <label htmlFor="provider-gemini" className={`ml-3 flex-1 ${!isGeminiConfigured() ? 'opacity-70' : 'cursor-pointer'}`}>
-                    <span className="block text-lg font-medium text-gray-900">Google Gemini API</span>
+                  <label htmlFor="provider-gemini" className="ml-3 cursor-pointer flex-1">
+                    <span className="block text-lg font-medium text-gray-900">Gemini</span>
                     <span className="block text-sm text-gray-500 mt-1">
-                      Use Google's advanced Gemini models via API. Requires API key.
+                      Cloud-based AI from Google. Free tier available.
                     </span>
                   </label>
                 </div>
@@ -431,11 +493,11 @@ export const SettingsPage: React.FC = () => {
                         <div className="relative">
                           <input
                             type={showApiKey ? 'text' : 'password'}
-                            id="apiKey"
+                            id="gemini-api-key"
                             value={tempApiKey}
                             onChange={(e) => handleApiKeyChange(e.target.value)}
                             placeholder="Enter your Gemini API key..."
-                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500 pr-10"
+                            className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 pr-10"
                           />
                           <button
                             type="button"
@@ -455,7 +517,7 @@ export const SettingsPage: React.FC = () => {
                               href="https://aistudio.google.com/app/apikey" 
                               target="_blank" 
                               rel="noopener noreferrer"
-                              className="text-red-600 hover:text-red-700"
+                              className="text-blue-600 hover:text-blue-700"
                             >
                               Get free API key
                             </a>
@@ -543,6 +605,146 @@ export const SettingsPage: React.FC = () => {
                     </div>
                   </div>
                 )}
+              </div>
+
+              {/* Llama API Option */}
+              <div 
+                className={`border rounded-xl p-5 transition duration-200 ${
+                  settings.preferredChatProvider === 'llama' 
+                    ? 'border-purple-500 bg-purple-50' 
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <div className="flex items-start mb-4">
+                  <input
+                    type="radio"
+                    id="provider-llama"
+                    name="chatProvider"
+                    value="llama"
+                    checked={settings.preferredChatProvider === 'llama'}
+                    onChange={() => handleProviderChange('llama')}
+                    className="mt-1 text-purple-600 focus:ring-purple-500"
+                    disabled={!isLlamaConfigured()}
+                  />
+                  <label htmlFor="provider-llama" className="ml-3 cursor-pointer flex-1">
+                    <span className="block text-lg font-medium text-gray-900">Llama API</span>
+                    <span className="block text-sm text-gray-500 mt-1">
+                      Cloud-based Meta Llama models. Requires API key.
+                    </span>
+                  </label>
+                </div>
+                
+                <div className="mt-3 ml-7">
+                  <div className="mb-3">
+                    <label htmlFor="llama-api-key" className="block text-sm font-medium text-gray-700">
+                      API Key
+                    </label>
+                    <div className="mt-1 flex relative rounded-md shadow-sm">
+                      <input
+                        type={showLlamaApiKey ? "text" : "password"}
+                        name="llama-api-key"
+                        id="llama-api-key"
+                        value={tempLlamaApiKey}
+                        onChange={(e) => handleLlamaApiKeyChange(e.target.value)}
+                        className="focus:ring-purple-500 focus:border-purple-500 block w-full sm:text-sm border-gray-300 rounded-md py-2 px-3"
+                        placeholder="Enter your Llama API key"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowLlamaApiKey(!showLlamaApiKey)}
+                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400"
+                      >
+                        {showLlamaApiKey ? <EyeSlashIcon className="h-5 w-5" /> : <EyeIcon className="h-5 w-5" />}
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-wrap space-x-2">
+                    <button
+                      type="button"
+                      onClick={saveLlamaApiKey}
+                      disabled={!unsavedLlamaChanges}
+                      className={`px-3 py-1.5 text-xs font-medium rounded-md ${
+                        unsavedLlamaChanges
+                          ? 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                          : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      }`}
+                    >
+                      Save
+                    </button>
+                    {unsavedLlamaChanges && (
+                      <button
+                        type="button"
+                        onClick={discardLlamaChanges}
+                        className="px-3 py-1.5 text-xs font-medium rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      >
+                        Discard
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      onClick={clearLlamaApiKey}
+                      disabled={!tempLlamaApiKey}
+                      className={`px-3 py-1.5 text-xs font-medium rounded-md flex items-center ${
+                        tempLlamaApiKey
+                          ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                          : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      }`}
+                    >
+                      <TrashIcon className="h-3 w-3 mr-1" />
+                      Clear
+                    </button>
+                    <button
+                      type="button"
+                      onClick={testLlamaConnection}
+                      disabled={testingLlamaConnection || !tempLlamaApiKey}
+                      className={`px-3 py-1.5 text-xs font-medium rounded-md flex items-center ${
+                        !testingLlamaConnection && tempLlamaApiKey
+                          ? 'bg-green-100 text-green-700 hover:bg-green-200'
+                          : 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      }`}
+                    >
+                      {testingLlamaConnection ? (
+                        <>
+                          <ArrowPathIcon className="h-3 w-3 mr-1 animate-spin" />
+                          Testing...
+                        </>
+                      ) : (
+                        <>
+                          <CheckIcon className="h-3 w-3 mr-1" />
+                          Test Connection
+                        </>
+                      )}
+                    </button>
+                  </div>
+                  
+                  {llamaConnectionResult && (
+                    <div className={`mt-3 p-2 text-sm rounded ${
+                      llamaConnectionResult.success ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'
+                    }`}>
+                      <div className="flex items-center">
+                        {llamaConnectionResult.success ? (
+                          <CheckCircleIcon className="h-4 w-4 mr-1.5 text-green-500" />
+                        ) : (
+                          <XCircleIcon className="h-4 w-4 mr-1.5 text-red-500" />
+                        )}
+                        <span>{llamaConnectionResult.message}</span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <div className="mt-3 text-xs text-gray-500">
+                    <a 
+                      href="https://www.llama-api.com" 
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-purple-600 hover:text-purple-800 flex items-center"
+                    >
+                      Get a Llama API key
+                      <ArrowTopRightOnSquareIcon className="h-3 w-3 ml-1" />
+                    </a>
+                  </div>
+                </div>
               </div>
             </div>
 
