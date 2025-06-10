@@ -6,6 +6,8 @@ import {
 } from '@heroicons/react/24/outline';
 import { GlobalChatbot } from './GlobalChatbot';
 import { useOllama } from '../hooks/useOllama';
+import { useGemini } from '../hooks/useGemini';
+import { useChatService } from '../hooks/useChatService';
 import { useProjects } from '../contexts/ProjectsContext';
 
 interface FloatingChatButtonProps {
@@ -15,17 +17,19 @@ interface FloatingChatButtonProps {
 export const FloatingChatButton: React.FC<FloatingChatButtonProps> = ({ projectData }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [showPulse, setShowPulse] = useState(false);
-  const { status, isLoading } = useOllama();
+  const { status: ollamaStatus, isLoading: ollamaLoading } = useOllama();
+  const { status: geminiStatus } = useGemini();
+  const { isConnected, providerName } = useChatService();
   const { projects, productTypes } = useProjects();
 
-  // Show pulse animation when Ollama status changes
+  // Show pulse animation when connection status changes
   useEffect(() => {
-    if (!isLoading) {
+    if (!ollamaLoading) {
       setShowPulse(true);
       const timer = setTimeout(() => setShowPulse(false), 3000);
       return () => clearTimeout(timer);
     }
-  }, [status.isConnected, isLoading]);
+  }, [isConnected, ollamaLoading]);
 
   const handleToggleChat = () => {
     setIsOpen(!isOpen);
@@ -37,33 +41,34 @@ export const FloatingChatButton: React.FC<FloatingChatButtonProps> = ({ projectD
   };
 
   // Don't show the button if we're still loading initial state
-  if (isLoading && status.isConnected === false && status.error === null) {
+  if (ollamaLoading && !isConnected) {
     return null;
   }
 
   const getButtonStyle = () => {
     // ASU Maroon and Gold branding
-    if (status.isConnected) {
+    if (isConnected) {
       return 'bg-gradient-to-r from-red-800 to-yellow-500 hover:from-red-900 hover:to-yellow-600';
-    } else if (status.error) {
+    } else if (ollamaStatus.error) {
       return 'bg-gradient-to-r from-red-700 to-orange-500 hover:from-red-800 hover:to-orange-600';
     }
     return 'bg-gradient-to-r from-gray-600 to-red-800 hover:from-gray-700 hover:to-red-900';
   };
 
   const getIcon = () => {
-    if (status.isConnected) {
-      return <SparklesIcon className="w-6 h-6" />;
-    } else if (status.error) {
+    if (isConnected) {
+      // Use ChatBubbleLeftRightIcon when connected to any API including Gemini
+      return <ChatBubbleLeftRightIcon className="w-6 h-6" />;
+    } else if (ollamaStatus.error) {
       return <ExclamationTriangleIcon className="w-6 h-6" />;
     }
     return <ChatBubbleLeftRightIcon className="w-6 h-6" />;
   };
 
   const getTooltipText = () => {
-    if (status.isConnected) {
-      return `Local AI Assistant (${status.currentModel})`;
-    } else if (status.error) {
+    if (isConnected) {
+      return `AI Assistant (${providerName})`;
+    } else if (ollamaStatus.error) {
       return 'AI Assistant (Setup required)';
     }
     return 'AI Assistant';
@@ -91,9 +96,9 @@ export const FloatingChatButton: React.FC<FloatingChatButtonProps> = ({ projectD
           >
             {/* Status Indicator */}
             <div className="absolute -top-1 -right-1">
-                          {status.isConnected ? (
+            {isConnected ? (
               <div className="w-4 h-4 bg-green-500 rounded-full border-2 border-white"></div>
-            ) : status.error ? (
+            ) : ollamaStatus.error ? (
               <div className="w-4 h-4 bg-amber-500 rounded-full border-2 border-white"></div>
             ) : (
               <div className="w-4 h-4 bg-gray-400 rounded-full border-2 border-white"></div>

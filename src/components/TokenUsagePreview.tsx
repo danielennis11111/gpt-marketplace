@@ -75,9 +75,31 @@ const TokenUsagePreview: React.FC<TokenUsagePreviewProps> = ({
   
   // Calculate token usage
   const getModelContextWindow = useCallback((): number => {
-    // This is a simplified implementation - in production would use detailed model info
-    return 8192; // Default context window size
-  }, [currentModelId, template]);
+    // Define context window sizes based on model
+    const MODEL_LIMITS: Record<string, number> = {
+      'gpt-4o': 128000,
+      'gpt-4o-mini': 128000,
+      'gpt-4': 8192,
+      'gpt-3.5-turbo': 16385,
+      'gemini-1.5-pro': 1000000,
+      'gemini-1.5-flash': 1000000,
+      'gemini-2.0-pro': 1000000,
+      'gemini-2.0-flash': 1000000,
+      'claude-3-opus': 200000,
+      'claude-3-sonnet': 200000,
+      'claude-3-haiku': 200000,
+      'llama3.1:70b': 8192,
+      'llama3.1:8b': 8192,
+      'mistral:7b': 8192,
+      'mixtral:7b': 32768
+    };
+    
+    // Use current model ID if available, otherwise from template
+    const modelId = currentModelId || template?.modelId;
+    
+    // Return model context window or default
+    return MODEL_LIMITS[modelId] || 8192;
+  }, [currentModelId, template?.modelId]);
 
   // Calculate token counts with null checks
   const systemTokens = template?.systemPrompt ? estimateTokenCount(template.systemPrompt) : 0;

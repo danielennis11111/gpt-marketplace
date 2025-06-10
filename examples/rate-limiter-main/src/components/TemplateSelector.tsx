@@ -31,7 +31,7 @@ const TemplateSelector: React.FC<TemplateSelectorProps> = ({
           <div className="flex items-center justify-between">
             <div>
                               <h2 className="text-2xl font-bold">Choose Your AI Adventure</h2>
-              <p className="text-yellow-100 mt-1">Welcome to Beta Land @ ASU - Select your AI companion for exploration</p>
+              <p className="text-yellow-100 mt-1">Welcome to META aiLand @ ASU - Select your AI companion for exploration</p>
             </div>
             <button
               onClick={onClose}

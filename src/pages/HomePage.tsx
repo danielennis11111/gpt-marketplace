@@ -184,12 +184,8 @@ const HomePage: React.FC = () => {
               <h1 className="text-4xl font-bold text-white mb-4">Marketplace</h1>
               <p className="text-xl text-gray-200 max-w-2xl">
                 Discover AI-powered tools, educational resources, and productivity solutions
-              </p>
-              <div className="mt-6 text-center">
-                <p className="text-lg text-gray-200">
-                  Need help? Click the AI assistant button in the bottom-right corner! 🤖
-                </p>
-              </div>
+ Customize your AI assistant with your own data and workflows.              </p>
+              
             </div>
           </div>
         </div>

@@ -113,7 +113,7 @@ export const getPageContext = (pathname: string, projectData?: any): PageContext
 
     case '/rate-limiter':
       return {
-        pageName: 'Beta aiLand @ ASU',
+        pageName: 'META aiLand @ ASU',
         description: 'ASU Local Wrapper for enterprise AI deployment',
         helpTopics: [
           'Using the ASU Local Wrapper interface',
