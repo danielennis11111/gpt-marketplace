@@ -16,12 +16,13 @@ export const useLlamaApi = () => {
     isConnected: false,
     error: null,
     models: [],
-    currentModel: 'llama-3.1-8b-instruct',
+    currentModel: 'meta/Llama-4-Scout-17B-16E-Instruct-FP8', // Set default to Llama 4 Scout
   });
 
   // Initialize Llama API service when API key changes
   useEffect(() => {
     if (settings.llamaApiKey) {
+      console.log('Initializing Llama API service with API key');
       const service = new LlamaApiService(settings.llamaApiKey);
       setLlamaService(service);
       
@@ -30,39 +31,54 @@ export const useLlamaApi = () => {
         try {
           const result = await service.testConnection();
           if (result.success) {
+            console.log('Llama API connection test successful');
             const models = await service.listModels();
+            console.log('Llama API models:', models);
+            
+            // Get model IDs for the dropdown
+            const modelIds = models.map(model => model.id);
+            
+            // Ensure we prioritize the Llama 4 models
+            const defaultModel = modelIds.find(id => id.includes('Llama-4-Scout')) || 
+                               modelIds.find(id => id.includes('Llama-4-Maverick')) || 
+                               modelIds[0] || 
+                               'meta/Llama-4-Scout-17B-16E-Instruct-FP8';
+            
             setStatus({
               isConnected: true,
               error: null,
-              models,
-              currentModel: models[0] || 'llama-3.1-8b-instruct',
+              models: modelIds,
+              currentModel: defaultModel,
             });
           } else {
+            console.error('Llama API connection test failed:', result.message);
             setStatus({
               isConnected: false,
               error: result.message,
               models: [],
-              currentModel: 'llama-3.1-8b-instruct',
+              currentModel: 'meta/Llama-4-Scout-17B-16E-Instruct-FP8',
             });
           }
         } catch (error) {
+          console.error('Error testing Llama API connection:', error);
           setStatus({
             isConnected: false,
             error: error instanceof Error ? error.message : 'Unknown error occurred',
             models: [],
-            currentModel: 'llama-3.1-8b-instruct',
+            currentModel: 'meta/Llama-4-Scout-17B-16E-Instruct-FP8',
           });
         }
       };
       
       testConnection();
     } else {
+      console.log('No Llama API key configured');
       setLlamaService(null);
       setStatus({
         isConnected: false,
         error: 'Llama API key not configured',
         models: [],
-        currentModel: 'llama-3.1-8b-instruct',
+        currentModel: 'meta/Llama-4-Scout-17B-16E-Instruct-FP8',
       });
     }
   }, [settings.llamaApiKey]);
@@ -89,7 +105,10 @@ export const useLlamaApi = () => {
   
   // Set current model
   const setCurrentModel = useCallback((modelName: string) => {
-    if (status.models.includes(modelName)) {
+    if (status.models.includes(modelName) || 
+        modelName === 'meta/Llama-4-Scout-17B-16E-Instruct-FP8' || 
+        modelName === 'meta/Llama-4-Maverick-17B-128E-Instruct-FP8') {
+      console.log(`Setting current Llama model to: ${modelName}`);
       setStatus(prev => ({
         ...prev,
         currentModel: modelName

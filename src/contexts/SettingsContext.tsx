@@ -101,15 +101,29 @@ export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) 
         secureStore('gemini_api_key', settings.geminiApiKey);
         // Remove the API key from the regular settings storage
         settingsForStorage.geminiApiKey = '';
+        
+        // Debug logging
+        console.log('Gemini API key configured and stored securely');
       }
       
       if (settings.llamaApiKey) {
         secureStore('llama_api_key', settings.llamaApiKey);
         // Remove the API key from the regular settings storage
         settingsForStorage.llamaApiKey = '';
+        
+        // Debug logging
+        console.log('Llama API key configured and stored securely');
       }
       
       localStorage.setItem('userSettings', JSON.stringify(settingsForStorage));
+      
+      // Debug logging - what providers are enabled?
+      console.log('Settings updated:', {
+        preferredChatProvider: settings.preferredChatProvider,
+        geminiConfigured: !!settings.geminiApiKey,
+        llamaConfigured: !!settings.llamaApiKey,
+        ollamaModel: settings.ollamaModel || 'not set'
+      });
     } catch (error) {
       console.error('Error saving settings:', error);
     }

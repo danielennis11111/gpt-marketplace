@@ -161,6 +161,7 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
   const getAIResponse = async (userMessage: string): Promise<string> => {
     const preferredProvider = settings.preferredChatProvider;
     const hasGeminiApiKey = !!settings.geminiApiKey && settings.geminiApiKey.trim() !== '';
+    const hasLlamaApiKey = !!settings.llamaApiKey && settings.llamaApiKey.trim() !== '';
     
     // Build message history for context
     const messageHistory = conversation.messages
@@ -179,29 +180,70 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
       content: userMessage
     });
     
-    // Use Gemini if it's the preferred provider and has an API key
+    // Try providers in order of preference with fallbacks
+    
+    // First try preferred provider
     if (preferredProvider === 'gemini' && hasGeminiApiKey) {
       try {
         const response = await geminiService.generateChatCompletion(messageHistory);
         return response.text;
       } catch (error) {
         console.error("Error using Gemini:", error);
-        throw new Error(`Gemini error: ${(error as Error).message}`);
+        // Fall through to fallback providers
       }
-    } 
-    // Otherwise use Ollama if connected
-    else if (ollama.status.isConnected) {
+    } else if (preferredProvider === 'llama' && hasLlamaApiKey) {
+      try {
+        // Implement llama API call here
+        throw new Error("Llama API support not fully implemented");
+      } catch (error) {
+        console.error("Error using Llama API:", error);
+        // Fall through to fallback providers
+      }
+    } else if (preferredProvider === 'ollama' && ollama.status.isConnected) {
       try {
         return await ollama.sendMessage(userMessage);
       } catch (error) {
         console.error("Error using Ollama:", error);
-        throw new Error(`Ollama error: ${(error as Error).message}`);
+        // Fall through to fallback providers
       }
-    } 
-    // No available provider
-    else {
-      throw new Error("No available AI provider. Please configure Ollama or Gemini in Settings.");
     }
+    
+    // Try fallbacks if preferred provider failed
+    
+    // Try Gemini as fallback
+    if (preferredProvider !== 'gemini' && hasGeminiApiKey) {
+      try {
+        console.log("Trying Gemini as fallback...");
+        const response = await geminiService.generateChatCompletion(messageHistory);
+        return response.text;
+      } catch (error) {
+        console.error("Error using Gemini as fallback:", error);
+      }
+    }
+    
+    // Try Ollama as fallback
+    if (preferredProvider !== 'ollama' && ollama.status.isConnected) {
+      try {
+        console.log("Trying Ollama as fallback...");
+        return await ollama.sendMessage(userMessage);
+      } catch (error) {
+        console.error("Error using Ollama as fallback:", error);
+      }
+    }
+    
+    // Try Llama as fallback
+    if (preferredProvider !== 'llama' && hasLlamaApiKey) {
+      try {
+        console.log("Trying Llama as fallback...");
+        // Implement llama API call here
+        throw new Error("Llama API support not fully implemented");
+      } catch (error) {
+        console.error("Error using Llama as fallback:", error);
+      }
+    }
+    
+    // All providers failed or none available
+    throw new Error("No available AI provider. Please configure Ollama, Gemini, or Llama in Settings.");
   };
   
   // Stream AI response
@@ -211,6 +253,7 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
   ): Promise<string> => {
     const preferredProvider = settings.preferredChatProvider;
     const hasGeminiApiKey = !!settings.geminiApiKey && settings.geminiApiKey.trim() !== '';
+    const hasLlamaApiKey = !!settings.llamaApiKey && settings.llamaApiKey.trim() !== '';
     
     // Get current model for token tracking
     const currentModel = settings.preferredChatProvider === 'gemini' ? 'gemini-2.0-flash' : 
@@ -236,7 +279,9 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
       content: userMessage
     });
     
-    // Stream using Gemini if it's the preferred provider
+    // Try streaming with preferred provider first
+    
+    // Try Gemini streaming
     if (preferredProvider === 'gemini' && hasGeminiApiKey && geminiService.isStreamingSupported()) {
       try {
         console.log('Starting Gemini streaming response');
@@ -249,7 +294,7 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
           {}
         );
         
-                  // Process the stream with for-await
+        // Process the stream with for-await
         for await (const chunk of stream) {
           // Add the chunk to our response
           fullResponse += chunk;
@@ -302,11 +347,13 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
         return fullResponse;
       } catch (error) {
         console.error("Error streaming from Gemini:", error);
-        throw new Error(`Gemini streaming error: ${(error as Error).message}`);
+        // Fall through to other providers
       }
     }
-    // Stream using Ollama if connected
-    else if (ollama.status.isConnected && ollama.isStreamingSupported()) {
+    
+    // Try Ollama streaming
+    if ((preferredProvider === 'ollama' || preferredProvider !== 'gemini') && 
+        ollama.status.isConnected && ollama.isStreamingSupported()) {
       try {
         console.log('Starting Ollama streaming response');
         let fullResponse = '';
@@ -314,7 +361,7 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
         // Create the stream but handle it directly in the for-await loop
         const stream = ollama.sendMessageStream(userMessage);
         
-                  // Process the stream with for-await
+        // Process the stream with for-await
         for await (const chunk of stream) {
           // Add the chunk to our response
           fullResponse += chunk;
@@ -343,36 +390,48 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
           await new Promise(resolve => setTimeout(resolve, 10));
         }
         
-        console.log('Ollama streaming complete, full response length:', fullResponse.length);
-        
-        // Verify we have a valid response to avoid blank messages
-        if (!fullResponse || !fullResponse.trim()) {
-          throw new Error("Empty response received from Ollama");
-        }
-        
-        // Make one final update to ensure the role is correct and model is tracked
-        conversationManager.updateMessage(
-          conversation.id,
-          messageId,
-          { 
-            content: fullResponse,
-            role: 'assistant',
-            metadata: {
-              citations: [],
-              modelUsed: currentModel
-            }
-          }
-        );
-        
         return fullResponse;
       } catch (error) {
         console.error("Error streaming from Ollama:", error);
-        throw new Error(`Ollama streaming error: ${(error as Error).message}`);
       }
-    } 
-    // Fall back to non-streaming approach
-    else {
-      return getAIResponse(userMessage);
+    }
+    
+    // If streaming failed or isn't supported, fall back to non-streaming approach
+    try {
+      console.log("Streaming not available, falling back to non-streaming approach");
+      const response = await getAIResponse(userMessage);
+      
+      // Update with final response
+      conversationManager.updateMessage(
+        conversation.id,
+        messageId,
+        { 
+          content: response,
+          role: 'assistant',
+          metadata: {
+            citations: [],
+            modelUsed: currentModel
+          }
+        }
+      );
+      
+      return response;
+    } catch (error) {
+      console.error("All response methods failed:", error);
+      const errorMessage = `Error: ${(error as Error).message}. Please check your settings and try again.`;
+      
+      // Update with error message
+      conversationManager.updateMessage(
+        conversation.id,
+        messageId,
+        { 
+          content: errorMessage,
+          role: 'assistant',
+          isError: true
+        }
+      );
+      
+      return errorMessage;
     }
   };
   

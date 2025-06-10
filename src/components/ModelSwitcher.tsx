@@ -1,20 +1,24 @@
 import React, { useState } from 'react';
-import { ChevronDown, Cpu, Check, DollarSign, Gauge } from 'lucide-react';
+import { ChevronDown, Cpu, Check, DollarSign, Gauge, BookOpen, Zap, Brain, Globe, Lock, Bug } from 'lucide-react';
 import { MODEL_LIMITS } from '../utils/rate-limiter/tokenCounter';
 
 interface ModelSwitcherProps {
   currentModel?: string;
   onModelChange: (modelId: string) => void;
   compact?: boolean;
-  provider?: 'openai' | 'gemini' | 'ollama' | 'anthropic';
+  provider?: 'openai' | 'gemini' | 'ollama' | 'anthropic' | 'llama';
+  availableModels?: any[]; // Add available models prop
 }
 
-interface ModelDescription {
-  purpose: string;
-  rateLimiting: string;
-  cost: string;
-  strengths: string[];
-  idealFor: string;
+interface ModelInfo {
+  id: string;
+  name: string;
+  description?: string;
+  contextWindow: number;
+  costEstimate: 'free' | 'low' | 'medium' | 'high';
+  tags: string[];
+  status?: string;
+  provider?: string;
 }
 
 /**
@@ -27,160 +31,222 @@ const ModelSwitcher: React.FC<ModelSwitcherProps> = ({
   currentModel = 'gpt-4o-mini',
   onModelChange,
   compact = false,
-  provider = 'openai'
+  provider,
+  availableModels = [] // Default to empty array
 }) => {
   const [isOpen, setIsOpen] = useState(false);
 
-  // Group models by provider
-  const allModelGroups = {
-    'OpenAI': [
-      { id: 'gpt-4o', name: 'GPT-4o', status: 'online' },
-      { id: 'gpt-4o-mini', name: 'GPT-4o Mini', status: 'online' },
-      { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo', status: 'online' },
-    ],
-    'Google': [
-      { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash', status: 'online' },
-      { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro', status: 'online' },
-    ],
-    'Anthropic': [
-      { id: 'claude-3.7-sonnet', name: 'Claude 3.7 Sonnet', status: 'online' },
-      { id: 'claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', status: 'online' },
-      { id: 'claude-3.5-haiku', name: 'Claude 3.5 Haiku', status: 'online' },
-    ],
-    'Local Models': [
-      { id: 'llama4-scout', name: 'Llama 4 Scout', status: 'limited' },
-      { id: 'llama3.2:3b', name: 'Llama 3.2 3B', status: 'online' },
-      { id: 'llama3.1:8b', name: 'Llama 3.1 8B', status: 'online' },
-      { id: 'mistral-7b', name: 'Mistral 7B', status: 'online' },
-      { id: 'phi-3', name: 'Phi-3', status: 'limited' },
-    ]
+  // Define model information with context window sizes and cost estimates
+  const modelInfoMap: Record<string, ModelInfo> = {
+    // Gemini models
+    'gemini-flash': {
+      id: 'gemini-flash',
+      name: 'Gemini 2.0 Flash',
+      description: 'Google\'s fastest model - excellent for most tasks',
+      contextWindow: 1000000,
+      costEstimate: 'low',
+      tags: ['fast', 'multimodal', 'vision']
+    },
+    'gemini-pro': {
+      id: 'gemini-pro',
+      name: 'Gemini 2.0 Pro',
+      description: 'Google\'s balanced model - high quality with good speed',
+      contextWindow: 1000000,
+      costEstimate: 'medium',
+      tags: ['balanced', 'reasoning', 'multimodal']
+    },
+    'gemini-ultra': {
+      id: 'gemini-ultra',
+      name: 'Gemini 2.0 Ultra',
+      description: 'Google\'s most advanced model - high-end reasoning',
+      contextWindow: 1000000, 
+      costEstimate: 'high',
+      tags: ['premium', 'reasoning', 'multimodal']
+    },
+    
+    // Llama models - Meta's real model IDs
+    'meta/llama-3-70b-instruct': {
+      id: 'meta/llama-3-70b-instruct',
+      name: 'Llama 3 70B',
+      description: 'Meta\'s most powerful model - excellent reasoning',
+      contextWindow: 128000,
+      costEstimate: 'medium',
+      tags: ['reasoning', 'instruction-tuned']
+    },
+    'meta/llama-3-8b-instruct': {
+      id: 'meta/llama-3-8b-instruct',
+      name: 'Llama 3 8B',
+      description: 'Fast and efficient model from Meta',
+      contextWindow: 128000,
+      costEstimate: 'low',
+      tags: ['fast', 'efficient']
+    },
+    'meta/llama-3.1-70b-instruct': {
+      id: 'meta/llama-3.1-70b-instruct',
+      name: 'Llama 3.1 70B',
+      description: 'Meta\'s latest powerful model with excellent reasoning',
+      contextWindow: 128000,
+      costEstimate: 'medium',
+      tags: ['reasoning', 'instruction-tuned']
+    },
+    'meta/llama-3.1-8b-instruct': {
+      id: 'meta/llama-3.1-8b-instruct',
+      name: 'Llama 3.1 8B',
+      description: 'Latest fast and efficient model from Meta',
+      contextWindow: 128000,
+      costEstimate: 'low',
+      tags: ['fast', 'efficient']
+    },
+    
+    // Ollama local models
+    'ollama-local': {
+      id: 'ollama-local',
+      name: 'Ollama (Local)',
+      description: 'Runs models locally on your machine',
+      contextWindow: 8192,
+      costEstimate: 'free',
+      tags: ['privacy', 'offline', 'local']
+    }
   };
+
+  // Map available models to include full details
+  const enhanceModels = (models: any[]) => {
+    return models.map(model => {
+      // Check if model has llama prefix but doesn't match exactly with our pre-defined models
+      const isLlamaModel = model.id.includes('llama') || model.provider === 'llama';
+      
+      // If it's a Llama model not in our predefined list, create a custom model info
+      if (isLlamaModel && !modelInfoMap[model.id]) {
+        return {
+          id: model.id,
+          name: model.name || `Llama ${model.id.split('/').pop()}`,
+          description: model.description || 'Meta Llama model',
+          contextWindow: model.maxContextLength || 128000,
+          costEstimate: 'medium',
+          tags: model.capabilities || ['instruction-tuned'],
+          provider: 'llama',
+          status: model.isConnected ? 'online' : 'offline',
+          version: model.version || '3'
+        };
+      }
+      
+      // For other models, use the predefined info or fallback
+      const baseInfo = modelInfoMap[model.id] || {
+        id: model.id,
+        name: model.name || model.id,
+        description: model.description || `Model ${model.id}`,
+        contextWindow: model.maxContextLength || 8192,
+        costEstimate: model.provider === 'ollama' ? 'free' : 'medium',
+        tags: model.capabilities || []
+      };
+      
+      return {
+        ...baseInfo,
+        ...model,
+        provider: model.provider || 'unknown',
+        status: model.isConnected ? 'online' : 'offline'
+      };
+    });
+  };
+
+  // Use the availableModels if provided, otherwise fall back to the hardcoded groups
+  const getModelGroups = () => {
+    if (availableModels && availableModels.length > 0) {
+      // Group the available models by provider
+      const groups: Record<string, any[]> = {};
+      const enhancedModels = enhanceModels(availableModels);
+      
+      enhancedModels.forEach(model => {
+        const providerName = model.provider ? (
+          model.provider === 'gemini' ? 'Google Gemini' :
+          model.provider === 'ollama' ? 'Local Models' :
+          model.provider === 'anthropic' ? 'Anthropic' :
+          model.provider === 'llama' ? 'Meta Llama' : 'OpenAI'
+        ) : 'Other Models';
+        
+        if (!groups[providerName]) {
+          groups[providerName] = [];
+        }
+        
+        groups[providerName].push(model);
+      });
+      
+      return groups;
+    }
+    
+    // Fallback to hardcoded groups
+    return {
+      'Google Gemini': [
+        modelInfoMap['gemini-flash'],
+        modelInfoMap['gemini-pro'],
+        modelInfoMap['gemini-ultra']
+      ],
+      'Meta Llama': [
+        modelInfoMap['meta/llama-3-70b-instruct'],
+        modelInfoMap['meta/llama-3-8b-instruct'],
+        modelInfoMap['meta/llama-3.1-70b-instruct'],
+        modelInfoMap['meta/llama-3.1-8b-instruct']
+      ],
+      'Local Models': [
+        modelInfoMap['ollama-local']
+      ]
+    };
+  };
+
+  // Get all model groups
+  const allModelGroups = getModelGroups();
 
   // Filter model groups based on the current provider
   const getFilteredModelGroups = () => {
-    const groups: Record<string, typeof allModelGroups['OpenAI']> = {};
-    
-    if (provider === 'openai') {
-      groups['OpenAI'] = allModelGroups['OpenAI'];
-    } else if (provider === 'gemini') {
-      groups['Google'] = allModelGroups['Google'];
-    } else if (provider === 'anthropic') {
-      groups['Anthropic'] = allModelGroups['Anthropic'];
-    } else if (provider === 'ollama') {
-      groups['Local Models'] = allModelGroups['Local Models'];
-    } else {
-      // If no provider specified or unknown, show all
-      return allModelGroups;
-    }
-    
-    return groups;
+    // Always return all models, ignoring the provider filter
+    return allModelGroups;
   };
   
-  const modelGroups = getFilteredModelGroups();
+  // Use all model groups regardless of provider
+  const modelGroups = allModelGroups;
 
-  // Enhanced model descriptions with practical information
-  const getModelDescription = (modelId: string): ModelDescription => {
-    const descriptions: Record<string, ModelDescription> = {
-      'gpt-4o': {
-        purpose: 'Advanced reasoning and multimodal analysis',
-        rateLimiting: 'Moderate limits, stable for production use',
-        cost: 'Premium pricing, higher cost per token',
-        strengths: ['Complex reasoning', 'Code generation', 'Multimodal'],
-        idealFor: 'Complex projects requiring high-quality outputs'
-      },
-      'gpt-4o-mini': {
-        purpose: 'Fast and cost-effective general tasks',
-        rateLimiting: 'Higher rate limits, excellent availability',
-        cost: 'Very cost-effective, budget-friendly',
-        strengths: ['Speed', 'Cost efficiency', 'High availability'],
-        idealFor: 'Rapid prototyping and everyday tasks'
-      },
-      'gpt-3.5-turbo': {
-        purpose: 'Reliable conversation and basic tasks',
-        rateLimiting: 'Stable limits, good for continuous use',
-        cost: 'Budget option, lowest cost per token',
-        strengths: ['Proven reliability', 'Fast responses', 'Low cost'],
-        idealFor: 'Basic automation and simple conversations'
-      },
-      'gemini-2.0-flash': {
-        purpose: 'Ultra-fast responses with massive context',
-        rateLimiting: 'Generous limits, optimized for high throughput',
-        cost: 'Competitive pricing, good value',
-        strengths: ['1M token context', 'Lightning speed', 'Multimodal'],
-        idealFor: 'Large document processing and real-time apps'
-      },
-      'gemini-1.5-pro': {
-        purpose: 'Research-grade analysis with huge context',
-        rateLimiting: 'Research-friendly limits, stable access',
-        cost: 'Research-tier pricing, moderate cost',
-        strengths: ['2M token context', 'Deep analysis', 'Scientific accuracy'],
-        idealFor: 'Academic research and complex analysis'
-      },
-      'claude-3.7-sonnet': {
-        purpose: 'Balanced performance and thoughtfulness',
-        rateLimiting: 'Research-grade limits with good availability',
-        cost: 'Premium pricing, moderate cost per token',
-        strengths: ['Nuanced responses', '200K context', 'Ethical design'],
-        idealFor: 'Complex reasoning and thoughtful analysis'
-      },
-      'claude-3.5-sonnet': {
-        purpose: 'High quality responses with nuance',
-        rateLimiting: 'Research-friendly limits, stable access',
-        cost: 'Premium pricing, moderate cost',
-        strengths: ['200K context', 'Factual accuracy', 'Thoughtful reasoning'],
-        idealFor: 'Research and detailed knowledge work'
-      },
-      'claude-3.5-haiku': {
-        purpose: 'Fast and efficient text generation',
-        rateLimiting: 'Higher throughput, excellent for scaling',
-        cost: 'Cost-effective, budget-friendly',
-        strengths: ['Speed', 'Efficiency', 'Reliability'],
-        idealFor: 'Rapid prototyping and high-volume tasks'
-      },
-      'llama4-scout': {
-        purpose: 'Advanced local reasoning with massive context',
-        rateLimiting: 'No rate limits - runs locally',
-        cost: 'Free - local processing, no API costs',
-        strengths: ['128K token context', 'Privacy', 'Unlimited use'],
-        idealFor: 'Privacy-sensitive work and unlimited experimentation'
-      },
-      'llama3.2:3b': {
-        purpose: 'Lightweight local model for basic tasks',
-        rateLimiting: 'No rate limits - runs locally',
-        cost: 'Free - local processing, no API costs',
-        strengths: ['Fast local inference', 'Privacy', 'Low resource usage'],
-        idealFor: 'Quick local tasks and testing'
-      },
-      'llama3.1:8b': {
-        purpose: 'Balanced local model with good capabilities',
-        rateLimiting: 'No rate limits - runs locally',
-        cost: 'Free - local processing, no API costs',
-        strengths: ['Good reasoning', 'Privacy', 'Balanced performance'],
-        idealFor: 'Local development and privacy-focused work'
-      },
-      'mistral-7b': {
-        purpose: 'Open-source model with strong reasoning',
-        rateLimiting: 'No rate limits - runs locally',
-        cost: 'Free - local processing, no API costs',
-        strengths: ['Reasoning', 'Privacy', 'Community support'],
-        idealFor: 'Local development and specialized fine-tuning'
-      },
-      'phi-3': {
-        purpose: 'Microsoft\'s compact but powerful model',
-        rateLimiting: 'No rate limits - runs locally',
-        cost: 'Free - local processing, no API costs',
-        strengths: ['Small size', 'Strong performance', 'Efficiency'],
-        idealFor: 'Resource-constrained environments'
-      }
-    };
+  // Helper function to format context window size nicely
+  const formatContextWindow = (size: number): string => {
+    if (size >= 1000000) {
+      return `${size / 1000000}M tokens`;
+    } else if (size >= 1000) {
+      return `${size / 1000}K tokens`;
+    }
+    return `${size} tokens`;
+  };
+
+  // Helper function to render cost indicator
+  const renderCostIndicator = (cost: string) => {
+    switch (cost) {
+      case 'free':
+        return <span className="text-green-500 flex items-center"><DollarSign className="h-3 w-3 mr-1" />Free</span>;
+      case 'low':
+        return <span className="text-blue-500 flex items-center"><DollarSign className="h-3 w-3 mr-1" />Low cost</span>;
+      case 'medium':
+        return <span className="text-yellow-500 flex items-center"><DollarSign className="h-3 w-3 mr-1" />Medium cost</span>;
+      case 'high':
+        return <span className="text-red-500 flex items-center"><DollarSign className="h-3 w-3 mr-1" />High cost</span>;
+      default:
+        return <span className="text-gray-500 flex items-center"><DollarSign className="h-3 w-3 mr-1" />Unknown</span>;
+    }
+  };
+
+  // Helper function to render tags
+  const renderTags = (tags: string[]) => {
+    if (!tags || tags.length === 0) return null;
     
-    return descriptions[modelId] || {
-      purpose: 'General purpose AI assistant',
-      rateLimiting: 'Standard rate limits apply',
-      cost: 'Variable pricing',
-      strengths: ['General capabilities'],
-      idealFor: 'General use cases'
-    };
+    return (
+      <div className="flex flex-wrap gap-1 mt-1">
+        {tags.map(tag => (
+          <span 
+            key={tag} 
+            className="px-1.5 py-0.5 text-xs rounded-full bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300"
+          >
+            {tag}
+          </span>
+        ))}
+      </div>
+    );
   };
 
   const getStatusColor = (status: string | undefined) => {
@@ -198,238 +264,171 @@ const ModelSwitcher: React.FC<ModelSwitcherProps> = ({
     }
   };
 
-  const getStatusIcon = (status: string | undefined) => {
-    switch (status) {
-      case 'online':
-        return <div className="w-2 h-2 bg-green-500 rounded-full"></div>;
-      case 'offline':
-        return <div className="w-2 h-2 bg-red-500 rounded-full"></div>;
-      case 'limited':
-        return <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>;
-      case 'loading':
-        return <div className="w-2 h-2 bg-[#FFC627] rounded-full animate-pulse"></div>;
-      default:
-        return <div className="w-2 h-2 bg-gray-400 rounded-full"></div>;
-    }
-  };
-
   const getStatusText = (status: string | undefined) => {
     switch (status) {
       case 'online':
-        return 'Online';
+        return 'Available';
       case 'offline':
         return 'Offline';
       case 'limited':
-        return 'Limited';
+        return 'Rate limited';
       case 'loading':
-        return 'Testing...';
+        return 'Checking...';
       default:
         return 'Unknown';
     }
   };
 
-  // Get current model info
+  // Find current model details
   const getCurrentModel = () => {
-    for (const group in modelGroups) {
-      const model = modelGroups[group as keyof typeof modelGroups].find(m => m.id === currentModel);
-      if (model) return model;
-    }
-    
-    // If current model is not in the filtered list, show a special "not available" entry
-    if (provider && currentModel) {
-      // Check if it's an Ollama model that's not in our predefined list
-      if (provider === 'ollama' && currentModel.includes('llama') || 
-          currentModel.includes('mistral') || currentModel.includes('phi')) {
-        return { 
-          id: currentModel, 
-          name: currentModel, 
-          status: 'online',
-          isCustom: true
+    for (const [groupName, models] of Object.entries(allModelGroups)) {
+      const found = models.find(model => model.id === currentModel);
+      if (found) {
+        return {
+          ...found,
+          group: groupName
         };
       }
-      
-      return { 
-        id: currentModel, 
-        name: currentModel, 
-        status: provider === 'ollama' ? 'online' : 'unknown',
-        isCustom: true  
-      };
     }
     
-    return { id: currentModel, name: currentModel, status: 'unknown' };
-  };
-
-  // Get connection status display for the header
-  const getConnectionStatus = () => {
-    switch (provider) {
-      case 'openai':
-        return { connected: true, name: 'OpenAI' };
-      case 'gemini': 
-        return { connected: true, name: 'Gemini' };
-      case 'anthropic':
-        return { connected: true, name: 'Claude' };
-      case 'ollama':
-        return { connected: true, name: 'Ollama' };
-      default:
-        return { connected: false, name: 'AI Model' };
-    }
-  };
-
-  // Get service logo icon component (no emojis)
-  const getServiceLogo = (modelId: string) => {
-    const logoClasses = "w-6 h-6 flex-shrink-0 rounded-full flex items-center justify-center";
-    
-    if (modelId.includes('gpt')) {
-      return <div className={`${logoClasses} bg-green-100`}>
-        <span className="text-green-700 text-xs font-bold">GPT</span>
-      </div>;
-    }
-    if (modelId.includes('gemini')) {
-      return <div className={`${logoClasses} bg-blue-100`}>
-        <span className="text-blue-700 text-xs font-bold">G</span>
-      </div>;
-    }
-    if (modelId.includes('claude')) {
-      return <div className={`${logoClasses} bg-purple-100`}>
-        <span className="text-purple-700 text-xs font-bold">C</span>
-      </div>;
-    }
-    if (modelId.includes('llama') || modelId.includes('mistral') || modelId.includes('phi')) {
-      return <div className={`${logoClasses} bg-orange-100`}>
-        <span className="text-orange-700 text-xs font-bold">L</span>
-      </div>;
-    }
-    return <div className={`${logoClasses} bg-gray-100`}>
-      <span className="text-gray-700 text-xs font-bold">AI</span>
-    </div>;
+    // Fallback for when the current model isn't in our groups
+    return {
+      id: currentModel,
+      name: currentModel,
+      group: 'Unknown',
+      description: 'Unknown model',
+      contextWindow: 0,
+      costEstimate: 'unknown',
+      tags: [],
+      status: 'unknown'
+    };
   };
 
   const currentModelInfo = getCurrentModel();
-  const sortedModelGroups = Object.entries(modelGroups).sort((a, b) => {
-    const aHasCurrent = a[1].some(m => m.id === currentModel);
-    const bHasCurrent = b[1].some(m => m.id === currentModel);
-    
-    if (aHasCurrent && !bHasCurrent) return -1;
-    if (!aHasCurrent && bHasCurrent) return 1;
-    return a[0].localeCompare(b[0]);
-  });
 
+  // Render the component
   return (
-    <div className="relative inline-block text-left">
-      <div>
-        <button
-          type="button"
-          className={`inline-flex items-center justify-center ${
-            compact 
-              ? 'px-2 py-1 text-sm' 
-              : 'px-4 py-2 text-base'
-          } font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
-          onClick={() => setIsOpen(!isOpen)}
-          aria-expanded={isOpen}
+    <div className="relative">
+      {/* Current Model Button */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`
+          flex items-center justify-between w-full px-3 py-2 
+          bg-white border border-gray-300 rounded-md shadow-sm
+          hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-indigo-500
+          text-sm font-medium text-gray-700
+          ${compact ? 'max-w-[200px]' : ''}
+        `}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
+      >
+        <div className="flex items-center">
+          <Cpu className="w-4 h-4 mr-2 text-gray-500" />
+          <span>{compact ? currentModelInfo.name : `Model: ${currentModelInfo.name}`}</span>
+        </div>
+        <ChevronDown className={`w-4 h-4 ml-2 transition-transform duration-200 ${isOpen ? 'transform rotate-180' : ''}`} />
+      </button>
+      
+      {/* Debug Button */}
+      <div className="absolute -top-7 right-0">
+        <button 
+          className="p-1 text-xs bg-gray-100 rounded-md hover:bg-gray-200 text-gray-500"
+          onClick={() => {
+            console.log('All model groups:', allModelGroups);
+            console.log('Current model groups:', modelGroups);
+            console.log('Available models:', availableModels);
+            console.log('Current model:', currentModelInfo);
+            alert(`Debug info logged to console! 
+Available models: ${availableModels?.length || 0}
+Current model: ${currentModel}
+Provider groups: ${Object.keys(allModelGroups).join(', ')}
+Total models: ${Object.values(allModelGroups).flat().length}
+`);
+          }}
         >
-          {getServiceLogo(currentModel)}
-          <div className="ml-2 text-left">
-            <div className="font-medium truncate">
-              {currentModelInfo.name}
-            </div>
-            {!compact && (
-              <div className="text-xs text-gray-500 flex items-center">
-                <div className={`w-2 h-2 rounded-full mr-1 ${getConnectionStatus().connected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                {getConnectionStatus().name}
-              </div>
-            )}
-          </div>
-          <ChevronDown className={`ml-2 h-4 w-4 ${compact ? '' : 'mt-0.5'}`} />
+          <Bug className="w-3 h-3" />
         </button>
       </div>
-
+      
+      {/* Dropdown */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 origin-top-right bg-white rounded-md shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-10" style={{ width: compact ? '300px' : '350px' }}>
-          <div className="py-2 px-3 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="text-sm font-medium text-gray-900">Select Model</div>
-              <div className="flex items-center text-xs text-gray-600">
-                <div className={`w-2 h-2 rounded-full mr-1 ${getConnectionStatus().connected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                {getConnectionStatus().name}: {getConnectionStatus().connected ? 'Connected' : 'Not Connected'}
+        <div className="absolute z-40 w-96 mt-1 bg-white border border-gray-300 rounded-md shadow-lg overflow-auto max-h-96 right-0">
+          {/* Provider Categories */}
+          {Object.entries(modelGroups).map(([groupName, models]) => (
+            <div key={groupName} className="border-b border-gray-200 last:border-b-0">
+              <div className="px-4 py-2 bg-gray-50 text-sm font-semibold text-gray-700">
+                {groupName} ({models.length} models)
               </div>
-            </div>
-          </div>
-          <div className="py-2 px-3 border-b border-gray-200">
-            <div className="flex items-center justify-between">
-              <div className="text-sm font-medium text-gray-900">Available Models</div>
-              <div className="text-xs text-gray-600">
-                {sortedModelGroups.map(([groupName, models]) => models.length).reduce((a, b) => a + b, 0)} models
-              </div>
-            </div>
-          </div>
-          <div className="py-2 px-3">
-            {sortedModelGroups.map(([groupName, models]) => (
-              <div key={groupName} className="mb-4 last:mb-0">
-                <h5 className="text-xs font-semibold text-gray-500 mb-2">{groupName}</h5>
-                <div className="space-y-2">
-                  {models.map(model => {
-                    const description = getModelDescription(model.id);
-                    return (
-                      <button
-                        key={model.id}
-                        onClick={() => {
-                          onModelChange(model.id);
-                          setIsOpen(false);
-                        }}
-                        disabled={model?.status === 'offline' || model?.status === 'loading'}
-                        className={`w-full p-3 text-left border rounded-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${
-                          model.id === currentModel
-                            ? 'border-[#FFC627] border-opacity-40 bg-[#FFC627] bg-opacity-10 shadow-sm'
-                            : model?.status === 'online' || model?.status === 'limited'
-                              ? 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-                              : 'border-gray-100 bg-gray-50'
-                        }`}
-                      >
-                        <div className="flex items-start space-x-3">
-                          <div className="flex items-center justify-center flex-shrink-0 mt-0.5">
-                            {getServiceLogo(model.id)}
+              <ul className="py-1" role="listbox">
+                {models.map((model) => (
+                  <li 
+                    key={model.id}
+                    role="option"
+                    aria-selected={currentModel === model.id}
+                    className={`
+                      px-4 py-3 cursor-pointer hover:bg-gray-50
+                      ${currentModel === model.id ? 'bg-indigo-50' : ''}
+                    `}
+                    onClick={() => {
+                      onModelChange(model.id);
+                      setIsOpen(false);
+                    }}
+                  >
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-semibold text-gray-900">{model.name}</p>
+                          {currentModel === model.id && (
+                            <Check className="w-4 h-4 text-indigo-600 ml-2" />
+                          )}
+                        </div>
+                        <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">
+                          {model.description || `Model ${model.id}`}
+                        </p>
+                        
+                        {renderTags(model.tags)}
+                        
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-2 text-xs">
+                          <div className="flex items-center text-gray-600">
+                            <BookOpen className="h-3 w-3 mr-1" />
+                            {formatContextWindow(model.contextWindow)}
                           </div>
                           
-                          <div className="flex-1 min-w-0">
-                            {/* Header */}
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-2">
-                                <span className="font-medium text-gray-900">{model.name}</span>
-                                {model.id === currentModel && (
-                                  <Check className="w-4 h-4 text-[#FFC627]" />
-                                )}
-                              </div>
-                              <div className={`text-xs ${getStatusColor(model?.status)} flex items-center space-x-1`}>
-                                {getStatusIcon(model?.status)}
-                                <span>{getStatusText(model?.status)}</span>
-                              </div>
-                            </div>
-                            
-                            {/* Purpose */}
-                            <p className="text-xs text-gray-600 mt-1">{description.purpose}</p>
-                            
-                            {/* Strengths */}
-                            {!compact && (
-                              <div className="flex flex-wrap gap-1 mt-2">
-                                {description.strengths.slice(0, 2).map((strength, index) => (
-                                  <span
-                                    key={index}
-                                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700"
-                                  >
-                                    {strength}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
+                          <div>
+                            {renderCostIndicator(model.costEstimate)}
+                          </div>
+                          
+                          <div className={`flex items-center ${getStatusColor(model.status)}`}>
+                            <Zap className="h-3 w-3 mr-1" />
+                            {getStatusText(model.status)}
                           </div>
                         </div>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
+                      </div>
+                      
+                      {/* Provider icon */}
+                      <div className="flex-shrink-0 ml-2">
+                        {model.provider === 'gemini' && (
+                          <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center">
+                            <span className="text-blue-600 text-xs font-bold">G</span>
+                          </div>
+                        )}
+                        {model.provider === 'llama' && (
+                          <div className="w-5 h-5 rounded-full bg-green-100 flex items-center justify-center">
+                            <span className="text-green-600 text-xs font-bold">L</span>
+                          </div>
+                        )}
+                        {model.provider === 'ollama' && (
+                          <div className="w-5 h-5 rounded-full bg-gray-100 flex items-center justify-center">
+                            <Lock className="w-3 h-3 text-gray-600" />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
         </div>
       )}
     </div>

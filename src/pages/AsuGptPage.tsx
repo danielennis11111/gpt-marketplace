@@ -17,10 +17,14 @@ import type { PersonaChatTemplate } from '../components/PersonaChatSelection';
 import ParticipantSelector from '../components/ParticipantSelector';
 import ChatInstructionsSelector from '../components/ChatInstructionsSelector';
 import { ASU_PARTICIPANTS } from '../components/ConversationParticipant';
+import { Helmet } from 'react-helmet';
+import FloatingChatButton from '../components/FloatingChatButton';
+import { LlamaApiService } from '../services/llamaApiService';
+import type { LlamaModel } from '../services/llamaApiService';
 
 // Import our custom implementations with aliases to avoid name conflicts
 import { CustomModelManager as ModelManager, CustomConversationManager as ConversationManager } from '../utils/rate-limiter/custom-adapter';
-import type { Conversation, ConversationTemplate, Message } from '../utils/rate-limiter/custom-adapter';
+import type { Conversation, ConversationTemplate, Message, AIModel } from '../utils/rate-limiter/custom-adapter';
 
 // Define the CommunityIdea type
 interface CommunityIdea {
@@ -35,6 +39,18 @@ interface CommunityIdea {
 // Define the Participant type based on ASU_PARTICIPANTS structure
 type Participant = typeof ASU_PARTICIPANTS[0];
 
+// Model interfaces
+interface ApiModel {
+  id: string;
+  name: string;
+  provider: string;
+  description?: string;
+  isConnected: boolean;
+  maxContextLength?: number;
+  capabilities?: string[];
+  version?: string;
+}
+
 export const AsuGptPage: React.FC = () => {
   const { settings } = useSettings();
   const ollama = useOllama();
@@ -47,7 +63,7 @@ export const AsuGptPage: React.FC = () => {
   // State management
   const [modelManager] = useState(() => new ModelManager());
   const [conversationManager] = useState(() => new ConversationManager());
-  const [models, setModels] = useState<any[]>([]);
+  const [models, setModels] = useState<ApiModel[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeConversation, setActiveConversation] = useState<Conversation | null>(null);
   
@@ -56,7 +72,7 @@ export const AsuGptPage: React.FC = () => {
     id: 'default-chat',
     name: 'ASU GPT',
     description: 'General conversation with ASU GPT',
-    modelId: 'gpt-4o-mini',
+    modelId: 'gemini-pro', // Changed default to Gemini Pro instead of GPT-4o
     systemPrompt: 'You are ASU GPT, a helpful AI assistant for Arizona State University. Provide accurate information about ASU, its programs, policies, and resources. Be friendly, helpful, and concise. If you don\'t know something, say so rather than making up information.',
     suggestedQuestions: [
       'What majors does ASU offer?',
@@ -74,53 +90,195 @@ export const AsuGptPage: React.FC = () => {
   const [isMobile, setIsMobile] = useState(false);
   const [isSidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [currentModel, setCurrentModel] = useState('gpt-4o-mini');
+  const [currentModel, setCurrentModel] = useState('gemini-pro'); // Changed default model
 
   // Add new state for participant and instructions
   const [activeParticipant, setActiveParticipant] = useState<string | undefined>(undefined);
   const [activeInstruction, setActiveInstruction] = useState<CommunityIdea | null>(null);
+  const [isLoadingModels, setIsLoadingModels] = useState(false);
+  
+  // Reference to track if the component is mounted
+  const isMounted = useRef(true);
 
-  // Initialize model manager with settings
+  // Get available models based on configured API keys
   useEffect(() => {
-    try {
-      modelManager.syncWithSettings(settings, ollama);
+    // Function to fetch models asynchronously
+    const fetchModels = async () => {
+      setIsLoadingModels(true);
+      const modelsList: ApiModel[] = [];
       
-      // Get all models with proper typing
-      const allModels = modelManager.getAllModels();
-      
-      // Create a filtered array of available models based on connection status
-      const filteredModels = [];
-      
-      for (const model of allModels) {
-        if (model.provider === 'gemini' && settings.geminiApiKey && settings.geminiApiKey.trim() !== '') {
-          // Add Gemini models if API key is configured
-          filteredModels.push(model);
-        } else if (model.provider === 'ollama' && ollama.status.isConnected) {
-          // Add Ollama models if Ollama is connected
-          filteredModels.push(model);
-        }
+      console.log('Settings in fetchModels:', {
+        geminiApiKey: !!settings.geminiApiKey, 
+        llamaApiKey: !!settings.llamaApiKey,
+        ollamaEnabled: settings.preferredChatProvider === 'ollama',
+        ollamaConnected: ollama.status.isConnected
+      });
+
+      // Add Gemini models if API key is configured
+      if (settings.geminiApiKey) {
+        console.log('Adding Gemini models to available models');
+        modelsList.push(
+          {
+            id: 'gemini-flash',
+            name: 'Gemini 2.0 Flash',
+            provider: 'gemini',
+            description: 'Google\'s fastest model - excellent for most tasks',
+            isConnected: true,
+            maxContextLength: 1000000,
+            capabilities: ['fast', 'multimodal', 'vision']
+          },
+          {
+            id: 'gemini-pro',
+            name: 'Gemini 2.0 Pro',
+            provider: 'gemini',
+            description: 'Google\'s balanced model - high quality with good speed',
+            isConnected: true,
+            maxContextLength: 1000000,
+            capabilities: ['balanced', 'reasoning', 'multimodal']
+          },
+          {
+            id: 'gemini-ultra',
+            name: 'Gemini 2.0 Ultra',
+            provider: 'gemini',
+            description: 'Google\'s most advanced model - high-end reasoning',
+            isConnected: true,
+            maxContextLength: 1000000,
+            capabilities: ['premium', 'reasoning', 'multimodal']
+          }
+        );
       }
-      
-      console.log('Available models:', filteredModels);
-      
-      // Set available models
-      setModels(filteredModels);
-      
-      // Set a default model if available
-      if (filteredModels.length > 0) {
-        // Check if current model is in the available models list
-        const currentModelExists = filteredModels.some(model => model.id === currentModel);
+
+      // Add Llama models if API key is configured
+      if (settings.llamaApiKey) {
+        console.log('Fetching real Llama models from API with key:', settings.llamaApiKey ? '(key exists)' : '(no key)');
+        try {
+          // Create a new Llama API service instance with the user's API key
+          const llamaApiService = new LlamaApiService(settings.llamaApiKey);
+          
+          // Fetch the actual models from the API
+          const llamaModels = await llamaApiService.listModels();
+          console.log('Received Llama models from API:', llamaModels);
+          
+          // Convert the Llama models to our ApiModel format
+          const formattedLlamaModels = llamaModels.map(model => ({
+            id: model.id,
+            name: model.name,
+            provider: 'llama',
+            description: model.description,
+            isConnected: true,
+            maxContextLength: model.contextLength,
+            capabilities: model.capabilities,
+            version: model.version
+          }));
+          
+          // Add the models to our list
+          modelsList.push(...formattedLlamaModels);
+          console.log('Added real Llama models to available models', formattedLlamaModels);
+        } catch (error) {
+          console.error('Error fetching Llama models:', error);
+          // Fallback to Meta's actual model IDs if the API call fails
+          modelsList.push(
+            {
+              id: 'meta/llama-3-70b-instruct',
+              name: 'Llama 3 70B',
+              provider: 'llama',
+              description: 'Meta\'s most powerful model - excellent reasoning',
+              isConnected: true,
+              maxContextLength: 128000,
+              capabilities: ['reasoning', 'instruction-tuned'],
+              version: '3'
+            },
+            {
+              id: 'meta/llama-3-8b-instruct',
+              name: 'Llama 3 8B',
+              provider: 'llama',
+              description: 'Fast and efficient model from Meta',
+              isConnected: true,
+              maxContextLength: 128000,
+              capabilities: ['fast', 'efficient'],
+              version: '3'
+            },
+            {
+              id: 'meta/llama-3.1-70b-instruct',
+              name: 'Llama 3.1 70B',
+              provider: 'llama',
+              description: 'Meta\'s latest powerful model with excellent reasoning',
+              isConnected: true,
+              maxContextLength: 128000,
+              capabilities: ['reasoning', 'instruction-tuned'],
+              version: '3.1'
+            },
+            {
+              id: 'meta/llama-3.1-8b-instruct',
+              name: 'Llama 3.1 8B',
+              provider: 'llama',
+              description: 'Latest fast and efficient model from Meta',
+              isConnected: true,
+              maxContextLength: 128000,
+              capabilities: ['fast', 'efficient'],
+              version: '3.1'
+            }
+          );
+        }
+      } else {
+        console.log('No Llama API key configured');
+      }
+
+      // Add Ollama models if enabled
+      if (settings.preferredChatProvider === 'ollama' && ollama.status.isConnected) {
+        console.log('Adding Ollama models to available models');
+        // Get running Ollama model from settings
+        const ollamaModel = settings.ollamaModel || '';
         
-        // If current model doesn't exist in available models, set to first available model
-        if (!currentModelExists) {
-          setCurrentModel(filteredModels[0].id);
+        if (ollamaModel) {
+          modelsList.push({
+            id: `ollama-${ollamaModel}`,
+            name: `Ollama: ${ollamaModel}`,
+            provider: 'ollama',
+            description: 'Local model running through Ollama',
+            isConnected: true,
+            maxContextLength: 8192,
+            capabilities: ['privacy', 'offline', 'local']
+          });
+        } else {
+          // Add default Ollama model if no specific model is configured
+          modelsList.push({
+            id: 'ollama-local',
+            name: 'Ollama (Local)',
+            provider: 'ollama',
+            description: 'Runs models locally on your machine',
+            isConnected: true,
+            maxContextLength: 8192,
+            capabilities: ['privacy', 'offline', 'local']
+          });
         }
       }
-    } catch (error) {
-      console.error('Error initializing model manager:', error);
-      setError('Failed to initialize model manager. Please try reloading the page.');
+
+      console.log('Final models list:', modelsList);
+      setIsLoadingModels(false);
+      return modelsList;
+    };
+
+    // Only update state if component is mounted
+    if (isMounted.current) {
+      fetchModels().then(modelsList => {
+        setModels(modelsList);
+        
+        // If the currently selected model isn't available, select the first available one
+        if (modelsList.length > 0 && !modelsList.some(model => model.id === currentModel)) {
+          setCurrentModel(modelsList[0].id);
+        }
+      }).catch(err => {
+        console.error('Error in fetchModels:', err);
+        setIsLoadingModels(false);
+      });
     }
-  }, [settings, ollama.status, modelManager, currentModel]);
+
+    // Cleanup function to set mounted state to false when component unmounts
+    return () => {
+      isMounted.current = false;
+    };
+  }, [settings, ollama.status]); // Removed currentModel dependency to prevent circular updates
 
   // Initialize conversation data
   useEffect(() => {
@@ -361,6 +519,7 @@ export const AsuGptPage: React.FC = () => {
   };
 
   const handleModelChange = (modelId: string) => {
+    console.log(`Changing model to: ${modelId}`);
     setCurrentModel(modelId);
   };
 
@@ -553,6 +712,13 @@ export const AsuGptPage: React.FC = () => {
     setCurrentModel(providerInfo.modelId);
   }, [settings.preferredChatProvider, settings.geminiApiKey, ollama.status]);
 
+  // Use a default provider fallback for the ModelSwitcher
+  const getDefaultProvider = (): 'openai' | 'gemini' | 'ollama' | 'anthropic' => {
+    if (ollama.status.isConnected) return 'ollama';
+    if (settings.geminiApiKey) return 'gemini';
+    return 'openai';
+  };
+
   // Show error message if something went wrong
   if (error) {
     return (
@@ -730,12 +896,14 @@ export const AsuGptPage: React.FC = () => {
               {/* Right Section with Model Switcher and Status */}
               <div className="flex items-center space-x-2">
                 {/* Model Switcher */}
-                <ModelSwitcher 
-                  currentModel={currentModel}
-                  onModelChange={handleModelChange}
-                  compact={true}
-                  provider={getProviderInfo().provider as 'openai' | 'gemini' | 'ollama' | 'anthropic'}
-                />
+                <div className="mr-4">
+                  <ModelSwitcher 
+                    currentModel={currentModel}
+                    onModelChange={handleModelChange}
+                    availableModels={models as any[]}
+                    provider={getDefaultProvider()}
+                  />
+                </div>
               </div>
             </div>
 
@@ -895,13 +1063,12 @@ export const AsuGptPage: React.FC = () => {
             </div>
             
             {/* Right Section with Model Switcher and Status */}
-            <div className="flex items-center space-x-2">
-              {/* Model Switcher */}
+            <div className="flex items-center justify-between mr-4">
               <ModelSwitcher 
                 currentModel={currentModel}
                 onModelChange={handleModelChange}
-                compact={true}
-                provider={getProviderInfo().provider as 'openai' | 'gemini' | 'ollama' | 'anthropic'}
+                availableModels={models as any[]}
+                provider={getDefaultProvider()}
               />
             </div>
           </div>

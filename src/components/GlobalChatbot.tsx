@@ -29,7 +29,7 @@ export const GlobalChatbot: React.FC<GlobalChatbotProps> = ({ onClose, projectDa
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  const { sendMessage, isConnected, isLoading, providerName } = useChatService();
+  const { sendMessage, isConnected, isLoading, providerName, availableProviders } = useChatService();
   const pageContext = usePageContext(projectData);
 
   const scrollToBottom = () => {
@@ -84,8 +84,14 @@ export const GlobalChatbot: React.FC<GlobalChatbotProps> = ({ onClose, projectDa
         const contextualPrompt = generateContextualPrompt(currentInput, pageContext, projects);
         response = await sendMessage(contextualPrompt);
       } catch (error) {
+        console.error('Error using AI service:', error);
         // Fallback to predefined responses with context awareness
         response = generateFallbackResponse(currentInput);
+        
+        // Add information about available services
+        if (availableProviders.length === 0) {
+          response += "\n\n*No AI services are configured. Please visit Settings to add API keys for Gemini or Llama, or start Ollama locally.*";
+        }
       }
 
       const botResponse: ChatMessage = {
@@ -99,7 +105,7 @@ export const GlobalChatbot: React.FC<GlobalChatbotProps> = ({ onClose, projectDa
     } catch (error) {
       const errorResponse: ChatMessage = {
         id: (Date.now() + 1).toString(),
-        text: `Sorry, I encountered an error: ${error}. You can try asking again or configure your AI service in settings.`,
+        text: `Sorry, I encountered an error: ${error}. You can try asking again or configure your AI service in settings.${availableProviders.length === 0 ? " No AI services are currently available." : ""}`,
         isUser: false,
         timestamp: new Date(),
         isError: true

@@ -29,7 +29,7 @@ export const HoneInChatbot: React.FC<HoneInChatbotProps> = ({
   const [inputMessage, setInputMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { sendMessage, isConnected, providerName } = useChatService();
+  const { sendMessage, isConnected, providerName, availableProviders } = useChatService();
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -45,12 +45,12 @@ export const HoneInChatbot: React.FC<HoneInChatbotProps> = ({
       const welcomeMessage: Message = {
         id: 'welcome',
         type: 'assistant',
-        content: `I'm here to help you refine your idea: "${initialIdea.title}"\n\nLet's explore this concept in more detail and develop it into something implementable. What specific aspect would you like to focus on first?`,
+        content: `I'm here to help you refine your idea: "${initialIdea.title}"\n\nLet's explore this concept in more detail and develop it into something implementable. What specific aspect would you like to focus on first?${!isConnected && availableProviders.length === 0 ? "\n\n*Note: No AI services are configured. Using basic responses.*" : ""}`,
         timestamp: new Date()
       };
       setMessages([welcomeMessage]);
     }
-  }, [isOpen, initialIdea.title, messages.length]);
+  }, [isOpen, initialIdea.title, messages.length, isConnected, availableProviders]);
 
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isLoading) return;
@@ -83,6 +83,11 @@ export const HoneInChatbot: React.FC<HoneInChatbotProps> = ({
         console.error('Error generating response:', error);
         // Fallback responses when AI provider is not connected
         response = generateFallbackResponse(inputMessage);
+        
+        // Add information about available services if needed
+        if (availableProviders.length === 0) {
+          response += "\n\n*No AI services are currently configured. Please visit Settings to add API keys for Gemini or Llama, or start Ollama locally for enhanced responses.*";
+        }
       }
 
       const assistantMessage: Message = {
@@ -98,7 +103,7 @@ export const HoneInChatbot: React.FC<HoneInChatbotProps> = ({
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
-        content: "I'm having trouble processing that right now. Could you try rephrasing your question?",
+        content: `I'm having trouble processing that right now. Could you try rephrasing your question?${availableProviders.length === 0 ? " No AI services are currently available." : ""}`,
         timestamp: new Date()
       };
       setMessages(prev => [...prev, errorMessage]);

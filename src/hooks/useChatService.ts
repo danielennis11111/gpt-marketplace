@@ -10,6 +10,7 @@ export interface ChatServiceResult {
   sendMessage: (message: string) => Promise<string>;
   providerName: string;
   testConnection: () => Promise<{ success: boolean; message: string }>;
+  availableProviders: string[];
 }
 
 export const useChatService = (): ChatServiceResult => {
@@ -21,6 +22,13 @@ export const useChatService = (): ChatServiceResult => {
   const isGeminiAvailable = gemini.status.isConnected;
   const isOllamaAvailable = ollama.status.isConnected;
   const isLlamaAvailable = llama.status.isConnected;
+
+  // Create an array of available providers for UI feedback
+  const availableProviders = [
+    isGeminiAvailable && 'gemini',
+    isOllamaAvailable && 'ollama',
+    isLlamaAvailable && 'llama'
+  ].filter(Boolean) as string[];
 
   // Determine which provider to use based on settings and availability
   const getProvider = () => {
@@ -162,5 +170,6 @@ export const useChatService = (): ChatServiceResult => {
     sendMessage,
     providerName: getProviderName(),
     testConnection,
+    availableProviders,
   };
 }; 
