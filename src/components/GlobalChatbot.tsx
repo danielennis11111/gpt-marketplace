@@ -234,9 +234,20 @@ export const GlobalChatbot: React.FC<GlobalChatbotProps> = ({ onClose, projectDa
     }
   };
 
+  useEffect(() => {
+    // Add class to body to shift content when sidebar is open
+    document.body.classList.add('chatbot-sidebar-open');
+    
+    // Clean up when component unmounts
+    return () => {
+      document.body.classList.remove('chatbot-sidebar-open');
+    };
+  }, []);
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl h-[600px] flex flex-col">
+    <div className="fixed inset-y-0 right-0 flex z-50">
+      {/* Main chatbot sidebar */}
+      <div className="bg-white shadow-xl w-96 h-full flex flex-col border-l border-gray-200">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200">
           <div className="flex items-center">
@@ -244,7 +255,7 @@ export const GlobalChatbot: React.FC<GlobalChatbotProps> = ({ onClose, projectDa
               <SparklesIcon className="w-5 h-5 text-white" />
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900">ASU AI Assistant</h3>
+              <h3 className="font-semibold text-gray-900">META aiLand Assistant</h3>
               <p className="text-sm text-gray-500">
                 {isConnected ? `Connected via ${providerName}` : 'Offline mode'}
               </p>

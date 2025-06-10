@@ -13,7 +13,8 @@ import {
   PuzzlePieceIcon,
   LightBulbIcon,
   MegaphoneIcon,
-  BookOpenIcon
+  BookOpenIcon,
+  PlusCircleIcon
 } from '@heroicons/react/24/outline';
 import { useNavigate } from 'react-router-dom';
 
@@ -21,7 +22,7 @@ import { useNavigate } from 'react-router-dom';
 const PRODUCT_TYPES = [
   {
     id: 'ai-projects',
-    name: 'AI Projects',
+    name: 'Fine Tuned AI Models',
     icon: CpuChipIcon,
     description: 'Custom AI assistants and intelligent tools',
     categories: ['Productivity', 'Development', 'Analytics', 'Education', 'Research', 'Project Management', 'Music', 'Literature', 'Wellness', 'History'],
@@ -180,7 +181,7 @@ const HomePage: React.FC = () => {
         >
           <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
             <div className="text-center">
-              <h1 className="text-4xl font-bold text-white mb-4">Beta aiLand Marketplace</h1>
+              <h1 className="text-4xl font-bold text-white mb-4">Marketplace</h1>
               <p className="text-xl text-gray-200 max-w-2xl">
                 Discover AI-powered tools, educational resources, and productivity solutions
               </p>
@@ -198,7 +199,7 @@ const HomePage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-gray-900">Shop by Product Type</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Marketplace Categories</h2>
             <button
               onClick={() => handleProductTypeFilter('')}
               className={`text-sm px-3 py-1 rounded-md transition-colors ${
@@ -284,9 +285,19 @@ const HomePage: React.FC = () => {
             )}
           </div>
           
-          <div className="hidden sm:flex items-center px-4 py-2 text-blue-600 rounded-md">
-            <LightBulbIcon className="w-4 h-4 mr-2" />
-            <span>Need help? Try the AI assistant! ➡️</span>
+          <div className="flex items-center space-x-4">
+            <button 
+              onClick={() => navigate('/contribute')}
+              className="flex items-center px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+            >
+              <PlusCircleIcon className="w-4 h-4 mr-2" />
+              <span>Contribute to the Marketplace</span>
+            </button>
+            
+            <div className="hidden sm:flex items-center px-4 py-2 text-blue-600 rounded-md">
+              <LightBulbIcon className="w-4 h-4 mr-2" />
+              <span>Need help? Try the AI assistant! ➡️</span>
+            </div>
           </div>
         </div>
 

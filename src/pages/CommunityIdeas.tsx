@@ -344,10 +344,6 @@ const CommunityIdeas: React.FC = () => {
               <SparklesIcon className="w-5 h-5 mr-2" />
               Create Idea with AI
             </Link>
-            <button className="inline-flex items-center px-6 py-3 bg-white text-gray-700 border border-gray-300 rounded-lg font-medium hover:bg-gray-50 transition-colors">
-              <PlusIcon className="w-5 h-5 mr-2" />
-              Submit Manual Idea
-            </button>
           </div>
         </div>
         

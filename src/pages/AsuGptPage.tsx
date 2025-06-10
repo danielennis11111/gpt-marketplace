@@ -84,13 +84,43 @@ export const AsuGptPage: React.FC = () => {
   useEffect(() => {
     try {
       modelManager.syncWithSettings(settings, ollama);
-      const availableModels = modelManager.getAllModels();
-      setModels(availableModels);
+      
+      // Get all models with proper typing
+      const allModels = modelManager.getAllModels();
+      
+      // Create a filtered array of available models based on connection status
+      const filteredModels = [];
+      
+      for (const model of allModels) {
+        if (model.provider === 'gemini' && settings.geminiApiKey && settings.geminiApiKey.trim() !== '') {
+          // Add Gemini models if API key is configured
+          filteredModels.push(model);
+        } else if (model.provider === 'ollama' && ollama.status.isConnected) {
+          // Add Ollama models if Ollama is connected
+          filteredModels.push(model);
+        }
+      }
+      
+      console.log('Available models:', filteredModels);
+      
+      // Set available models
+      setModels(filteredModels);
+      
+      // Set a default model if available
+      if (filteredModels.length > 0) {
+        // Check if current model is in the available models list
+        const currentModelExists = filteredModels.some(model => model.id === currentModel);
+        
+        // If current model doesn't exist in available models, set to first available model
+        if (!currentModelExists) {
+          setCurrentModel(filteredModels[0].id);
+        }
+      }
     } catch (error) {
       console.error('Error initializing model manager:', error);
       setError('Failed to initialize model manager. Please try reloading the page.');
     }
-  }, [settings, ollama.status, modelManager]);
+  }, [settings, ollama.status, modelManager, currentModel]);
 
   // Initialize conversation data
   useEffect(() => {
@@ -590,6 +620,19 @@ export const AsuGptPage: React.FC = () => {
                 <h2 className="text-sm font-semibold text-gray-800">Chats</h2>
               )}
               
+              {/* Mobile Close Button */}
+              {isMobile && (
+                <button 
+                  onClick={toggleSidebar}
+                  className="text-gray-500 hover:text-gray-700 p-1 rounded-md hover:bg-gray-100"
+                  title="Close sidebar"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+              
               {/* Collapse Button (only shown on desktop) */}
               {!isMobile && (
                 <button 
@@ -726,6 +769,19 @@ export const AsuGptPage: React.FC = () => {
               <h2 className="text-lg font-semibold text-gray-800">Conversations</h2>
             ) : (
               <h2 className="text-sm font-semibold text-gray-800">Chats</h2>
+            )}
+            
+            {/* Mobile Close Button */}
+            {isMobile && (
+              <button 
+                onClick={toggleSidebar}
+                className="text-gray-500 hover:text-gray-700 p-1 rounded-md hover:bg-gray-100"
+                title="Close sidebar"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
             )}
             
             {/* Collapse Button (only shown on desktop) */}

@@ -317,8 +317,8 @@ For ${userIdea} specifically:
                       id="idea"
                       name="idea"
                       rows={3}
-                      className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md"
-                      placeholder="Example: I want to create an AI music assistant that helps me discover new artists based on my mood"
+                      className="shadow-sm focus:ring-indigo-500 focus:border-indigo-500 block w-full sm:text-sm border border-gray-300 rounded-md p-6"
+                      placeholder="Example: I want to create an AI music app"
                       value={userIdea}
                       onChange={(e) => setUserIdea(e.target.value)}
                       disabled={isGenerating}

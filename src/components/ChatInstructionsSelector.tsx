@@ -40,13 +40,8 @@ const ChatInstructionsSelector: React.FC<ChatInstructionsSelectorProps> = ({
   
   // Handle selecting an instruction
   const handleSelectIdea = (idea: CommunityIdea) => {
-    // Only use ideas tagged as instructions
-    if (idea.category === 'instructions') {
-      onSelectInstruction(idea);
-    } else {
-      // You could show an error message here
-      console.warn('Selected idea is not an instruction');
-    }
+    // Use any community idea as an instruction
+    onSelectInstruction(idea);
     setIsIdeaSelectorOpen(false);
   };
   

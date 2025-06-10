@@ -61,5 +61,16 @@
     @apply bg-background text-foreground;
     margin: 0;
     min-height: 100vh;
+    transition: padding-right 0.3s ease;
+  }
+  
+  /* When the chatbot sidebar is open, push content to the left */
+  body.chatbot-sidebar-open {
+    padding-right: 384px; /* Match the width of the sidebar (w-96 = 384px) */
+  }
+  
+  /* Don't push the sidebar itself */
+  body.chatbot-sidebar-open .fixed {
+    transition: none;
   }
 }

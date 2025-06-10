@@ -101,7 +101,7 @@ export const FloatingChatButton: React.FC<FloatingChatButtonProps> = ({ projectD
             </div>
 
             {/* Icon */}
-            <div className={`transition-transform duration-300 ${isOpen ? 'rotate-45' : ''}`}>
+            <div className={`flex items-center justify-center transition-transform duration-300 ${isOpen ? 'rotate-45' : ''}`}>
               {getIcon()}
             </div>
 

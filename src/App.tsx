@@ -33,7 +33,8 @@ import {
   LightBulbIcon,
   DocumentTextIcon,
   ChevronDoubleLeftIcon,
-  ChevronDoubleRightIcon
+  ChevronDoubleRightIcon,
+  ShoppingBagIcon
 } from '@heroicons/react/24/outline';
 import siteLogo from './assets/site-logo.png';
 
@@ -170,11 +171,11 @@ const AppContent = () => {
             <NavItem to="/" icon={HomeIcon} collapsed={sidebarCollapsed}>
               Dashboard
             </NavItem>
-            <NavItem to="/marketplace" icon={RocketLaunchIcon} collapsed={sidebarCollapsed}>
-              Marketplace
-            </NavItem>
-            <NavItem to="/launch-pad" icon={LightBulbIcon} collapsed={sidebarCollapsed}>
+            <NavItem to="/launch-pad" icon={RocketLaunchIcon} collapsed={sidebarCollapsed}>
               Launch Pad
+            </NavItem>
+            <NavItem to="/marketplace" icon={ShoppingBagIcon} collapsed={sidebarCollapsed}>
+              Marketplace
             </NavItem>
             <NavItem to="/community-ideas" icon={LightBulbIcon} collapsed={sidebarCollapsed}>
               Community Ideas
