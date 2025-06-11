@@ -12,7 +12,7 @@ export interface LlamaModel {
 
 export class LlamaApiService {
   private apiKey: string;
-  private baseUrl: string = 'https://api.meta.ai/v1';  // Updated to Meta's actual API endpoint
+  private baseUrl: string = 'https://api.llama.com/v1';  // Updated base URL to match documentation
 
   constructor(apiKey: string) {
     this.apiKey = apiKey;
@@ -20,14 +20,50 @@ export class LlamaApiService {
 
   async testConnection(): Promise<{ success: boolean; message: string }> {
     try {
-      // Attempt to list models to verify API key is valid
+      // First try to list models
       const models = await this.listModels();
-      return {
-        success: true,
-        message: `Llama API connection successful - found ${models.length} models`,
-      };
+      
+      if (models.length === 0) {
+        return {
+          success: false,
+          message: 'No models found in Llama API response',
+        };
+      }
+
+      // Try to generate a simple test message
+      try {
+        const testPrompt = 'Hello, this is a test message. Please respond with "Connection test successful."';
+        const response = await this.generateContent(testPrompt, models[0].id);
+        
+        if (response && response.length > 0) {
+          return {
+            success: true,
+            message: `Llama API connection successful - found ${models.length} models and verified content generation`,
+          };
+        } else {
+          return {
+            success: false,
+            message: 'Could not generate content with Llama API',
+          };
+        }
+      } catch (genError) {
+        console.error('Error testing content generation:', genError);
+        return {
+          success: false,
+          message: `Could not generate content: ${genError instanceof Error ? genError.message : 'Unknown error'}`,
+        };
+      }
     } catch (error) {
       console.error('Llama API connection test failed:', error);
+      
+      // If we have a network error, check if it's a DNS resolution issue
+      if (error instanceof TypeError && error.message.includes('Failed to fetch')) {
+        return {
+          success: false,
+          message: 'Could not connect to Llama API. Please check your internet connection and API endpoint configuration.',
+        };
+      }
+      
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Unknown error connecting to Llama API',
@@ -49,14 +85,25 @@ export class LlamaApiService {
       if (!response.ok) {
         const errorText = await response.text();
         console.error(`Llama API error (${response.status}): ${errorText}`);
+        
+        // If we get a 404, the endpoint might be wrong
+        if (response.status === 404) {
+          throw new Error('Llama API endpoint not found. Please check the API configuration.');
+        }
+        
         throw new Error(`Llama API error: ${response.status} ${response.statusText}`);
       }
 
       const data = await response.json();
       console.log('Llama API models response:', data);
       
+      // If we get here but have no data, use fallback models
+      if (!data || !data.data || !Array.isArray(data.data)) {
+        console.warn('No valid models data received from Llama API, using fallback models');
+        return this.getFallbackModels();
+      }
+      
       // Parse the API response to extract model information
-      // This mapping needs to match the actual API response format
       const models: LlamaModel[] = data.data.map((model: any) => ({
         id: model.id,
         name: this.formatModelName(model.id),
@@ -71,144 +118,12 @@ export class LlamaApiService {
     } catch (error) {
       console.error('Error listing Llama models:', error);
       
-      // Fallback to default models if the API call fails
-      // Including the specific models requested by the user
-      return [
-        {
-          id: 'meta/Llama-4-Scout-17B-16E-Instruct-FP8',
-          name: 'Llama 4 Scout 17B 16E Instruct',
-          contextLength: 128000,
-          description: 'High-performance Scout model with 17B parameters and 16 experts',
-          capabilities: ['complex reasoning', 'instruction following', 'long-form content'],
-          version: '4',
-          provider: 'llama'
-        },
-        {
-          id: 'meta/Llama-4-Maverick-17B-128E-Instruct-FP8',
-          name: 'Llama 4 Maverick 17B 128E Instruct',
-          contextLength: 128000,
-          description: 'Advanced Maverick model with 17B parameters and 128 experts',
-          capabilities: ['complex reasoning', 'instruction following', 'long-form content'],
-          version: '4',
-          provider: 'llama'
-        },
-        {
-          id: 'meta/llama-3-8b-instruct',
-          name: 'Llama 3 8B Instruct',
-          contextLength: 128000,
-          description: 'Efficient model for most tasks with 8B parameters',
-          capabilities: ['text generation', 'chat', 'instruction following'],
-          version: '3',
-          provider: 'llama'
-        },
-        {
-          id: 'meta/llama-3-70b-instruct',
-          name: 'Llama 3 70B Instruct',
-          contextLength: 128000,
-          description: 'High-performance model with 70B parameters, excellent reasoning',
-          capabilities: ['complex reasoning', 'instruction following', 'long-form content'],
-          version: '3',
-          provider: 'llama'
-        },
-        {
-          id: 'meta/llama-3.1-8b-instruct',
-          name: 'Llama 3.1 8B Instruct',
-          contextLength: 128000, 
-          description: 'Latest 8B parameter model with improved instruction following',
-          capabilities: ['text generation', 'chat', 'instruction following'],
-          version: '3.1',
-          provider: 'llama'
-        },
-        {
-          id: 'meta/llama-3.1-70b-instruct',
-          name: 'Llama 3.1 70B Instruct',
-          contextLength: 128000,
-          description: 'Latest 70B parameter model with state-of-the-art performance',
-          capabilities: ['complex reasoning', 'instruction following', 'long-form content'],
-          version: '3.1',
-          provider: 'llama'
-        }
-      ];
+      // Use fallback models if the API call fails
+      return this.getFallbackModels();
     }
   }
 
-  // Helper method to format model name for display
-  private formatModelName(modelId: string): string {
-    // Extract the model name from the ID and format it nicely
-    const nameParts = modelId.split('/').pop()?.split('-') || [];
-    
-    if (nameParts.length < 2) return modelId;
-    
-    // Special case for Llama 4 models with specific formatting
-    if (modelId.includes('Llama-4-Scout') || modelId.includes('Llama-4-Maverick')) {
-      const parts = modelId.split('/').pop()?.split('-') || [];
-      if (parts.length >= 5) {
-        // Format as "Llama 4 Scout 17B 16E Instruct"
-        return `${parts[0]} ${parts[1]} ${parts[2]} ${parts[3]} ${parts[5]}`;
-      }
-    }
-    
-    // Capitalize first letter of each part
-    return nameParts
-      .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-      .join(' ');
-  }
-
-  // Helper method to determine context length based on model ID
-  private getContextLength(modelId: string): number {
-    if (modelId.includes('llama-4') || modelId.includes('Llama-4')) return 128000;
-    if (modelId.includes('llama-3')) return 128000;
-    if (modelId.includes('llama-2')) return 4096;
-    return 8192; // Default context length
-  }
-
-  // Helper to extract capabilities based on model ID
-  private getModelCapabilities(modelId: string): string[] {
-    const capabilities = ['text generation'];
-    
-    if (modelId.includes('instruct')) {
-      capabilities.push('instruction following');
-    }
-    
-    if (modelId.includes('70b') || modelId.includes('17B')) {
-      capabilities.push('complex reasoning', 'long-form content');
-    }
-    
-    if (modelId.includes('8b')) {
-      capabilities.push('efficient', 'fast responses');
-    }
-    
-    if (modelId.includes('Scout') || modelId.includes('Maverick')) {
-      capabilities.push('mixture of experts', 'advanced reasoning');
-    }
-    
-    return capabilities;
-  }
-
-  // Helper to extract version from model ID
-  private extractVersionFromId(modelId: string): string {
-    if (modelId.includes('Llama-4')) return '4';
-    
-    const versionMatch = modelId.match(/llama-(\d+\.\d+|\d+)/i);
-    return versionMatch ? versionMatch[1] : '';
-  }
-
-  // Helper to get model description
-  private getModelDescription(modelId: string): string {
-    if (modelId.includes('Llama-4-Scout')) {
-      return 'Specialized Llama 4 Scout model with 17B parameters and 16 experts for advanced reasoning';
-    } else if (modelId.includes('Llama-4-Maverick')) {
-      return 'Premium Llama 4 Maverick model with 17B parameters and 128 experts for state-of-the-art performance';
-    } else if (modelId.includes('70b')) {
-      return 'Large 70B parameter model with excellent reasoning capabilities';
-    } else if (modelId.includes('8b')) {
-      return 'Efficient 8B parameter model, ideal for most general tasks';
-    } else {
-      return 'Meta Llama model for advanced natural language tasks';
-    }
-  }
-
-  async generateContent(prompt: string, modelName: string = 'meta/llama-3.1-8b-instruct'): Promise<string> {
+  async generateContent(prompt: string, modelName: string = 'meta/Llama-4-Scout-17B-16E-Instruct-FP8'): Promise<string> {
     try {
       console.log(`Generating content with Llama API using model: ${modelName}`);
       
@@ -243,5 +158,110 @@ export class LlamaApiService {
       console.error('Error generating content with Llama API:', error);
       throw error;
     }
+  }
+
+  // Helper methods
+  private formatModelName(modelId: string): string {
+    // Convert model ID to a more readable format
+    return modelId
+      .replace('meta/', '')
+      .replace(/-/g, ' ')
+      .replace(/Instruct/g, '')
+      .replace(/FP8/g, '')
+      .trim();
+  }
+
+  private getContextLength(modelId: string): number {
+    if (modelId.includes('Llama-4-Scout')) return 128000;
+    if (modelId.includes('Llama-4-Maverick')) return 128000;
+    if (modelId.includes('llama-3')) return 8192;
+    return 4096; // Default context length
+  }
+
+  private getModelDescription(modelId: string): string {
+    if (modelId.includes('Llama-4-Scout')) {
+      return 'Llama 4 Scout is a high-performance model optimized for speed and efficiency.';
+    }
+    if (modelId.includes('Llama-4-Maverick')) {
+      return 'Llama 4 Maverick is a powerful model with extended context window.';
+    }
+    if (modelId.includes('llama-3')) {
+      return 'Llama 3 is a versatile model with good performance across various tasks.';
+    }
+    return 'A capable language model for various tasks.';
+  }
+
+  private getModelCapabilities(modelId: string): string[] {
+    const capabilities = ['text-generation', 'chat'];
+    if (modelId.includes('Llama-4')) {
+      capabilities.push('code-generation', 'reasoning');
+    }
+    return capabilities;
+  }
+
+  private extractVersionFromId(modelId: string): string {
+    if (modelId.includes('Llama-4')) return '4.0';
+    if (modelId.includes('llama-3.1')) return '3.1';
+    if (modelId.includes('llama-3')) return '3.0';
+    return '1.0';
+  }
+
+  private getFallbackModels(): LlamaModel[] {
+    return [
+      {
+        id: 'meta/Llama-4-Scout-17B-16E-Instruct-FP8',
+        name: 'Llama 4 Scout 17B 16E Instruct',
+        contextLength: 128000,
+        description: 'Llama 4 Scout is a high-performance model optimized for speed and efficiency.',
+        capabilities: ['text-generation', 'chat', 'code-generation', 'reasoning'],
+        version: '4.0',
+        provider: 'llama'
+      },
+      {
+        id: 'meta/Llama-4-Maverick-17B-128E-Instruct-FP8',
+        name: 'Llama 4 Maverick 17B 128E Instruct',
+        contextLength: 128000,
+        description: 'Llama 4 Maverick is a powerful model with extended context window.',
+        capabilities: ['text-generation', 'chat', 'code-generation', 'reasoning'],
+        version: '4.0',
+        provider: 'llama'
+      },
+      {
+        id: 'meta/llama-3-8b-instruct',
+        name: 'Llama 3 8B Instruct',
+        contextLength: 8192,
+        description: 'Llama 3 is a versatile model with good performance across various tasks.',
+        capabilities: ['text-generation', 'chat'],
+        version: '3.0',
+        provider: 'llama'
+      },
+      {
+        id: 'meta/llama-3-70b-instruct',
+        name: 'Llama 3 70B Instruct',
+        contextLength: 8192,
+        description: 'Llama 3 is a versatile model with good performance across various tasks.',
+        capabilities: ['text-generation', 'chat'],
+        version: '3.0',
+        provider: 'llama'
+      },
+      {
+        id: 'meta/llama-3.1-8b-instruct',
+        name: 'Llama 3.1 8B Instruct',
+        contextLength: 8192,
+        description: 'Llama 3.1 is an improved version of Llama 3 with better performance.',
+        capabilities: ['text-generation', 'chat'],
+        version: '3.1',
+        provider: 'llama'
+      },
+      {
+        id: 'meta/llama-3.1-70b-instruct',
+        name: 'Llama 3.1 70B Instruct',
+        contextLength: 8192,
+        description: 'Llama 3.1 is an improved version of Llama 3 with better performance.',
+        capabilities: ['text-generation', 'chat'],
+        version: '3.1',
+        provider: 'llama'
+      }
+    ];
   }
 } 
