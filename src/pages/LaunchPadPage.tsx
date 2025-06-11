@@ -8,10 +8,13 @@ import {
   CheckCircleIcon,
   MagnifyingGlassIcon,
   ChatBubbleLeftRightIcon,
-  RocketLaunchIcon
+  RocketLaunchIcon,
+  ArrowDownTrayIcon
 } from '@heroicons/react/24/outline';
 import { useChatService } from '../hooks/useChatService';
 import { generateSystemInstructionsPrompt } from '../utils/promptTemplates';
+import { downloadInstructions } from '../utils/downloadHelper';
+import DownloadPreview from '../components/DownloadPreview';
 
 interface PromptIdea {
   id: string;
@@ -30,6 +33,10 @@ export const LaunchPadPage: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPrompt, setGeneratedPrompt] = useState<PromptIdea | null>(null);
   const [duplicateFound, setDuplicateFound] = useState<PromptIdea | null>(null);
+  const [prompt, setPrompt] = useState('');
+  const [response, setResponse] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Debug function to reset community ideas
   const resetCommunityIdeas = () => {
@@ -64,6 +71,88 @@ export const LaunchPadPage: React.FC = () => {
     ];
   }, []);
 
+  // Helper function to extract fields from text response
+  const extractField = (text: string, fieldName: string): string | null => {
+    const regex = new RegExp(`${fieldName}:(.*)`, 'i');
+    const match = text.match(regex);
+    return match ? match[1].trim() : null;
+  };
+
+  // Generate a better title using AI based on the user's full input
+  const generateIdeaTitle = async (userIdea: string): Promise<string> => {
+    try {
+      if (!isConnected) {
+        // Fallback to improved manual title generation
+        const words = userIdea.trim().split(/\s+/);
+        if (words.length <= 6) {
+          return userIdea.charAt(0).toUpperCase() + userIdea.slice(1);
+        }
+        
+        // Create a better title from first part
+        const firstPart = words.slice(0, 6).join(' ');
+        const capitalizedFirst = firstPart.charAt(0).toUpperCase() + firstPart.slice(1);
+        
+        // Add descriptive suffix based on keywords following AI tool patterns
+        if (userIdea.toLowerCase().includes('analy')) return 'Analytics with AI';
+        if (userIdea.toLowerCase().includes('website')) return 'Website AI Tool';
+        if (userIdea.toLowerCase().includes('tutoring') || userIdea.toLowerCase().includes('tutor')) return 'Tutor AI';
+        if (userIdea.toLowerCase().includes('music')) return 'Music with AI';
+        if (userIdea.toLowerCase().includes('business')) return 'Business AI Tool';
+        if (userIdea.toLowerCase().includes('code') || userIdea.toLowerCase().includes('coding')) return 'Code with AI';
+        if (userIdea.toLowerCase().includes('writing') || userIdea.toLowerCase().includes('write')) return 'Writing AI Tool';
+        if (userIdea.toLowerCase().includes('learning') || userIdea.toLowerCase().includes('learn')) return 'Learning with AI';
+        if (userIdea.toLowerCase().includes('planning') || userIdea.toLowerCase().includes('plan')) return 'Planning AI Tool';
+        
+        return 'Smart AI Assistant';
+      }
+
+      const titlePrompt = `You are an expert at creating concise, descriptive titles for AI project ideas. Based on the user's idea below, generate a clear, professional title that follows the pattern of successful AI tools.
+
+User's idea: "${userIdea}"
+
+Requirements:
+- Maximum 4 words
+- Follow patterns like "X with AI", "AI Y Tool", "Smart X Assistant"
+- Clear and descriptive
+- Professional tone
+- Focus on the core function or outcome
+- Make it appealing to potential users
+
+Examples:
+- "I need help analyzing my website analytics" → "Analytics with AI"
+- "I want a language tutor for Spanish" → "Spanish Tutor AI"
+- "I need help with meal planning" → "Meal Planning AI"
+- "I want help coding Python" → "Code with AI"
+- "I need help writing essays" → "Writing Assistant AI"
+- "I want to learn guitar" → "Guitar Learning AI"
+
+Generate ONLY the title, no additional text:`;
+
+      const titleResponse = await sendMessage(titlePrompt);
+      const generatedTitle = titleResponse.trim().replace(/^["']|["']$/g, ''); // Remove quotes
+      
+      // Validate title isn't too long and has substance
+      if (generatedTitle.length > 30 || generatedTitle.length < 5) {
+        // Fallback to manual generation with AI patterns
+        if (userIdea.toLowerCase().includes('analy')) return 'Analytics with AI';
+        if (userIdea.toLowerCase().includes('website')) return 'Website AI Tool';
+        if (userIdea.toLowerCase().includes('tutoring') || userIdea.toLowerCase().includes('tutor')) return 'Tutor AI';
+        if (userIdea.toLowerCase().includes('music')) return 'Music with AI';
+        if (userIdea.toLowerCase().includes('business')) return 'Business AI Tool';
+        if (userIdea.toLowerCase().includes('code') || userIdea.toLowerCase().includes('coding')) return 'Code with AI';
+        if (userIdea.toLowerCase().includes('writing') || userIdea.toLowerCase().includes('write')) return 'Writing AI Tool';
+        return 'Smart AI Assistant';
+      }
+      
+      return generatedTitle;
+    } catch (error) {
+      console.error('Error generating title:', error);
+      // Fallback to improved manual title generation
+      const words = userIdea.trim().split(/\s+/).slice(0, 5).join(' ');
+      return words.charAt(0).toUpperCase() + words.slice(1) + ' Assistant';
+    }
+  };
+
   const generatePrompt = async () => {
     if (!userIdea.trim()) return;
 
@@ -74,7 +163,7 @@ export const LaunchPadPage: React.FC = () => {
     // First check for existing community ideas - using very loose matching
     const existingCommunityIdeas = JSON.parse(localStorage.getItem('communityIdeas') || '[]');
     console.log("Existing community ideas count:", existingCommunityIdeas.length);
-    
+       
     // Almost always create a new idea by default
     // Only match if the idea is EXACTLY the same (exact title match, case insensitive)
     const similarCommunityIdea = existingCommunityIdeas.find((idea: any) => 
@@ -93,7 +182,7 @@ export const LaunchPadPage: React.FC = () => {
     }
 
     setIsGenerating(true);
-    
+       
     try {
       let promptResponse = '';
       
@@ -107,98 +196,39 @@ export const LaunchPadPage: React.FC = () => {
           promptResponse = await sendMessage(promptGeneration);
           console.log("AI Response received:", promptResponse.substring(0, 100) + "...");
         } else {
-          console.log("AI service not connected, using fallback");
-          throw new Error("AI service not connected");
+          console.log("AI service not connected, throwing error instead of using fallback");
+          throw new Error(`No AI services are configured. ${providerName}`);
         }
       } catch (error) {
         console.error('Error with AI generation:', error);
+        const errorMessage = error instanceof Error ? error.message : 'AI service error';
         
-        // Enhanced fallback generation with comprehensive instructions
-        console.log("Using fallback generation");
-        const ideaWords = userIdea.split(' ');
-        // Format the title based on the user's request
-        let title = 'AI Assistant';
-        
-        if (userIdea.toLowerCase().includes('music') && userIdea.toLowerCase().includes('ai')) {
-          title = 'Music AI Assistant';
-        } else if (userIdea.toLowerCase().includes('music')) {
-          title = 'AI Music Experience';
-        } else if (ideaWords.length > 3) {
-          title = ideaWords.slice(0, 3).map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+        // Instead of fallback, show a proper error to the user
+        if (errorMessage.includes('No AI services') || errorMessage.includes('not configured')) {
+          alert('Please configure an AI service (Gemini, Llama, or Ollama) in Settings to generate prompts.');
+        } else if (errorMessage.includes('API key')) {
+          alert('API key issue detected. Please check your API key configuration in Settings.');
+        } else if (errorMessage.includes('rate limit')) {
+          alert('Rate limit exceeded. Please wait a moment and try again.');
+        } else {
+          alert(`Error generating prompt: ${errorMessage}`);
         }
-      
-        // Create a more specific description based on the user's idea
-        const description = userIdea.includes('music') 
-          ? 'AI assistant that helps improve life through personalized music recommendations and analysis'
-          : 'An AI assistant that specializes in ' + userIdea;
         
-        // Choose a more appropriate category based on keywords
-        const category = userIdea.includes('music') ? 'Entertainment' : 'Development';
-        
-        promptResponse = `TITLE: ${title}
-DESCRIPTION: ${description}
-CATEGORY: ${category}
-DIFFICULTY: intermediate
-PROMPT: # System Instructions: ${title}
-
-## Role and Expertise
-You are a specialized AI assistant designed to help with ${userIdea}. You have deep expertise in this domain, allowing you to provide comprehensive guidance and solutions tailored to the user's specific needs.
-
-## Core Capabilities
-As an AI focused on ${title}, you should:
-- Analyze user requirements related to ${userIdea}
-- Provide expert guidance on best practices
-- Generate personalized recommendations based on user preferences
-- Answer questions with appropriate depth based on the user's apparent expertise level
-- Suggest alternatives and optimizations when appropriate
-
-## Communication Style
-Maintain a conversational yet professional tone that balances accessibility with accuracy. Use clear, precise language that avoids unnecessary jargon while accurately conveying important concepts. Adapt your communication style based on the user's apparent familiarity with the subject.
-
-## Response Structure
-When providing comprehensive responses about ${userIdea}, structure your information as follows:
-1. Begin with a brief overview summarizing key points
-2. Provide detailed explanations with clearly labeled sections
-3. Include practical implementation steps or actionable guidance
-4. Address potential challenges or limitations
-5. Summarize main takeaways or suggested next steps
-
-## Domain-Specific Guidance
-For ${userIdea} specifically:
-- Focus on current best practices in the field
-- Reference reliable methodologies and approaches
-- Provide practical advice that can be immediately applied
-- Address common misconceptions or pitfalls
-- Adapt recommendations to different user contexts (beginners vs. experts)
-
-## User Interaction
-- Ask clarifying questions when the user's needs are unclear
-- Provide appropriate level of detail based on the user's questions
-- Acknowledge limitations in your knowledge when relevant
-- Offer alternatives when multiple valid approaches exist
-- Seek feedback to improve the relevance of your responses
-
-## Ethical Considerations
-- Prioritize user safety and wellbeing in all recommendations
-- Respect intellectual property and provide appropriate attributions
-- Maintain objectivity when discussing controversial topics
-- Avoid making claims beyond your knowledge scope
-- Recommend professional consultation when appropriate`;
-        
-        console.log("Fallback prompt response created");
+        setIsGenerating(false);
+        return;
       }
 
       // Parse the response
       console.log("Parsing prompt response");
       const lines = promptResponse.split('\n');
-      // Create a unique title with detailed timestamp to avoid duplicate detection issues
-      const timestamp = Date.now();
-      const timeDisplay = new Date().toLocaleTimeString().replace(/:/g, '');
+      
+      // Generate a better title using AI instead of truncating user input
+      console.log("Generating AI-powered title...");
+      const aiGeneratedTitle = await generateIdeaTitle(userIdea);
+      console.log("Generated title:", aiGeneratedTitle);
+      
       const parsed = {
-        title: (lines.find(l => l.startsWith('TITLE:'))?.replace('TITLE:', '').trim() || 
-               (userIdea.length > 30 ? 
-                 userIdea.substring(0, 30) + '...' : 
-                 userIdea)) + ` [${timeDisplay}]`,
+        title: aiGeneratedTitle, // Use AI-generated title instead of parsed response or truncated input
         description: lines.find(l => l.startsWith('DESCRIPTION:'))?.replace('DESCRIPTION:', '').trim() || `An AI assistant that helps with: ${userIdea}`,
         category: lines.find(l => l.startsWith('CATEGORY:'))?.replace('CATEGORY:', '').trim() || 'Productivity',
         difficulty: lines.find(l => l.startsWith('DIFFICULTY:'))?.replace('DIFFICULTY:', '').trim() as 'beginner' | 'intermediate' | 'advanced' || 'intermediate',
@@ -220,11 +250,58 @@ For ${userIdea} specifically:
       
       console.log("New idea created:", newIdea);
       setGeneratedPrompt(newIdea);
+      
+      // Automatically add to community ideas
+      addToCommunityAutomatically(newIdea);
     } catch (error) {
       console.error('Error generating prompt:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert(`Failed to generate prompt: ${errorMessage}`);
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  // Automatically add idea to community when generated
+  const addToCommunityAutomatically = (prompt: PromptIdea) => {
+    const existingIdeas = JSON.parse(localStorage.getItem('communityIdeas') || '[]');
+    
+    // Check if this exact idea already exists
+    const existingIdea = existingIdeas.find((idea: any) => idea.id === prompt.id);
+    if (existingIdea) {
+      console.log("Idea already exists in community:", prompt.id);
+      return;
+    }
+
+    // Create properly formatted community idea
+    const communityIdea = {
+      id: prompt.id,
+      title: prompt.title,
+      description: prompt.description,
+      category: prompt.category,
+      difficulty: prompt.difficulty,
+      timestamp: new Date().toISOString(),
+      createdAt: new Date().toLocaleDateString('en-US', {
+        month: 'numeric',
+        day: 'numeric', 
+        year: 'numeric'
+      }),
+      likes: 0,
+      comments: 0,
+      saves: 0,
+      popularity: 1,
+      isFromPromptGuide: false,
+      isFromLaunchPad: true,
+      hasAIResult: true,
+      aiSystemInstructions: prompt.prompt,
+      prompt: prompt.prompt
+    };
+
+    // Add to beginning of array (newest first)
+    const updatedIdeas = [communityIdea, ...existingIdeas];
+    localStorage.setItem('communityIdeas', JSON.stringify(updatedIdeas));
+    
+    console.log('Automatically added idea to community:', communityIdea.title);
   };
 
   const submitToCommunity = () => {
@@ -257,20 +334,6 @@ For ${userIdea} specifically:
       }
     }
 
-    // Add new idea to community ideas
-    const newIdeasList = [
-      ...existingIdeas,
-      {
-        ...generatedPrompt,
-        likes: 0,
-        views: 0,
-        downloads: 0,
-        comments: []
-      }
-    ];
-
-    localStorage.setItem('communityIdeas', JSON.stringify(newIdeasList));
-    
     // Navigate to the community ideas page or the specific idea
     navigate(`/community-ideas/${generatedPrompt.id}`);
   };
@@ -283,6 +346,12 @@ For ${userIdea} specifically:
         initialUserPrompt: `I want to talk about: ${userIdea}`
       } 
     });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const result = await sendMessage(prompt);
+    setResponse(result);
   };
 
   return (
@@ -411,9 +480,45 @@ For ${userIdea} specifically:
                 </div>
 
                 <div className="border-t border-gray-200 pt-4">
-                  <h3 className="text-lg font-medium text-gray-900">System Prompt</h3>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-lg font-medium text-gray-900">System Prompt</h3>
+                    <div className="flex items-center space-x-2">
+                      <DownloadPreview 
+                        content={generatedPrompt.prompt}
+                        title={`${generatedPrompt.title} - System Instructions`}
+                        filename={`${generatedPrompt.title.replace(/[^a-zA-Z0-9]/g, '_').toLowerCase()}_instructions`}
+                        trigger={
+                          <button className="inline-flex items-center px-3 py-1.5 text-sm bg-green-100 hover:bg-green-200 text-green-700 rounded-lg transition-colors">
+                            <ArrowDownTrayIcon className="w-4 h-4 mr-1" />
+                            Preview & Download
+                          </button>
+                        }
+                      />
+                      <button
+                        onClick={() => downloadInstructions(generatedPrompt.prompt, generatedPrompt.title)}
+                        className="inline-flex items-center px-3 py-1.5 text-sm bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-lg transition-colors"
+                        title="Quick download as text file"
+                      >
+                        <ArrowDownTrayIcon className="w-4 h-4 mr-1" />
+                        Quick .txt
+                      </button>
+                    </div>
+                  </div>
                   <div className="mt-2 bg-gray-50 p-4 rounded-md">
                     <pre className="whitespace-pre-wrap text-sm text-gray-800 font-mono">{generatedPrompt.prompt}</pre>
+                  </div>
+                </div>
+
+                <div className="bg-green-50 border border-green-200 rounded-md p-3 mb-4">
+                  <div className="flex">
+                    <div className="flex-shrink-0">
+                      <CheckCircleIcon className="h-5 w-5 text-green-400" aria-hidden="true" />
+                    </div>
+                    <div className="ml-3">
+                      <p className="text-sm text-green-800">
+                        <strong>Success!</strong> Your idea has been automatically added to the Community Ideas page where others can discover and build upon it.
+                      </p>
+                    </div>
                   </div>
                 </div>
 
@@ -424,7 +529,7 @@ For ${userIdea} specifically:
                     onClick={submitToCommunity}
                   >
                     <LightBulbIcon className="h-5 w-5 mr-2" />
-                    Share with Community
+                    View in Community
                   </button>
                   <button
                     type="button"

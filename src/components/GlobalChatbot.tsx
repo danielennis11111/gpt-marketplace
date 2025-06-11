@@ -43,23 +43,25 @@ export const GlobalChatbot: React.FC<GlobalChatbotProps> = ({ onClose, projectDa
   // Initialize with welcome message
   useEffect(() => {
     if (messages.length === 0) {
+      const getStatusMessage = () => {
+        if (isConnected) {
+          return `Connected via ${providerName}`;
+        } else if (isLoading) {
+          return 'Loading AI services...';
+        } else {
+          return 'Configure AI services in Settings to get enhanced responses';
+        }
+      };
+
       const welcomeMessage: ChatMessage = {
         id: 'welcome',
-        text: generateWelcomeMessage(),
+        text: `Hello! I'm your AI assistant. I can help you with questions, ideas, research, and more. What would you like to talk about?\n\n*${getStatusMessage()}*`,
         isUser: false,
         timestamp: new Date()
       };
       setMessages([welcomeMessage]);
     }
-  }, [isConnected, pageContext.pageName]);
-
-  const generateWelcomeMessage = (): string => {
-    if (isConnected) {
-      return `Hi! I'm your ASU AI Assistant running with ${providerName}. I can help with ${pageContext.description.toLowerCase()}. What do you need?`;
-    } else {
-      return `Hi! I'm your ASU AI Assistant. I can help with ${pageContext.description.toLowerCase()}. Configure your AI service in settings for better responses!`;
-    }
-  };
+  }, [isConnected, isLoading, providerName, messages.length]);
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
@@ -90,7 +92,7 @@ export const GlobalChatbot: React.FC<GlobalChatbotProps> = ({ onClose, projectDa
         
         // Add information about available services
         if (availableProviders.length === 0) {
-          response += "\n\n*No AI services are configured. Please visit Settings to add API keys for Gemini or Llama, or start Ollama locally.*";
+          response += "\n\n*Configure AI services in Settings to get enhanced responses.*";
         }
       }
 

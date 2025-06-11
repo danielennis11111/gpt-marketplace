@@ -12,8 +12,10 @@ const SettingsForm: React.FC = () => {
   const [showGeminiKey, setShowGeminiKey] = useState(false);
   const [showLlamaKey, setShowLlamaKey] = useState(false);
 
-  const handleProviderChange = (provider: 'ollama' | 'gemini' | 'llama') => {
-    updateSettings({ preferredChatProvider: provider });
+  const handleProviderChange = (provider: 'gemini' | 'llama' | 'ollama') => {
+    updateSettings({
+      preferredChatProvider: provider
+    });
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -26,6 +28,12 @@ const SettingsForm: React.FC = () => {
     updateSettings({
       geminiApiKey: formData.geminiApiKey,
       llamaApiKey: formData.llamaApiKey,
+    });
+  };
+
+  const handleThemeChange = (theme: 'light' | 'dark') => {
+    updateSettings({
+      theme
     });
   };
 
@@ -42,34 +50,47 @@ const SettingsForm: React.FC = () => {
           <button 
             type="button"
             onClick={() => handleProviderChange('gemini')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
               settings.preferredChatProvider === 'gemini'
                 ? 'bg-indigo-600 text-white'
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
             }`}
           >
+            <img 
+              src="/gemini-logo.png"
+              alt="Gemini"
+              className="w-4 h-4 object-contain"
+            />
             Gemini AI
           </button>
           <button 
             type="button"
             onClick={() => handleProviderChange('llama')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
               settings.preferredChatProvider === 'llama'
                 ? 'bg-indigo-600 text-white'
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
             }`}
           >
+            <div className="w-4 h-4 bg-blue-600 rounded-full flex items-center justify-center">
+              <span className="text-white text-xs font-bold">M</span>
+            </div>
             Llama API
           </button>
           <button 
             type="button"
             onClick={() => handleProviderChange('ollama')}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors flex items-center gap-2 ${
               settings.preferredChatProvider === 'ollama'
                 ? 'bg-indigo-600 text-white'
                 : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
             }`}
           >
+            <img 
+              src="/ollama-logo.png"
+              alt="Ollama"
+              className="w-4 h-4 object-contain"
+            />
             Local Ollama
           </button>
         </div>
@@ -142,6 +163,37 @@ const SettingsForm: React.FC = () => {
           </p>
         </div>
       )}
+
+      {/* Theme Selection */}
+      <div className="space-y-2">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+          Theme
+        </label>
+        <div className="flex gap-3">
+          <button
+            type="button"
+            onClick={() => handleThemeChange('light')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              settings.theme === 'light'
+                ? 'bg-indigo-600 text-white'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
+            }`}
+          >
+            Light
+          </button>
+          <button
+            type="button"
+            onClick={() => handleThemeChange('dark')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+              settings.theme === 'dark'
+                ? 'bg-indigo-600 text-white'
+                : 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600'
+            }`}
+          >
+            Dark
+          </button>
+        </div>
+      </div>
 
       {/* Save Button */}
       <div className="pt-4">

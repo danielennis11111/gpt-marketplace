@@ -1,0 +1,74 @@
+{
+  "hash": "f2bc87f8",
+  "browserHash": "9ac00dc9",
+  "optimized": {
+    "react": {
+      "src": "../../node_modules/react/index.js",
+      "file": "react.js",
+      "fileHash": "d55aecfa",
+      "needsInterop": true
+    },
+    "react-dom/client": {
+      "src": "../../node_modules/react-dom/client.js",
+      "file": "react-dom_client.js",
+      "fileHash": "373aed21",
+      "needsInterop": true
+    },
+    "react-router-dom": {
+      "src": "../../node_modules/react-router-dom/dist/index.js",
+      "file": "react-router-dom.js",
+      "fileHash": "912a8373",
+      "needsInterop": false
+    },
+    "@heroicons/react/24/outline": {
+      "src": "../../node_modules/@heroicons/react/24/outline/esm/index.js",
+      "file": "@heroicons_react_24_outline.js",
+      "fileHash": "fc227a74",
+      "needsInterop": false
+    },
+    "@heroicons/react/24/solid": {
+      "src": "../../node_modules/@heroicons/react/24/solid/esm/index.js",
+      "file": "@heroicons_react_24_solid.js",
+      "fileHash": "d4d1742a",
+      "needsInterop": false
+    },
+    "lucide-react": {
+      "src": "../../node_modules/lucide-react/dist/esm/lucide-react.js",
+      "file": "lucide-react.js",
+      "fileHash": "21530fd7",
+      "needsInterop": false
+    },
+    "@headlessui/react": {
+      "src": "../../node_modules/@headlessui/react/dist/headlessui.esm.js",
+      "file": "@headlessui_react.js",
+      "fileHash": "c06b1658",
+      "needsInterop": false
+    },
+    "react-markdown": {
+      "src": "../../node_modules/react-markdown/index.js",
+      "file": "react-markdown.js",
+      "fileHash": "8309e0f7",
+      "needsInterop": false
+    },
+    "remark-gfm": {
+      "src": "../../node_modules/remark-gfm/index.js",
+      "file": "remark-gfm.js",
+      "fileHash": "8ee40e76",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "chunk-PS64ZXBB": {
+      "file": "chunk-PS64ZXBB.js"
+    },
+    "chunk-D5XH5CMR": {
+      "file": "chunk-D5XH5CMR.js"
+    },
+    "chunk-MA2WHGMY": {
+      "file": "chunk-MA2WHGMY.js"
+    },
+    "chunk-ZC22LKFR": {
+      "file": "chunk-ZC22LKFR.js"
+    }
+  }
+}

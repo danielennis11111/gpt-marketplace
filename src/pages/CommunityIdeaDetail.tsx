@@ -9,10 +9,12 @@ import {
   TagIcon,
   UserIcon,
   SparklesIcon,
-  ClipboardDocumentIcon
+  ClipboardDocumentIcon,
+  DocumentArrowDownIcon
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartIconSolid } from '@heroicons/react/24/solid';
 import { HoneInChatbot } from '../components/HoneInChatbot';
+import IdeaExportDialog from '../components/IdeaExportDialog';
 
 interface CommunityIdea {
   id: string;
@@ -37,6 +39,7 @@ export const CommunityIdeaDetail: React.FC = () => {
   const [isLiked, setIsLiked] = useState(false);
   const [showChatbot, setShowChatbot] = useState(true);
   const [showSystemInstructions, setShowSystemInstructions] = useState(false);
+  const [showExportDialog, setShowExportDialog] = useState(false);
 
   useEffect(() => {
     // Load the specific idea from localStorage
@@ -205,6 +208,14 @@ export const CommunityIdeaDetail: React.FC = () => {
                   <ShareIcon className="w-4 h-4 mr-1" />
                   Share
                 </button>
+
+                <button
+                  onClick={() => setShowExportDialog(true)}
+                  className="flex items-center px-3 py-2 bg-green-100 text-green-700 rounded-lg hover:bg-green-200 transition-colors"
+                >
+                  <DocumentArrowDownIcon className="w-4 h-4 mr-1" />
+                  Export
+                </button>
               </div>
             </div>
           </div>
@@ -318,6 +329,13 @@ export const CommunityIdeaDetail: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Export Dialog */}
+      <IdeaExportDialog
+        isOpen={showExportDialog}
+        onClose={() => setShowExportDialog(false)}
+        idea={idea}
+      />
     </div>
   );
 }; 

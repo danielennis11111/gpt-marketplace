@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { HashRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import { DashboardPage } from './pages/DashboardPage';
 import { ProjectDetail } from './components/ProjectDetail';
 import MyProjects from './pages/MyProjects';
 import ProjectEditor from './pages/ProjectEditor';
-import CommunityIdeas from './pages/CommunityIdeas';
+import CommunityIdeasPage from './pages/CommunityIdeasPage';
 import { ContributePage } from './pages/ContributePage';
 import { LaunchPadPage } from './pages/LaunchPadPage';
 import { AsuGptPage } from './pages/AsuGptPage';
@@ -262,7 +262,7 @@ const AppContent = () => {
           <Route path="/edit-project/:id" element={<ProjectEditor />} />
           <Route path="/contribute" element={<ContributePage />} />
           <Route path="/launch-pad" element={<LaunchPadPage />} />
-          <Route path="/community-ideas" element={<CommunityIdeas />} />
+          <Route path="/community-ideas" element={<CommunityIdeasPage />} />
           <Route path="/community-ideas/:id" element={<CommunityIdeaDetail />} />
           <Route path="/asugpt" element={<AsuGptPage />} />
           <Route path="/settings" element={<SettingsPage />} />

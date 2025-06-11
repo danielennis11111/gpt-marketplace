@@ -1,0 +1,15 @@
+this is how the app should function. 
+
+users land on a dashboard page, where there is a floating sidebar chat. they click it and it encourages them to add an api in settings or run ollama locally. 
+
+in the settings page, user can add as many apis as they want, and can connect to ollama models locally at the same time. 
+
+there is no backend. 
+
+settings page neeeds to securely store api keys locally in local storage and use this local storage to retrieve the api key whenever it's called elsewhere 
+
+there should be a fallback system in place for the user to choose their preferred model to call. when this is selected, the defaults across the site use this model selection method, including all of our dynamic data for context window size, our details in the model selection dropdown, and a model from that connection is provided as the default. 
+
+for example, I could install a gemini api key and a llama api key in local storage, but choose llama as my preference. if I do that, everywhere uses llama as the base model. then if each page has unique personas or instructions they just use the model and adapt to the persona being used. this is already built so don't try and rebuild this. 
+
+The default key should also be used on the launch pad page. 

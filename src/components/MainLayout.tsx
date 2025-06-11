@@ -1,6 +1,8 @@
 import React from 'react';
 import type { ReactNode } from 'react';
 import GeminiInitializer from './GeminiInitializer';
+import LlamaInitializer from './LlamaInitializer';
+import OllamaInitializer from './OllamaInitializer';
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -17,6 +19,8 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
     <>
       {/* Global service initializers */}
       <GeminiInitializer />
+      <LlamaInitializer />
+      <OllamaInitializer />
       
       {/* Main content */}
       {children}

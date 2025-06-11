@@ -300,17 +300,12 @@ const PersonaChatSelection: React.FC<PersonaChatSelectionProps> = ({
     // Get enhancement if available
     const enhancement = enhancedPrompts[template.id];
     
-    // Create enhanced system prompt if needed
-    let finalSystemPrompt = template.systemPrompt;
-    if (enhancement && enhancement.systemInstructions) {
-      finalSystemPrompt = `${template.systemPrompt}\n\n# SPECIALIZED KNOWLEDGE AND CAPABILITIES\n\nI have specialized knowledge and capabilities related to "${enhancement.title}" that allows me to provide expert assistance in this area. This includes:\n\n${enhancement.systemInstructions}`;
-    }
-    
+    // Pass the template with enhancement info (unified system will handle combining)
     onSelectChat({
       ...template,
       modelId,
-      systemPrompt: finalSystemPrompt,
-      enhancedWithIdea: enhancement
+      systemPrompt: template.systemPrompt, // Keep original persona prompt
+      enhancedWithIdea: enhancement // Let unified system handle the combination
     });
   };
 

@@ -1,14 +1,13 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { secureStore, secureRetrieve } from '../utils/secureStorage';
+import { secureStore, secureRetrieve, secureRemove } from '../utils/secureStorage';
 
 export interface UserSettings {
-  preferredChatProvider: 'ollama' | 'gemini' | 'llama';
-  ollamaModel: string;
+  preferredChatProvider: 'gemini' | 'llama' | 'ollama';
   geminiApiKey: string;
   llamaApiKey: string;
   theme: 'light' | 'dark';
-  notificationsEnabled: boolean;
+  notifications: boolean;
 }
 
 interface SettingsContextType {
@@ -21,11 +20,10 @@ interface SettingsContextType {
 
 const defaultSettings: UserSettings = {
   preferredChatProvider: 'gemini',
-  ollamaModel: '',
   geminiApiKey: '',
   llamaApiKey: '',
   theme: 'light',
-  notificationsEnabled: true,
+  notifications: true,
 };
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
@@ -42,110 +40,126 @@ interface SettingsProviderProps {
   children: ReactNode;
 }
 
+// Validate API key format
+const validateGeminiApiKey = (key: string): boolean => {
+  // Gemini API keys start with 'AIza' and are typically 39 characters long
+  return key.startsWith('AIza') && key.length >= 35 && key.length <= 45;
+};
+
+const validateLlamaApiKey = (key: string): boolean => {
+  // Basic validation for Llama API keys - adjust based on actual format
+  return key.length >= 20 && /^[A-Za-z0-9_-]+$/.test(key);
+};
+
 export const SettingsProvider: React.FC<SettingsProviderProps> = ({ children }) => {
   const [settings, setSettings] = useState<UserSettings>(defaultSettings);
 
-  // Load settings from localStorage on mount
   useEffect(() => {
-    try {
-      const savedSettings = localStorage.getItem('userSettings');
-      if (savedSettings) {
-        const parsedSettings = JSON.parse(savedSettings);
-        
-        // Handle migration from old format with llama4scout
-        if (parsedSettings.preferredChatProvider === 'llama4scout') {
-          parsedSettings.preferredChatProvider = 'ollama';
-        }
-        
-        // Load the securely stored API keys if available
-        const secureGeminiApiKey = secureRetrieve('gemini_api_key');
-        if (secureGeminiApiKey) {
-          parsedSettings.geminiApiKey = secureGeminiApiKey;
-        }
+    console.log('SettingsContext: Loading settings from localStorage');
+    const loadSettings = () => {
+      try {
+        const storedSettings = localStorage.getItem('userSettings');
+        if (storedSettings) {
+          const parsedSettings = JSON.parse(storedSettings);
+          console.log('SettingsContext: Found stored settings');
+          
+          // Load API keys from secure storage
+          const geminiKey = secureRetrieve('geminiApiKey');
+          const llamaKey = secureRetrieve('llamaApiKey');
+          
+          console.log('SettingsContext: API keys loaded from secure storage', {
+            hasGeminiKey: !!geminiKey,
+            geminiKeyValid: geminiKey ? validateGeminiApiKey(geminiKey) : false,
+            hasLlamaKey: !!llamaKey,
+            llamaKeyValid: llamaKey ? validateLlamaApiKey(llamaKey) : false
+          });
 
-        const secureLlamaApiKey = secureRetrieve('llama_api_key');
-        if (secureLlamaApiKey) {
-          parsedSettings.llamaApiKey = secureLlamaApiKey;
+          setSettings({
+            ...parsedSettings,
+            geminiApiKey: geminiKey || '',
+            llamaApiKey: llamaKey || '',
+          });
+        } else {
+          console.log('SettingsContext: No stored settings found, using defaults');
         }
-        
-        setSettings({ ...defaultSettings, ...parsedSettings });
-      } else {
-        // Check if we have securely stored API keys even if no settings are saved
-        const secureGeminiApiKey = secureRetrieve('gemini_api_key');
-        const secureLlamaApiKey = secureRetrieve('llama_api_key');
-        
-        if (secureGeminiApiKey || secureLlamaApiKey) {
-          const newSettings = { ...defaultSettings };
-          if (secureGeminiApiKey) {
-            newSettings.geminiApiKey = secureGeminiApiKey;
-          }
-          if (secureLlamaApiKey) {
-            newSettings.llamaApiKey = secureLlamaApiKey;
-          }
-          setSettings(newSettings);
-        }
+      } catch (error) {
+        console.error('SettingsContext: Error loading settings:', error);
+        // Reset to defaults if there's an error
+        setSettings(defaultSettings);
       }
-    } catch (error) {
-      console.error('Error loading settings:', error);
-    }
+    };
+
+    loadSettings();
   }, []);
 
-  // Save settings to localStorage whenever they change
-  useEffect(() => {
-    try {
-      // Create a copy of settings without the API keys for regular localStorage
-      const settingsForStorage = { ...settings };
-      
-      // Store the API keys securely
-      if (settings.geminiApiKey) {
-        secureStore('gemini_api_key', settings.geminiApiKey);
-        // Remove the API key from the regular settings storage
-        settingsForStorage.geminiApiKey = '';
-        
-        // Debug logging
-        console.log('Gemini API key configured and stored securely');
-      }
-      
-      if (settings.llamaApiKey) {
-        secureStore('llama_api_key', settings.llamaApiKey);
-        // Remove the API key from the regular settings storage
-        settingsForStorage.llamaApiKey = '';
-        
-        // Debug logging
-        console.log('Llama API key configured and stored securely');
-      }
-      
-      localStorage.setItem('userSettings', JSON.stringify(settingsForStorage));
-      
-      // Debug logging - what providers are enabled?
-      console.log('Settings updated:', {
-        preferredChatProvider: settings.preferredChatProvider,
-        geminiConfigured: !!settings.geminiApiKey,
-        llamaConfigured: !!settings.llamaApiKey,
-        ollamaModel: settings.ollamaModel || 'not set'
-      });
-    } catch (error) {
-      console.error('Error saving settings:', error);
-    }
-  }, [settings]);
-
   const updateSettings = (newSettings: Partial<UserSettings>) => {
-    setSettings(prev => ({ ...prev, ...newSettings }));
+    console.log('SettingsContext: Updating settings', newSettings);
+    try {
+      const updatedSettings = { ...settings, ...newSettings };
+      
+      // Validate and store API keys in secure storage
+      if (newSettings.geminiApiKey !== undefined) {
+        if (newSettings.geminiApiKey && !validateGeminiApiKey(newSettings.geminiApiKey)) {
+          console.warn('SettingsContext: Invalid Gemini API key format');
+        }
+        console.log('SettingsContext: Storing Gemini API key');
+        secureStore('geminiApiKey', newSettings.geminiApiKey);
+      }
+      
+      if (newSettings.llamaApiKey !== undefined) {
+        if (newSettings.llamaApiKey && !validateLlamaApiKey(newSettings.llamaApiKey)) {
+          console.warn('SettingsContext: Invalid Llama API key format');
+        }
+        console.log('SettingsContext: Storing Llama API key');
+        secureStore('llamaApiKey', newSettings.llamaApiKey);
+      }
+
+      // Store non-sensitive settings in localStorage
+      const { geminiApiKey, llamaApiKey, ...publicSettings } = updatedSettings;
+      localStorage.setItem('userSettings', JSON.stringify(publicSettings));
+      
+      setSettings(updatedSettings);
+      console.log('SettingsContext: Settings updated successfully');
+    } catch (error) {
+      console.error('SettingsContext: Error updating settings:', error);
+    }
   };
 
   const resetSettings = () => {
-    setSettings(defaultSettings);
-    localStorage.removeItem('userSettings');
-    secureStore('gemini_api_key', ''); // Clear the securely stored Gemini API key
-    secureStore('llama_api_key', ''); // Clear the securely stored Llama API key
+    console.log('SettingsContext: Resetting settings');
+    try {
+      // Clear secure storage
+      secureRemove('geminiApiKey');
+      secureRemove('llamaApiKey');
+      
+      // Clear localStorage
+      localStorage.removeItem('userSettings');
+      
+      setSettings(defaultSettings);
+      console.log('SettingsContext: Settings reset successfully');
+    } catch (error) {
+      console.error('SettingsContext: Error resetting settings:', error);
+    }
   };
 
   const isGeminiConfigured = () => {
-    return settings.geminiApiKey.trim().length > 0;
+    const configured = !!settings.geminiApiKey && validateGeminiApiKey(settings.geminiApiKey);
+    console.log('SettingsContext: Checking Gemini configuration:', {
+      hasKey: !!settings.geminiApiKey,
+      isValid: configured,
+      keyLength: settings.geminiApiKey?.length || 0
+    });
+    return configured;
   };
 
   const isLlamaConfigured = () => {
-    return settings.llamaApiKey.trim().length > 0;
+    const configured = !!settings.llamaApiKey && validateLlamaApiKey(settings.llamaApiKey);
+    console.log('SettingsContext: Checking Llama configuration:', {
+      hasKey: !!settings.llamaApiKey,
+      isValid: configured,
+      keyLength: settings.llamaApiKey?.length || 0
+    });
+    return configured;
   };
 
   const value: SettingsContextType = {

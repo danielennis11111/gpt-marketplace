@@ -20,6 +20,7 @@ import {
   InformationCircleIcon
 } from '@heroicons/react/24/outline';
 import { fetchAllAvailableModels, debugModelLoading } from '../utils/modelHelper';
+import EnhancedRAGDemo from '../components/EnhancedRAGDemo';
 
 export const SettingsPage: React.FC = () => {
   const { settings, updateSettings, resetSettings, isGeminiConfigured, isLlamaConfigured } = useSettings();
@@ -300,8 +301,15 @@ export const SettingsPage: React.FC = () => {
                     className="mt-1 text-red-600 focus:ring-red-500"
                   />
                   <label htmlFor="provider-ollama" className="ml-3 cursor-pointer flex-1">
-                    <span className="block text-lg font-medium text-gray-900">Ollama (Local)</span>
-                    <span className="block text-sm text-gray-500 mt-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <img 
+                        src="/ollama-logo.png"
+                        alt="Ollama"
+                        className="w-5 h-5 object-contain"
+                      />
+                      <span className="text-lg font-medium text-gray-900">Ollama (Local)</span>
+                    </div>
+                    <span className="block text-sm text-gray-500">
                       Run AI models locally on your machine. Free but requires setup.
                     </span>
                   </label>
@@ -541,8 +549,15 @@ export const SettingsPage: React.FC = () => {
                     disabled={!isGeminiConfigured()}
                   />
                   <label htmlFor="provider-gemini" className="ml-3 cursor-pointer flex-1">
-                    <span className="block text-lg font-medium text-gray-900">Gemini</span>
-                    <span className="block text-sm text-gray-500 mt-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <img 
+                        src="/gemini-logo.png"
+                        alt="Google Gemini"
+                        className="w-5 h-5 object-contain"
+                      />
+                      <span className="text-lg font-medium text-gray-900">Gemini</span>
+                    </div>
+                    <span className="block text-sm text-gray-500">
                       Cloud-based AI from Google. Free tier available.
                     </span>
                   </label>
@@ -688,8 +703,13 @@ export const SettingsPage: React.FC = () => {
                     className="mt-1 text-green-600 focus:ring-green-500"
                   />
                   <label htmlFor="provider-llama" className="ml-3 cursor-pointer flex-1">
-                    <span className="block text-lg font-medium text-gray-900">Llama (Cloud API)</span>
-                    <span className="block text-sm text-gray-500 mt-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-5 h-5 bg-blue-600 rounded-full flex items-center justify-center">
+                        <span className="text-white text-xs font-bold">M</span>
+                      </div>
+                      <span className="text-lg font-medium text-gray-900">Llama (Cloud API)</span>
+                    </div>
+                    <span className="block text-sm text-gray-500">
                       Access Meta's powerful Llama models via cloud API. Requires API key.
                     </span>
                   </label>
@@ -1108,6 +1128,11 @@ export const SettingsPage: React.FC = () => {
               ))}
             </div>
           )}
+        </div>
+
+        {/* Enhanced RAG File Support Demo */}
+        <div className="mt-8">
+          <EnhancedRAGDemo />
         </div>
       </div>
     </div>

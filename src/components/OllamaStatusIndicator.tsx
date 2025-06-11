@@ -18,26 +18,30 @@ const OllamaStatusIndicator: React.FC = () => {
   let statusInfo = {
     name: 'AI Provider',
     isConnected: false,
-    details: ''
+    details: '',
+    logoPath: ''
   };
   
   if (preferredProvider === 'gemini' && hasGeminiApiKey) {
     statusInfo = {
       name: 'Gemini',
       isConnected: true,
-      details: '2.0 Flash'
+      details: '2.0 Flash',
+      logoPath: '/gemini-logo.png'
     };
   } else if (preferredProvider === 'ollama' && ollama.status.isConnected) {
     statusInfo = {
       name: 'Ollama',
       isConnected: ollama.status.isConnected,
-      details: ollama.status.currentModel || 'Connected'
+      details: ollama.status.currentModel || 'Connected',
+      logoPath: '/ollama-logo.png'
     };
   } else if (ollama.status.isConnected) {
     statusInfo = {
       name: 'Ollama',
       isConnected: ollama.status.isConnected,
-      details: ollama.status.currentModel || 'Connected'
+      details: ollama.status.currentModel || 'Connected',
+      logoPath: '/ollama-logo.png'
     };
   }
 
@@ -56,6 +60,16 @@ const OllamaStatusIndicator: React.FC = () => {
           statusInfo.isConnected ? 'bg-green-500' : 'bg-red-500'
         }`}
       />
+      
+      {/* Provider Logo */}
+      {statusInfo.logoPath && (
+        <img 
+          src={statusInfo.logoPath}
+          alt={statusInfo.name}
+          className="w-4 h-4 object-contain"
+        />
+      )}
+      
       <span>
         {statusInfo.isConnected 
           ? `${statusInfo.name} Connected: ${statusInfo.details}` 

@@ -25,6 +25,10 @@ import type { PersonaChatTemplate } from './PersonaChatSelection';
 
 // Import the MarkdownContent component
 import MarkdownContent from './MarkdownContent';
+import DownloadButton from './DownloadButton';
+import { EnhancedRAGProcessor } from '../utils/enhancedRAGProcessor';
+import { UnifiedPromptSystem, type SystemPromptComponents } from '../utils/promptSystem';
+import SystemPromptPreview from './SystemPromptPreview';
 
 interface CustomConversationViewProps {
   conversation: Conversation;
@@ -60,6 +64,55 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
   const [selectedModel, setSelectedModel] = useState(settings.preferredChatProvider === 'gemini' ? 'gemini-2.0-flash' : (ollama.status.currentModel || 'llama3.1:8b'));
   const [activeParticipant, setActiveParticipant] = useState<string | undefined>(undefined);
   const [isScrolling, setIsScrolling] = useState(false);
+  
+  // Initialize RAG processor based on current model
+  const [ragProcessor, setRagProcessor] = useState(() => new EnhancedRAGProcessor(selectedModel));
+  
+  // Update RAG processor when model changes
+  useEffect(() => {
+    const currentModel = settings.preferredChatProvider === 'gemini' ? 'gemini-2.0-flash' : 
+                         ollama.status.currentModel || 'llama3.1:8b';
+    setRagProcessor(new EnhancedRAGProcessor(currentModel));
+  }, [settings.preferredChatProvider, ollama.status.currentModel]);
+
+  // Build unified system prompt combining all components
+  const buildUnifiedSystemPrompt = (): string => {
+    // Get current participant for persona
+    const participant = ASU_PARTICIPANTS.find(p => p.id === activeParticipant);
+    let persona = null;
+    
+    if (participant) {
+      const personaTemplate = PERSONA_CHAT_TEMPLATES.find(
+        t => t.persona === participant.name
+      );
+      if (personaTemplate) {
+        persona = {
+          name: participant.name,
+          systemPrompt: personaTemplate.systemPrompt
+        };
+      }
+    }
+
+    // Extract additional instructions from enhanced template
+    let additionalInstructions = null;
+    const enhancedTemplate = template as any; // Type assertion for enhanced properties
+    if (enhancedTemplate.enhancedWithIdea?.systemInstructions) {
+      additionalInstructions = {
+        title: enhancedTemplate.enhancedWithIdea.title,
+        instructions: enhancedTemplate.enhancedWithIdea.systemInstructions
+      };
+    }
+
+    // Build prompt components
+    const components: SystemPromptComponents = UnifiedPromptSystem.extractPromptComponents(
+      template,
+      persona,
+      additionalInstructions,
+      ragDocuments
+    );
+
+    return UnifiedPromptSystem.buildSystemPrompt(components);
+  };
   
   // Auto-scroll to bottom of messages
   useEffect(() => {
@@ -163,22 +216,32 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
     const hasGeminiApiKey = !!settings.geminiApiKey && settings.geminiApiKey.trim() !== '';
     const hasLlamaApiKey = !!settings.llamaApiKey && settings.llamaApiKey.trim() !== '';
     
-    // Build message history for context
-    const messageHistory = conversation.messages
-      .filter(msg => {
-        // Include messages that are user or assistant messages
-        return msg.role === 'user' || msg.role === 'assistant';
-      })
-      .map(msg => ({
-        role: msg.role,
-        content: msg.content
-      }));
+    // Build unified system prompt
+    const systemPrompt = buildUnifiedSystemPrompt();
     
-    // Add the new user message
-    messageHistory.push({
-      role: 'user',
-      content: userMessage
-    });
+    // Build message history for context
+    const messageHistory = [
+      // Start with system message
+      {
+        role: 'system',
+        content: systemPrompt
+      },
+      // Add conversation history (exclude system messages as we have our own)
+      ...conversation.messages
+        .filter(msg => {
+          return (msg.role === 'user' || msg.role === 'assistant') && 
+                 msg.content && msg.content.trim() !== '';
+        })
+        .map(msg => ({
+          role: msg.role,
+          content: msg.content
+        })),
+      // Add the new user message
+      {
+        role: 'user',
+        content: userMessage
+      }
+    ];
     
     // Try providers in order of preference with fallbacks
     
@@ -260,24 +323,33 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
                          ollama.status.currentModel || 'llama3.1:8b';
     console.log(`Using model ${currentModel} for streaming response`);
     
-    // Build message history for context (filter out empty messages)
-    const messageHistory = conversation.messages
-      .filter(msg => {
-        // Include messages that are user or assistant messages and have content
-        return (msg.role === 'user' || msg.role === 'assistant') && 
-               msg.content && msg.content.trim() && 
-               msg.content !== '...'; // Filter out placeholder content
-      })
-      .map(msg => ({
-        role: msg.role,
-        content: msg.content
-      }));
+    // Build unified system prompt
+    const systemPrompt = buildUnifiedSystemPrompt();
     
-    // Add the new user message
-    messageHistory.push({
-      role: 'user',
-      content: userMessage
-    });
+    // Build message history for context (filter out empty messages)
+    const messageHistory = [
+      // Start with unified system message
+      {
+        role: 'system',
+        content: systemPrompt
+      },
+      // Add conversation history (exclude system messages as we have our own)
+      ...conversation.messages
+        .filter(msg => {
+          return (msg.role === 'user' || msg.role === 'assistant') && 
+                 msg.content && msg.content.trim() && 
+                 msg.content !== '...'; // Filter out placeholder content
+        })
+        .map(msg => ({
+          role: msg.role,
+          content: msg.content
+        })),
+      // Add the new user message
+      {
+        role: 'user',
+        content: userMessage
+      }
+    ];
     
     // Try streaming with preferred provider first
     
@@ -689,68 +761,32 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
     const newActiveParticipant = participantId === activeParticipant ? undefined : participantId;
     setActiveParticipant(newActiveParticipant);
     
-    // If a new participant is selected, update the system prompt
+    // If a new participant is selected, add user-visible message
     if (newActiveParticipant) {
       const participant = ASU_PARTICIPANTS.find(p => p.id === newActiveParticipant);
       if (participant) {
         console.log(`Selected participant: ${participant.name}`);
         
-        // Find matching persona from PERSONA_CHAT_TEMPLATES
-        const personaTemplate = PERSONA_CHAT_TEMPLATES.find(
-          template => template.persona === participant.name
-        );
-        
-        if (personaTemplate && personaTemplate.systemPrompt) {
-          // Add or update system message
-          const existingSystemMessage = conversation.messages.find(m => m.role === 'system');
-          
-          if (existingSystemMessage) {
-            // Update existing system message
-            conversationManager.updateMessage(
-              conversation.id,
-              existingSystemMessage.id,
-              { content: personaTemplate.systemPrompt }
-            );
-          } else {
-            // Add new system message
-            const systemMessage = {
-              role: 'system',
-              content: personaTemplate.systemPrompt,
-              isVisible: false
-            };
-            
-            conversationManager.addMessageAtPosition(conversation.id, systemMessage, 0);
-          }
-          
-          // Add a user-visible message about the participant
-          const infoMessage = {
-            role: 'assistant',
-            content: `You are now chatting with **${participant.name}**, ${participant.role}. Feel free to ask about ${participant.expertise.join(', ')}.`,
-            isVisible: true
-          };
-          
-          conversationManager.addMessage(conversation.id, infoMessage);
-          onConversationUpdate();
-        }
-      }
-    } else if (activeParticipant && !newActiveParticipant) {
-      // If participant is deselected, remove system prompt
-      const existingSystemMessage = conversation.messages.find(m => m.role === 'system');
-      
-      if (existingSystemMessage) {
-        // Remove the system message or reset to default
-        conversationManager.hideMessage(conversation.id, existingSystemMessage.id);
-        
-        // Add a message about ending the specialized chat
-        const endMessage = {
+        // Add a user-visible message about the participant (system prompt handled by unified system)
+        const infoMessage = {
           role: 'assistant',
-          content: 'You are now back to chatting with a general AI assistant.',
+          content: `You are now chatting with **${participant.name}**, ${participant.role}. Feel free to ask about ${participant.expertise.join(', ')}.`,
           isVisible: true
         };
         
-        conversationManager.addMessage(conversation.id, endMessage);
+        conversationManager.addMessage(conversation.id, infoMessage);
         onConversationUpdate();
       }
+    } else if (activeParticipant && !newActiveParticipant) {
+      // If participant is deselected, add message about general chat
+      const endMessage = {
+        role: 'assistant',
+        content: 'You are now back to chatting with a general AI assistant.',
+        isVisible: true
+      };
+      
+      conversationManager.addMessage(conversation.id, endMessage);
+      onConversationUpdate();
     }
   };
   
@@ -761,13 +797,42 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
     setRagDocuments(updatedDocuments);
   };
   
-  // Add this function to handle uploading files
+  // Add this function to handle uploading files with enhanced RAG processor
   const handleFileUpload = async (file: File) => {
     setIsFileLoading(true);
     try {
-      // Process the file
-      const content = await file.text();
-      const docContext = processDocumentForRAG(file, content);
+      // Check if file is supported by current model
+      const validation = ragProcessor.isFileSupported(file);
+      if (!validation.supported) {
+        alert(validation.reason || 'File not supported');
+        return;
+      }
+      
+      // Process the file using enhanced processor
+      const processedFile = await ragProcessor.processFile(file);
+      
+      // Map fileType to compatible type
+      const mapFileTypeToDocumentType = (fileType: string): "pdf" | "docx" | "txt" | "md" | "csv" | "json" | "xml" | "html" | "code" | "binary" => {
+        switch (fileType) {
+          case 'image': return 'binary';
+          case 'audio': return 'binary';
+          case 'video': return 'binary';
+          case 'data': return 'json';
+          case 'code': return 'code';
+          case 'document': return 'pdf';
+          default: return 'txt';
+        }
+      };
+      
+      // Convert to DocumentContext for compatibility
+      const docContext: DocumentContext = {
+        type: mapFileTypeToDocumentType(processedFile.fileType),
+        name: processedFile.name,
+        content: processedFile.content,
+        tokenCount: processedFile.tokenCount,
+        size: processedFile.size,
+        uploadedAt: processedFile.uploadedAt
+      };
       
       // Check if we need to compress based on context size
       const currentModelId = settings.preferredChatProvider === 'gemini' ? 'gemini-2.0-flash' : 
@@ -807,16 +872,21 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
       // Update state with processed documents
       setRagDocuments(newDocuments);
       
-      // Show notification about compression
-      if (percentageUsed > 30) {
-        // Display notification about compression
-        alert(`Added document "${file.name}" (${docContext.tokenCount.toLocaleString()} tokens). Documents were compressed to fit in context window.`);
-      } else {
-        alert(`Added document "${file.name}" (${docContext.tokenCount.toLocaleString()} tokens)`);
+      // Show enhanced notification with file type and capabilities info
+      let notification = `Added ${processedFile.fileType}: "${file.name}" (${docContext.tokenCount.toLocaleString()} tokens)`;
+      
+      if (processedFile.fileType === 'image' && processedFile.metadata.dimensions) {
+        notification += ` - ${processedFile.metadata.dimensions.width}x${processedFile.metadata.dimensions.height}`;
       }
+      
+      if (percentageUsed > 30) {
+        notification += '. Documents were compressed to fit in context window.';
+      }
+      
+      alert(notification);
     } catch (error) {
       console.error("Error processing document:", error);
-      alert(`Error processing document: ${error}`);
+      alert(`Error processing document: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsFileLoading(false);
     }
@@ -828,6 +898,16 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
       
       {/* Main chat area - now full width */}
       <div className="flex-1 overflow-auto p-4">
+        
+        {/* System Prompt Preview (for debugging/transparency) */}
+        <div className="mb-4">
+          <SystemPromptPreview
+            template={template}
+            persona={activeParticipant ? ASU_PARTICIPANTS.find(p => p.id === activeParticipant) : null}
+            additionalInstructions={(template as any).enhancedWithIdea}
+            ragDocuments={ragDocuments}
+          />
+        </div>
         {/* Conversation Partners panel removed - now in top bar */}
         
         {/* Messages */}
@@ -847,7 +927,18 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
                 {message.role === 'user' ? (
                   <div className="whitespace-pre-wrap">{message.content}</div>
                 ) : (
-                  <MarkdownContent content={message.content} />
+                  <div className="space-y-2">
+                    <MarkdownContent content={message.content} />
+                    {/* Download button for assistant messages */}
+                    <div className="flex justify-end">
+                      <DownloadButton 
+                        content={message.content} 
+                        filename={`ai_response_${index + 1}`}
+                        title={`AI Response ${index + 1}`}
+                        compact={true}
+                      />
+                    </div>
+                  </div>
                 )}
               </div>
             </div>
@@ -882,7 +973,7 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
               onClick={() => document.getElementById('file-upload')?.click()}
               disabled={isLoading || isFileLoading}
               className={`p-3 rounded-lg transition-colors bg-gray-100 text-gray-600 hover:bg-gray-200 disabled:opacity-50`}
-              title="Upload document for context"
+              title={`Upload files for context - ${ragProcessor.getCapabilitiesString()}`}
             >
               <Upload className="w-5 h-5" />
               {isFileLoading && (
@@ -892,7 +983,7 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
             <input
               id="file-upload"
               type="file"
-              accept=".pdf,.txt,.md,.doc,.docx"
+              accept={ragProcessor.getAcceptString()}
               onChange={(e) => {
                 const file = e.target.files?.[0];
                 if (file) {
