@@ -272,7 +272,7 @@ export class EnhancedRAGProcessor {
     // Convert to base64 for vision models
     const base64 = await this.fileToBase64(file);
     processedFile.base64Data = base64;
-    processedFile.processingMethod = 'base64_vision';
+    processedFile.processingMethod = 'vision_analysis';
     
     // Try to get image dimensions
     try {
@@ -282,17 +282,31 @@ export class EnhancedRAGProcessor {
       console.warn('Could not get image dimensions:', error);
     }
 
-    // Generate description for content
-    processedFile.content = `[Image: ${file.name}] - ${file.type} image file (${(file.size / 1024).toFixed(1)}KB)`;
+    // Start with basic file information
+    let content = `## Image Analysis: ${file.name}\n\n`;
+    content += `**File Details:**\n`;
+    content += `- Type: ${file.type}\n`;
+    content += `- Size: ${(file.size / 1024).toFixed(1)}KB\n`;
     
     if (processedFile.metadata.dimensions) {
-      processedFile.content += ` - Dimensions: ${processedFile.metadata.dimensions.width}x${processedFile.metadata.dimensions.height}`;
+      content += `- Dimensions: ${processedFile.metadata.dimensions.width}x${processedFile.metadata.dimensions.height}\n`;
     }
 
-    // For models without vision, provide basic description
-    if (!this.capabilities.vision) {
-      processedFile.content += '\n[Note: This model cannot process images. Only file metadata is available.]';
+    // For models with vision capabilities, prepare for image analysis
+    if (this.capabilities.vision && this.isGeminiModel()) {
+      // Store placeholder content that will be processed when analyzing
+      content += `\n**Visual Analysis:**\n[Image ready for AI analysis. Content will be generated when processed by the chat system.]\n`;
+      content += `\n**Text Extraction:**\n[OCR analysis will be performed when processed by the chat system.]\n`;
+      processedFile.processingMethod = 'gemini_vision_ready';
+    } else {
+      content += '\n[Note: This model cannot process images. Only file metadata is available.]';
     }
+
+    processedFile.content = content;
+  }
+
+  private isGeminiModel(): boolean {
+    return this.model.includes('gemini');
   }
 
   private async processAudioFile(file: File, processedFile: ProcessedFile): Promise<void> {

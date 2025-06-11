@@ -10,6 +10,131 @@ export class GeminiService {
     this.apiKey = apiKey;
   }
 
+  async generateContentWithImage(prompt: string, imageData: string, mimeType: string, model: string = 'gemini-2.0-flash'): Promise<string> {
+    console.log('GeminiService: Generating content with image using model:', model);
+    
+    if (!this.apiKey) {
+      console.error('GeminiService: No API key available');
+      throw new Error('Gemini API key not configured');
+    }
+
+    if (!this.apiKey.startsWith('AIza')) {
+      console.error('GeminiService: Invalid API key format');
+      throw new Error('Invalid Gemini API key format. API keys should start with "AIza"');
+    }
+
+    // Validate model supports vision
+    const visionModels = ['gemini-2.0-flash', 'gemini-1.5-pro', 'gemini-1.5-flash'];
+    if (!visionModels.includes(model)) {
+      console.warn(`GeminiService: Model "${model}" may not support vision, using default "gemini-2.0-flash"`);
+      model = 'gemini-2.0-flash';
+    }
+
+    try {
+      const requestBody = {
+        contents: [{
+          parts: [
+            {
+              text: prompt
+            },
+            {
+              inlineData: {
+                mimeType: mimeType,
+                data: imageData
+              }
+            }
+          ]
+        }],
+        generationConfig: {
+          temperature: 0.7,
+          topK: 40,
+          topP: 0.95,
+          maxOutputTokens: 4096, // Increased for detailed image analysis
+        },
+        safetySettings: [
+          {
+            category: 'HARM_CATEGORY_HARASSMENT',
+            threshold: 'BLOCK_MEDIUM_AND_ABOVE'
+          },
+          {
+            category: 'HARM_CATEGORY_HATE_SPEECH',
+            threshold: 'BLOCK_MEDIUM_AND_ABOVE'
+          },
+          {
+            category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT',
+            threshold: 'BLOCK_MEDIUM_AND_ABOVE'
+          },
+          {
+            category: 'HARM_CATEGORY_DANGEROUS_CONTENT',
+            threshold: 'BLOCK_MEDIUM_AND_ABOVE'
+          }
+        ]
+      };
+
+      console.log('GeminiService: Making vision API request to:', `${this.baseUrl}/${model}:generateContent`);
+
+      const response = await fetch(`${this.baseUrl}/${model}:generateContent?key=${this.apiKey}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody)
+      });
+
+      if (!response.ok) {
+        const errorData = await response.text();
+        console.error('GeminiService: Vision API error:', {
+          status: response.status,
+          statusText: response.statusText,
+          errorData
+        });
+
+        // Handle specific error cases
+        switch (response.status) {
+          case 400:
+            if (errorData.includes('FAILED_PRECONDITION')) {
+              throw new Error('Gemini vision API free tier is not available in your region. Please enable billing in Google AI Studio.');
+            }
+            if (errorData.includes('INVALID_ARGUMENT')) {
+              throw new Error('Invalid image format or size. Please use JPG, PNG, GIF, or WebP images under 20MB.');
+            }
+            throw new Error(`Invalid request: ${errorData}`);
+          case 403:
+            throw new Error('API key does not have vision permissions. Please check your API key in Google AI Studio.');
+          case 413:
+            throw new Error('Image file too large. Please use images under 20MB.');
+          default:
+            throw new Error(`Gemini Vision API error: ${response.status} - ${errorData}`);
+        }
+      }
+
+      const data = await response.json();
+      console.log('GeminiService: Vision content generated successfully');
+      
+      if (!data.candidates || data.candidates.length === 0) {
+        if (data.promptFeedback?.blockReason) {
+          throw new Error(`Content was blocked due to: ${data.promptFeedback.blockReason}. Please modify your prompt or image and try again.`);
+        }
+        throw new Error('No response generated from Gemini Vision. The content may have been filtered.');
+      }
+
+      const candidate = data.candidates[0];
+      if (candidate.finishReason === 'SAFETY') {
+        throw new Error('Response was blocked due to safety filters. Please modify your prompt or image and try again.');
+      }
+
+      const generatedText = candidate?.content?.parts?.[0]?.text;
+      if (!generatedText) {
+        throw new Error('Invalid response format from Gemini Vision');
+      }
+
+      return generatedText;
+    } catch (error) {
+      console.error('GeminiService: Error generating vision content:', error);
+      throw error;
+    }
+  }
+
   async generateContent(prompt: string, model: string = 'gemini-2.0-flash'): Promise<string> {
     console.log('GeminiService: Generating content with model:', model);
     
@@ -342,5 +467,112 @@ export class GeminiService {
         message: errorMessage
       };
     }
+  }
+
+  /**
+   * Convert a File object to base64 string for image analysis
+   */
+  async fileToBase64(file: File): Promise<{ data: string; mimeType: string }> {
+    return new Promise((resolve, reject) => {
+      // Validate file type
+      const supportedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+      if (!supportedTypes.includes(file.type)) {
+        reject(new Error(`Unsupported image format: ${file.type}. Please use JPG, PNG, GIF, or WebP.`));
+        return;
+      }
+
+      // Validate file size (20MB limit)
+      const maxSize = 20 * 1024 * 1024; // 20MB
+      if (file.size > maxSize) {
+        reject(new Error(`Image file too large: ${(file.size / 1024 / 1024).toFixed(1)}MB. Please use images under 20MB.`));
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (reader.result && typeof reader.result === 'string') {
+          // Remove the data:image/jpeg;base64, prefix
+          const base64Data = reader.result.split(',')[1];
+          resolve({
+            data: base64Data,
+            mimeType: file.type
+          });
+        } else {
+          reject(new Error('Failed to read image file'));
+        }
+      };
+      reader.onerror = () => reject(new Error('Error reading image file'));
+      reader.readAsDataURL(file);
+    });
+  }
+
+  /**
+   * Analyze an image with a custom prompt
+   */
+  async analyzeImage(file: File, customPrompt?: string, model: string = 'gemini-2.0-flash'): Promise<string> {
+    try {
+      console.log('GeminiService: Starting image analysis for file:', file.name);
+      
+      const { data, mimeType } = await this.fileToBase64(file);
+      
+      const defaultPrompt = `Please analyze this image in detail. Provide a comprehensive description that includes:
+
+1. **Overall Description**: What is the main subject or scene in the image?
+2. **Visual Elements**: Colors, composition, lighting, style, and any notable visual features
+3. **Text Content**: Any text, labels, signs, or written content visible in the image (transcribe it accurately)
+4. **Objects and People**: Identify and describe all significant objects, people, or entities present
+5. **Context and Setting**: Where does this appear to be taken? What's the environment or context?
+6. **Technical Details**: Image quality, format, any technical aspects worth noting
+7. **Key Insights**: What are the most important or interesting aspects of this image?
+
+Please be thorough and accurate in your analysis, as this information may be used for research or documentation purposes.`;
+
+      const prompt = customPrompt || defaultPrompt;
+      
+      return await this.generateContentWithImage(prompt, data, mimeType, model);
+    } catch (error) {
+      console.error('GeminiService: Error analyzing image:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Extract text from an image (OCR functionality)
+   */
+  async extractTextFromImage(file: File, model: string = 'gemini-2.0-flash'): Promise<string> {
+    try {
+      console.log('GeminiService: Extracting text from image:', file.name);
+      
+      const { data, mimeType } = await this.fileToBase64(file);
+      
+      const prompt = `Please extract all text content from this image. Provide:
+
+1. **Extracted Text**: All readable text in the image, preserving formatting and structure as much as possible
+2. **Text Layout**: Description of how the text is organized (headings, paragraphs, lists, tables, etc.)
+3. **Quality Assessment**: How clear and readable is the text in the image?
+4. **Language**: What language(s) is the text written in?
+
+Focus on accuracy and completeness. If there are multiple columns or sections, please indicate the structure clearly.`;
+
+      return await this.generateContentWithImage(prompt, data, mimeType, model);
+    } catch (error) {
+      console.error('GeminiService: Error extracting text from image:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if a file is a supported image format
+   */
+  isImageFile(file: File): boolean {
+    const supportedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+    return supportedTypes.includes(file.type);
+  }
+
+  /**
+   * Get supported image formats as a string for file input accept attribute
+   */
+  getSupportedImageFormats(): string {
+    return '.jpg,.jpeg,.png,.gif,.webp';
   }
 } 

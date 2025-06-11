@@ -29,6 +29,9 @@ import DownloadButton from './DownloadButton';
 import { EnhancedRAGProcessor } from '../utils/enhancedRAGProcessor';
 import { UnifiedPromptSystem, type SystemPromptComponents } from '../utils/promptSystem';
 import SystemPromptPreview from './SystemPromptPreview';
+import { CitationProcessor, type Citation, type SourceDocument, type ThinkingProcess } from '../utils/citationProcessor';
+import CitationDisplay from './CitationDisplay';
+import DocumentViewer from './DocumentViewer';
 
 interface CustomConversationViewProps {
   conversation: Conversation;
@@ -67,6 +70,17 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
   
   // Initialize RAG processor based on current model
   const [ragProcessor, setRagProcessor] = useState(() => new EnhancedRAGProcessor(selectedModel));
+  
+  // Citation states
+  const [citationProcessor] = useState(new CitationProcessor());
+  const [messageCitations, setMessageCitations] = useState<Map<string, Citation[]>>(new Map());
+  const [messageThinkingProcesses, setMessageThinkingProcesses] = useState<Map<string, ThinkingProcess>>(new Map());
+  const [responseStartTime, setResponseStartTime] = useState<Date | null>(null);
+  const [documentViewer, setDocumentViewer] = useState<{
+    isOpen: boolean;
+    document: SourceDocument | null;
+    citation: Citation | null;
+  }>({ isOpen: false, document: null, citation: null });
   
   // Update RAG processor when model changes
   useEffect(() => {
@@ -112,6 +126,52 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
     );
 
     return UnifiedPromptSystem.buildSystemPrompt(components);
+  };
+
+  // Process AI response for citations
+  const processResponseWithCitations = (response: string, messageId: string): string => {
+    if (ragDocuments.length === 0) return response;
+
+    // Convert RAG documents to SourceDocument format
+    const sourceDocuments: SourceDocument[] = ragDocuments.map(doc => ({
+      id: doc.name,
+      name: doc.name,
+      type: doc.type,
+      content: doc.content,
+      uploadedAt: doc.uploadedAt ? new Date(doc.uploadedAt) : new Date()
+    }));
+
+    // Calculate thinking time from when response started to now
+    const thinkingTimeMs = responseStartTime ? Date.now() - responseStartTime.getTime() : 2000;
+
+    // Process response for citations with thinking time
+    const processedResponse = citationProcessor.processResponse(response, sourceDocuments, thinkingTimeMs);
+    
+    // Store citations and thinking process for this message
+    setMessageCitations(prev => {
+      const updated = new Map(prev);
+      updated.set(messageId, processedResponse.citations);
+      return updated;
+    });
+
+    if (processedResponse.thinkingProcess) {
+      setMessageThinkingProcesses(prev => {
+        const updated = new Map(prev);
+        updated.set(messageId, processedResponse.thinkingProcess!);
+        return updated;
+      });
+    }
+
+    return processedResponse.highlightedContent;
+  };
+
+  // Handle viewing source document
+  const handleViewDocument = (document: SourceDocument, citation: Citation) => {
+    setDocumentViewer({
+      isOpen: true,
+      document,
+      citation
+    });
   };
   
   // Auto-scroll to bottom of messages
@@ -402,15 +462,18 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
           throw new Error("Empty response received from Gemini");
         }
         
+        // Process response for citations
+        const processedContent = processResponseWithCitations(fullResponse, messageId);
+        
         // Make one final update to ensure the role is correct and model is tracked
         conversationManager.updateMessage(
           conversation.id,
           messageId,
           { 
-            content: fullResponse,
+            content: processedContent,
             role: 'assistant',
             metadata: {
-              citations: [],
+              citations: messageCitations.get(messageId) || [],
               modelUsed: currentModel
             }
           }
@@ -538,6 +601,7 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
     conversationManager.addMessage(conversation.id, userMessage);
     setInput('');
     setIsLoading(true);
+    setResponseStartTime(new Date()); // Track when AI response starts
     onConversationUpdate();
     
     try {
@@ -928,7 +992,25 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
                   <div className="whitespace-pre-wrap">{message.content}</div>
                 ) : (
                   <div className="space-y-2">
-                    <MarkdownContent content={message.content} />
+                    {/* Use CitationDisplay for assistant messages with citations */}
+                    {messageCitations.has(message.id) && messageCitations.get(message.id)!.length > 0 ? (
+                      <CitationDisplay
+                        content={message.content}
+                        citations={messageCitations.get(message.id)!}
+                        sourceDocuments={ragDocuments.map(doc => ({
+                          id: doc.name,
+                          name: doc.name,
+                          type: doc.type,
+                          content: doc.content,
+                          uploadedAt: doc.uploadedAt ? new Date(doc.uploadedAt) : new Date()
+                        }))}
+                        thinkingProcess={messageThinkingProcesses.get(message.id)}
+                        onViewDocument={handleViewDocument}
+                      />
+                    ) : (
+                      <MarkdownContent content={message.content} />
+                    )}
+                    
                     {/* Download button for assistant messages */}
                     <div className="flex justify-end">
                       <DownloadButton 
@@ -1072,6 +1154,15 @@ const CustomConversationView: React.FC<CustomConversationViewProps> = ({
           </p>
         </div>
       </div>
+      
+      {/* Document Viewer Modal */}
+      <DocumentViewer
+        isOpen={documentViewer.isOpen}
+        document={documentViewer.document}
+        citation={documentViewer.citation}
+        allCitations={Array.from(messageCitations.values()).flat()}
+        onClose={() => setDocumentViewer({ isOpen: false, document: null, citation: null })}
+      />
     </div>
   );
 };

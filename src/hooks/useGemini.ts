@@ -152,6 +152,7 @@ export const useGemini = () => {
     sendMessage,
     sendMessageStream,
     isStreamingSupported,
-    setCurrentModel
+    setCurrentModel,
+    geminiService // Export the service for direct access
   };
 }; 

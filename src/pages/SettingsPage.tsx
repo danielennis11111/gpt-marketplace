@@ -21,6 +21,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { fetchAllAvailableModels, debugModelLoading } from '../utils/modelHelper';
 import EnhancedRAGDemo from '../components/EnhancedRAGDemo';
+import CitationDemo from '../components/CitationDemo';
 
 export const SettingsPage: React.FC = () => {
   const { settings, updateSettings, resetSettings, isGeminiConfigured, isLlamaConfigured } = useSettings();
@@ -1133,6 +1134,11 @@ export const SettingsPage: React.FC = () => {
         {/* Enhanced RAG File Support Demo */}
         <div className="mt-8">
           <EnhancedRAGDemo />
+        </div>
+
+        {/* Citation System Demo */}
+        <div className="mt-8">
+          <CitationDemo />
         </div>
       </div>
     </div>
